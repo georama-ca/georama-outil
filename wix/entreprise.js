@@ -172,11 +172,16 @@ $w.onReady(() => {
   const idsRep = textes.concat(boutons).filter(dansRepeteur).map((el) => el.id);
   remplacerTextes(textes.filter((el) => !idsRep.includes(el.id)));
   remplacerBoutons(boutons.filter((el) => !idsRep.includes(el.id)));
-  try {
-    tous($w('Repeater')).forEach((r) => r.forEachItem(($item) => {
-      idsRep.forEach((id) => { try { const el = $item('#' + id); if (el.type === '$w.Button') remplacerBoutons([el]); else remplacerTextes([el]); } catch (e) { } });
-    }));
-  } catch (e) { }
+  // répéteurs : on redonne leurs données pour que chaque élément passe par onItemReady
+  tous($w('Repeater')).forEach((r) => {
+    try {
+      r.onItemReady(($item) => {
+        idsRep.forEach((id) => { try { const el = $item('#' + id); if (el.type === '$w.Button') remplacerBoutons([el]); else remplacerTextes([el]); } catch (e) { } });
+      });
+      const d = r.data || [];
+      if (d.length) r.data = d.map((x) => Object.assign({}, x, { _maj: 1 }));
+    } catch (e) { }
+  });
   try { $w(CHAMP).placeholder = CONFIG.champ; } catch (e) { }
 
   $w(OUTIL).onMessage((e) => {
