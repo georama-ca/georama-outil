@@ -158,7 +158,7 @@ $w.onReady(() => {
   remplacerBoutons(boutons.filter((el) => !idsRep.includes(el.id)));
   try {
     tous($w('Repeater')).forEach((r) => r.forEachItem(($item) => {
-      idsRep.forEach((id) => { try { const el = $item('#' + id); remplacerTextes([el].filter((x) => 'html' in x)); remplacerBoutons([el].filter((x) => 'label' in x)); } catch (e) { } });
+      idsRep.forEach((id) => { try { const el = $item('#' + id); if (el.type === '$w.Button') remplacerBoutons([el]); else remplacerTextes([el]); } catch (e) { } });
     }));
   } catch (e) { }
   try { $w(CHAMP).placeholder = CONFIG.champ; } catch (e) { }
