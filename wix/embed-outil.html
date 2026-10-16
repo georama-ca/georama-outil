@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#fff}iframe{border:0;width:100%;height:100%;display:block}</style>
+</head><body>
+<iframe id="outil" title="Outil Georama" src="https://outil.georama.ca/" allow="clipboard-write; fullscreen; geolocation" allowfullscreen></iframe>
+<script>
+/* Pont Wix <-> outil.georama.ca : l'outil est hébergé sur GitHub Pages, ce cadre relaie les messages dans les deux sens. */
+(function () {
+  var f = document.getElementById("outil");
+  var ORIGINE = "https://outil.georama.ca";
+  var pret = false, attente = [];
+  window.addEventListener("message", function (e) {
+    if (e.source === f.contentWindow) {
+      if (!pret) { pret = true; attente.forEach(function (d) { f.contentWindow.postMessage(d, ORIGINE); }); attente = []; }
+      try { window.parent.postMessage(e.data, "*"); } catch (x) {}
+    } else if (pret) { try { f.contentWindow.postMessage(e.data, ORIGINE); } catch (x) {} }
+    else { attente.push(e.data); }
+  });
+})();
+</script>
+</body></html>
