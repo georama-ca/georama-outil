@@ -150,22 +150,13 @@ function remplacerBoutons(liste) {
 $w.onReady(() => {
   try { wixSeoFrontend.setTitle(CONFIG.seoTitre); } catch (e) { }
   try { wixSeoFrontend.setMetaTags([{ name: 'description', content: CONFIG.seoDescription }]); } catch (e) { }
-  // les éléments d'un répéteur sont traités élément par élément ($item), les autres directement
+  // les éléments d'un répéteur ne sont pas touchés ici (Wix les copierait dans tous les éléments)
   const dansRepeteur = (el) => { let p = el; for (let i = 0; i < 12 && p; i++) { try { p = p.parent; } catch (e) { return false; } if (p && p.type === '$w.Repeater') return true; } return false; };
   const textes = tous($w('Text')), boutons = tous($w('Button'));
   const idsRep = textes.concat(boutons).filter(dansRepeteur).map((el) => el.id);
   remplacerTextes(textes.filter((el) => !idsRep.includes(el.id)));
   remplacerBoutons(boutons.filter((el) => !idsRep.includes(el.id)));
-  // répéteurs : on redonne leurs données pour que chaque élément passe par onItemReady
-  tous($w('Repeater')).forEach((r) => {
-    try {
-      r.onItemReady(($item) => {
-        idsRep.forEach((id) => { try { const el = $item('#' + id); if (el.type === '$w.Button') remplacerBoutons([el]); else remplacerTextes([el]); } catch (e) { } });
-      });
-      const d = r.data || [];
-      if (d.length) r.data = d.map((x) => Object.assign({}, x, { _maj: 1 }));
-    } catch (e) { }
-  });
+  // les répéteurs (atouts, étapes) sont modifiés directement dans l'éditeur, page par page
   try { $w(CHAMP).placeholder = CONFIG.champ; } catch (e) { }
 
   $w(OUTIL).onMessage((e) => {
