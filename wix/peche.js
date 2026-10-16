@@ -150,9 +150,10 @@ function remplacerBoutons(liste) {
 $w.onReady(() => {
   try { wixSeoFrontend.setTitle(CONFIG.seoTitre); } catch (e) { }
   try { wixSeoFrontend.setMetaTags([{ name: 'description', content: CONFIG.seoDescription }]); } catch (e) { }
+  // d'abord les répéteurs (chaque élément séparément), ensuite le reste de la page
+  try { tous($w('Repeater')).forEach((r) => r.forEachItem(($item) => { remplacerTextes($item('Text')); remplacerBoutons($item('Button')); })); } catch (e) { }
   remplacerTextes($w('Text'));
   remplacerBoutons($w('Button'));
-  try { tous($w('Repeater')).forEach((r) => r.forEachItem(($item) => { remplacerTextes($item('Text')); remplacerBoutons($item('Button')); })); } catch (e) { }
   try { $w(CHAMP).placeholder = CONFIG.champ; } catch (e) { }
 
   $w(OUTIL).onMessage((e) => {
