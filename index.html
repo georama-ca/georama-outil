@@ -5636,5 +5636,16 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
 })();
 
 </script>
+<script>
+/* Pages d'atterrissage Wix : la page envoie {type:"georama-profil", p:"pleinair"} et l'outil part du bon type de maquette. */
+window.addEventListener("message", function (e) {
+  var d = e.data || {};
+  if (d.type !== "georama-profil" || window.__georamaProfil) return;
+  window.__georamaProfil = true;
+  var deja = document.querySelector('#gTypes .g-type[aria-pressed="true"]');
+  var b = document.querySelector('#gTypes .g-type[data-v="' + d.p + '"]');
+  if (b && !deja) b.click();
+});
+</script>
 </body>
 </html>
