@@ -150,10 +150,17 @@ function remplacerBoutons(liste) {
 $w.onReady(() => {
   try { wixSeoFrontend.setTitle(CONFIG.seoTitre); } catch (e) { }
   try { wixSeoFrontend.setMetaTags([{ name: 'description', content: CONFIG.seoDescription }]); } catch (e) { }
-  // d'abord les répéteurs (chaque élément séparément), ensuite le reste de la page
-  try { tous($w('Repeater')).forEach((r) => r.forEachItem(($item) => { remplacerTextes($item('Text')); remplacerBoutons($item('Button')); })); } catch (e) { }
-  remplacerTextes($w('Text'));
-  remplacerBoutons($w('Button'));
+  // les éléments d'un répéteur sont traités élément par élément ($item), les autres directement
+  const dansRepeteur = (el) => { let p = el; for (let i = 0; i < 12 && p; i++) { try { p = p.parent; } catch (e) { return false; } if (p && p.type === '$w.Repeater') return true; } return false; };
+  const textes = tous($w('Text')), boutons = tous($w('Button'));
+  const idsRep = textes.concat(boutons).filter(dansRepeteur).map((el) => el.id);
+  remplacerTextes(textes.filter((el) => !idsRep.includes(el.id)));
+  remplacerBoutons(boutons.filter((el) => !idsRep.includes(el.id)));
+  try {
+    tous($w('Repeater')).forEach((r) => r.forEachItem(($item) => {
+      idsRep.forEach((id) => { try { const el = $item('#' + id); remplacerTextes([el].filter((x) => 'html' in x)); remplacerBoutons([el].filter((x) => 'label' in x)); } catch (e) { } });
+    }));
+  } catch (e) { }
   try { $w(CHAMP).placeholder = CONFIG.champ; } catch (e) { }
 
   $w(OUTIL).onMessage((e) => {
