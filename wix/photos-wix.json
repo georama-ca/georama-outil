@@ -1,0 +1,210 @@
+{
+ "chasse": [
+  {
+   "fichier": "carte-3d-territoire-de-chasse-quebec-georama.jpg",
+   "wix": "7477d2_a9ed6a38a2834d879511063219d61c42~mv2.jpg",
+   "w": 1500,
+   "h": 2000,
+   "alt": "Carte 3D d'un territoire de chasse au Québec, imprimée par Georama"
+  },
+  {
+   "fichier": "maquette-3d-relief-foret-chasse-detail-georama.jpg",
+   "wix": "7477d2_0b47e7954be9411a99fc52eb844165f0~mv2.jpg",
+   "w": 1500,
+   "h": 2000,
+   "alt": "Détail d'une maquette 3D : relief et forêt d'un territoire de chasse"
+  },
+  {
+   "fichier": "maquette-3d-territoire-de-chasse-orignal-georama.jpg",
+   "wix": "7477d2_a2ab7759525b4ccf9b33e3e688e0ffe2~mv2.jpg",
+   "w": 1500,
+   "h": 2000,
+   "alt": "Maquette 3D d'un territoire de chasse à l'orignal"
+  },
+  {
+   "fichier": "maquette-3d-territoire-orignal-sentiers-georama.jpg",
+   "wix": "7477d2_172b5f5d6b7f4e7aa508c55850f64100~mv2.jpg",
+   "w": 1500,
+   "h": 2000,
+   "alt": "Maquette 3D d'un territoire d'orignal avec sentiers et postes"
+  },
+  {
+   "fichier": "maquette-3d-zec-pourvoirie-murale-georama.jpg",
+   "wix": "7477d2_5f68f9ddd0264620800a3b7fcb31b866~mv2.jpg",
+   "w": 1500,
+   "h": 2000,
+   "alt": "Maquette murale 3D d'une zec ou d'une pourvoirie"
+  },
+  {
+   "fichier": "maquette-topographique-chasse-salon-georama.jpg",
+   "wix": "7477d2_548847e79a4b4071a86848739580f8b4~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette topographique de territoire de chasse posée au salon"
+  }
+ ],
+ "entreprise": [
+  {
+   "fichier": "maquette-3d-chantier-maritime-entreprise-georama.jpg",
+   "wix": "7477d2_3c73d063db3d420d987185fced2e13d7~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'un chantier maritime pour une entreprise"
+  },
+  {
+   "fichier": "maquette-3d-entreprise-site-industriel-georama.jpg",
+   "wix": "7477d2_e98884b26f5347e49ae93036c3efa89c~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'un site industriel d'entreprise"
+  },
+  {
+   "fichier": "maquette-3d-projet-immobilier-terrain-georama.jpg",
+   "wix": "7477d2_81dd0c2b78cb456e9051bad73bf96dc6~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'un terrain pour un projet immobilier"
+  },
+  {
+   "fichier": "maquettes-3d-plaques-grand-format-georama.jpg",
+   "wix": "7477d2_9f250855e6ff4eada28df27f60a6109a~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquettes 3D grand format en plusieurs plaques assemblées"
+  }
+ ],
+ "peche": [
+  {
+   "fichier": "carte-bathymetrique-3d-fond-de-lac-murale-georama.jpg",
+   "wix": "7477d2_aa5040e48a4a489e8817cd09e9d33dc7~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Carte bathymétrique 3D murale du fond d'un lac"
+  },
+  {
+   "fichier": "maquette-3d-lac-bathymetrie-cadre-georama.jpg",
+   "wix": "7477d2_129ac50aadea48a4bbf30cbd14e3efad~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D de lac et bathymétrie dans un cadre"
+  },
+  {
+   "fichier": "maquette-3d-lac-profondeurs-tablette-georama.jpg",
+   "wix": "7477d2_b27f202adf244f548ad3b1ea5a9f391f~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D des profondeurs d'un lac posée sur une tablette"
+  },
+  {
+   "fichier": "maquette-bathymetrique-lac-cadre-bois-georama.jpg",
+   "wix": "7477d2_08114d41379240d7997f025e16e2dfd2~mv2.jpg",
+   "w": 1500,
+   "h": 2000,
+   "alt": "Maquette bathymétrique d'un lac dans un cadre de bois"
+  }
+ ],
+ "randonnee": [
+  {
+   "fichier": "maquette-3d-mont-sentier-randonnee-georama.jpg",
+   "wix": "7477d2_45b9104911d14541ad2374ebdc4dae1b~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'un mont et de son sentier de randonnée"
+  },
+  {
+   "fichier": "maquette-3d-montagne-sentiers-quebec-georama.jpg",
+   "wix": "7477d2_514f1fbaf0944f119f9bb09a1402eeea~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'une montagne du Québec et de ses sentiers"
+  },
+  {
+   "fichier": "maquette-3d-sommet-peinte-main-georama.jpg",
+   "wix": "7477d2_ca65677eb0f44fce822a1f5c3b74411c~mv2.jpg",
+   "w": 1536,
+   "h": 1281,
+   "alt": "Maquette 3D d'un sommet peinte à la main"
+  },
+  {
+   "fichier": "maquette-3d-sommet-trace-gps-georama.jpg",
+   "wix": "7477d2_e5caba50403a4d56986f59634534a330~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'un sommet avec le tracé GPS de la randonnée"
+  },
+  {
+   "fichier": "maquette-topographique-montagne-riviere-georama.jpg",
+   "wix": "7477d2_39e42cc317334f9bbffa048cce3bbba7~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette topographique d'une montagne et de sa rivière"
+  }
+ ],
+ "terre-a-bois": [
+  {
+   "fichier": "maquette-3d-chemins-forestiers-riviere-quebec-georama.jpg",
+   "wix": "7477d2_1496839102204553b4fed257df1eb162~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'une terre à bois avec chemins forestiers et rivière"
+  },
+  {
+   "fichier": "maquette-3d-erabliere-chalet-terrain-georama.jpg",
+   "wix": "7477d2_d6dd4848d4a145ae998b0f55ab7eecab~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'une érablière et d'un terrain de chalet"
+  },
+  {
+   "fichier": "maquette-3d-terre-a-bois-sentiers-riviere-georama.jpg",
+   "wix": "7477d2_0c595b78105d436998f8ea34e109e2bb~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'une terre à bois, de ses sentiers et de sa rivière"
+  },
+  {
+   "fichier": "maquette-topographique-terre-a-bois-relief-foret-georama.jpg",
+   "wix": "7477d2_59e3c45875f7425c9d9b0b5b917a4d81~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette topographique d'une terre à bois : relief et forêt"
+  }
+ ],
+ "ville": [
+  {
+   "fichier": "maquette-3d-chicoutimi-saguenay-ville-georama.jpg",
+   "wix": "7477d2_f7af76ef5f5a4cd99ee971443e82d562~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D de Chicoutimi, à Saguenay"
+  },
+  {
+   "fichier": "maquette-3d-quebec-chateau-frontenac-georama.jpg",
+   "wix": "7477d2_8456b748dd0c435781ae30ad3812dc8e~mv2.jpg",
+   "w": 1500,
+   "h": 2000,
+   "alt": "Maquette 3D de Québec et du Château Frontenac"
+  },
+  {
+   "fichier": "maquette-3d-vieux-quebec-batiments-georama.jpg",
+   "wix": "7477d2_e3930cd8d5fb44209f6544787c97ab48~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D du Vieux-Québec et de ses bâtiments"
+  },
+  {
+   "fichier": "maquette-3d-ville-de-quebec-quartier-georama.jpg",
+   "wix": "7477d2_b0649bbe00eb43c5a26665d61648db2b~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'un quartier de la ville de Québec"
+  },
+  {
+   "fichier": "maquette-murale-3d-ville-quartier-georama.jpg",
+   "wix": "7477d2_537136d86bce4d51af09b5c43cc85b79~mv2.jpg",
+   "w": 1500,
+   "h": 2000,
+   "alt": "Maquette murale 3D d'une ville et d'un quartier"
+  }
+ ]
+}
