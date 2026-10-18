@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v2.0 (2026-10-18) -->
+<!-- Outil Georama v2.1 (2026-10-18) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -232,9 +232,9 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <div class="g-carte" id="colCarte">
 <div class="g-onglets" role="tablist" aria-label="Type d’aperçu">
 <button type="button" role="tab" id="ongletCarte" aria-selected="true">Carte</button>
-<button type="button" role="tab" id="apercu3d" aria-selected="false" hidden>En 3D</button>
 <button type="button" role="tab" id="ongletTable" aria-selected="false">Sur la table</button>
 <button type="button" role="tab" id="ongletMur" aria-selected="false">Au mur</button>
+<button type="button" role="tab" id="apercu3d" aria-selected="false">Voir en 3D</button>
 </div>
 <div id="zoneCarte"><div id="map" aria-label="Carte"></div></div>
 <div id="msg" role="status">Cliquez sur la carte ou cherchez une adresse, puis déplacez le repère pour centrer votre territoire.</div>
@@ -387,7 +387,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v2.0 · 2026-10-18</p>
+<p class="g-version">Outil Georama v2.1 · 2026-10-18</p>
 </div>
 </aside>
 </div>
@@ -5523,6 +5523,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
   }
   if (el("ongletTable")) el("ongletTable").onclick = () => montrerTable(true);
   el("apercu3d").onclick = () => {
+    if (!aMarqueur()) { dire("Choisissez d’abord votre lieu : cherchez-le ou cliquez sur la carte."); return; }
     const pal = el("v3pal"), g = el("murGamme").value;
     if (pal && pal.querySelector('option[value="' + g + '"]')) pal.value = g;
     ouvrir3D();
