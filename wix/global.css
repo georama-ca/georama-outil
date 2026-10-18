@@ -14,7 +14,7 @@
 
   /* ---------- En-tête : logo, panier, menu. Le reste passe dans le menu ---------- */
   [id$="comp-mp39q6vo"] { display: none !important; }          /* Se connecter (8 px de large, inutilisable) */
-  [id$="comp-mv64yzul"] { display: none !important; }          /* bouton vert « Voir ma propriété en 3D » : dans le menu */
+  [id$="comp-mqachpeh"] { display: none !important; }          /* bouton vert « Voir ma propriété en 3D » : dans le menu */
 
   /* ---------- Menu hamburger : fond foncé, liens pâles et gros ---------- */
   [id$="comp-m6z5qjfh5"] { background: #111311 !important; }
