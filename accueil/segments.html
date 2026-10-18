@@ -45,16 +45,26 @@
   .btn.ligne:hover { background: #2f342c; }
   .btn:focus-visible { outline: 3px solid var(--accent-pale); outline-offset: 2px; }
   @media (max-width: 1000px) {
-    .page { padding: 36px 24px; gap: 28px; }
-    .gauche { flex-basis: 40%; }
+    .page { padding: 32px 24px; gap: 26px; }
     h2 { font-size: 28px; }
     .promesse { font-size: 21px; }
     .photo { aspect-ratio: 16 / 9; }
   }
-  @media (max-width: 760px) {
-    .page { flex-direction: column; padding: 32px 16px; gap: 22px; }
-    h2 { font-size: 26px; }
-    .contenu { padding: 18px 18px 20px; }
+  @media (max-width: 860px) {
+    .gauche { flex-basis: 36%; }
+    .choix { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+    .choix button { min-height: 56px; }
+    .aide { display: none; }
+  }
+  @media (max-width: 620px) {
+    .page { flex-direction: column; padding: 26px 14px; gap: 20px; }
+    h2 { font-size: 24px; }
+    .choix { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .choix button { gap: 8px; padding: 8px 10px; }
+    .choix svg { width: 22px; height: 22px; }
+    .choix .court { display: none; }
+    .contenu { padding: 16px 16px 18px; gap: 14px; }
+    .promesse { font-size: 19px; }
     .actions { width: 100%; }
     .btn { flex: 1 1 auto; justify-content: center; }
   }
