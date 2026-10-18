@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v2.2 (2026-10-18) -->
+<!-- Outil Georama v2.3 (2026-10-18) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -387,7 +387,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v2.2 · 2026-10-18</p>
+<p class="g-version">Outil Georama v2.3 · 2026-10-18</p>
 </div>
 </aside>
 </div>
@@ -6711,6 +6711,9 @@ window.addEventListener("message", function (e) {
       barre.insertBefore(l2, lab || $("v3fermer"));
       const pal = $("v3pal"), lp = pal && pal.closest("label");
       if (lp && lp.firstChild && lp.firstChild.nodeType === 3) lp.firstChild.textContent = "Couleurs ";
+      // v2.3 : pas de choix de relief (il ne fait pas partie de la commande) ; le relief reste en automatique
+      const exa = $("v3exa"), le = exa && exa.closest("label");
+      if (exa) { exa.value = "auto"; if (le) le.hidden = true; }
       const ferm = $("v3fermer"); if (ferm) ferm.textContent = "Retour à la carte";
       const note = v.querySelector(".v3-note");
       if (note) { const src = $("v3src"); note.textContent = "Glissez pour tourner, pincez ou utilisez la molette pour zoomer. "; if (src) note.appendChild(src); }
