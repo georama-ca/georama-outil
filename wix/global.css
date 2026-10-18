@@ -37,7 +37,7 @@
   }
 
   /* ---------- Menu hamburger : fond foncé, liens pâles, gros et faciles à toucher ---------- */
-  [data-part="hamburger-overlay"] div:has(> div > .horizontal-menu) {
+  .hamburger-menu-container {
     background-color: #111311 !important;
   }
   /* boîte du menu : presque toute la largeur, centrée, défile si l'écran est court */
@@ -83,7 +83,6 @@
   }
   [data-part="hamburger-overlay"] .menu__item a {
     inline-size: 100% !important;
-    min-block-size: 44px !important;
   }
   [data-part="hamburger-overlay"] .menu__item-label {
     color: #f2f1ea !important;
