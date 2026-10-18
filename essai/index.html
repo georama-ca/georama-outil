@@ -6760,7 +6760,7 @@ window.addEventListener("message", function (e) {
       ? (estPeche() ? "<b>Aperçu à titre indicatif.</b> Fond du lac simulé : votre maquette aura le vrai fond du lac." : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise.")
       : estPeche()
       ? "<b>Aperçu à titre indicatif.</b> Le fond du lac est simulé ici : votre maquette reproduira le vrai fond du lac, beaucoup plus précis."
-      : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise : relief LiDAR détaillé et données vérifiées par Georama.";
+      : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise, avec le relief LiDAR détaillé.";
     const poserIndic = (hote) => {
       if (!hote) return;
       let b = hote.querySelector(":scope > .g-indicatif");
