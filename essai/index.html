@@ -5288,7 +5288,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     const lig = (pal && pal.ligne) || "#DBC8B6";
     remplir(s.parc, "rgba(120,190,95,0.55)");
     remplir(s.camping || [], "rgba(205,190,150,0.6)");
-    remplir(s.indus, "rgba(186,184,180,0.92)");
+    remplir(s.indus, "rgba(156,153,148,0.94)");
     contour(s.indus, "rgba(90,90,90,0.5)", Math.max(1, k));
     remplir(s.carriere, "rgba(203,186,150,0.96)");
     contour(s.carriere, "rgba(120,100,70,0.6)", Math.max(1, k));
@@ -5312,7 +5312,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     const routes = enVille ? [] : (s.routes || []).slice().sort((a, b) => (LR[a.cls] || 7) - (LR[b.cls] || 7));
     routes.forEach((r) => tracer([r.pts], "rgba(0,0,0,0.35)", w((LR[r.cls] || 7) + 3, 2)));
     routes.forEach((r) => tracer([r.pts], lig, w(LR[r.cls] || 7, 1.4)));
-    if (!enVille) tracer(s.sentiers || [], "rgba(255,250,235,0.95)", w(3, 1.2), [5 * k, 3 * k]);
+    if (!enVille) tracer(s.sentiers || [], "rgba(255,250,235,0.8)", w(2.5, 1), [5 * k, 3 * k]);
     // Pistes de ski : couloirs blancs bordés de la couleur de difficulté
     const DIFF = { novice: "#2E9E3E", easy: "#2E9E3E", intermediate: "#1F5FBF", advanced: "#111111", expert: "#111111", freeride: "#FF671F", extreme: "#FF671F" };
     s.pistes.forEach((p) => {
@@ -5320,7 +5320,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
       if (p.aire) { remplir([p.pts], "rgba(255,255,255,0.93)"); contour([p.pts], col, Math.max(1.5, 2.2 * k)); }
       else { tracer([p.pts], col, w(34, 4)); tracer([p.pts], "rgba(255,255,255,0.95)", w(26, 3)); }
     });
-    tracer(s.nordique, "rgba(255,255,255,0.8)", w(6, 1.5), [6 * k, 4 * k]);
+    tracer(s.nordique, "rgba(255,255,255,0.55)", w(4, 1), [6 * k, 4 * k]);
     tracer(s.remontees, "rgba(40,40,44,0.95)", w(3, 1.4));
     tracer(s.rail, "rgba(60,60,60,0.95)", w(4, 1.5), [5 * k, 3 * k]);
     tracer(s.electrique, "rgba(60,60,64,0.75)", w(2.2, 1));
