@@ -61,15 +61,18 @@
   [id$="comp-m6z5qjfj"] { min-width: 44px !important; min-height: 44px !important; }
   [id$="comp-m6z5qjfj"] svg { fill: #f2f1ea !important; }
 
-  /* ---------- Textes : tailles lisibles sur téléphone ---------- */
-  .wixui-rich-text__text.font_8, p.font_8 { font-size: 16px !important; line-height: 1.5 !important; }
-  .wixui-rich-text__text.font_7, p.font_7 { font-size: 16px !important; line-height: 1.5 !important; }
-  .wixui-rich-text__text.font_9, p.font_9 { font-size: 13px !important; line-height: 1.45 !important; }
-  .wixui-rich-text__text.font_6, h6.font_6 { font-size: 18px !important; line-height: 1.3 !important; }
-  .wixui-rich-text__text.font_5, h5.font_5 { font-size: 20px !important; line-height: 1.3 !important; }
-  .wixui-rich-text__text.font_4, h4.font_4 { font-size: 22px !important; line-height: 1.25 !important; }
-  h2.font_2 { font-size: 28px !important; line-height: 1.2 !important; }
-  h1.font_2, h1.font_0 { font-size: 34px !important; line-height: 1.15 !important; }
+  /* ---------- Textes : tailles lisibles sur téléphone ----------
+     « html body » : plus précis que les tailles réduites que Wix met par élément sur mobile */
+  html body .wixui-rich-text__text.font_8 { font-size: 16px !important; line-height: 1.5 !important; }
+  html body .wixui-rich-text__text.font_7 { font-size: 16px !important; line-height: 1.5 !important; }
+  html body .wixui-rich-text__text.font_9 { font-size: 13px !important; line-height: 1.45 !important; }
+  html body .wixui-rich-text__text.font_6 { font-size: 18px !important; line-height: 1.3 !important; }
+  html body .wixui-rich-text__text.font_5 { font-size: 20px !important; line-height: 1.3 !important; }
+  html body .wixui-rich-text__text.font_4 { font-size: 22px !important; line-height: 1.25 !important; }
+  html body h2.wixui-rich-text__text.font_2 { font-size: 28px !important; line-height: 1.2 !important; }
+  html body h1.wixui-rich-text__text.font_2,
+  html body h1.wixui-rich-text__text.font_0 { font-size: 34px !important; line-height: 1.15 !important; }
+  html body .wixui-rich-text__text span { font-size: inherit !important; }
   /* boutons : texte et zone tactile */
   .wixui-button__label, [data-testid="stylablebutton-label"] { font-size: 16px !important; }
   a.wixui-button, button.wixui-button { min-height: 48px !important; }
