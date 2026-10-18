@@ -13,9 +13,11 @@
    ========================================================================== */
 
 /* --- Ordinateur et tablette : le menu principal garde ses 4 liens.
+       « :not(:has(.menu__item-icon)) » : le bouton vert « Voir ma propriété en 3D » est aussi un menu
+       (avec une icône) ; il ne doit pas être touché.
        Les 7 premiers liens (types de maquettes) sont pour le menu mobile. --- */
 @media (min-width: 751px) {
-  [data-part="menu-root"]:has(.hamburger-open-button) .horizontal-menu li[data-part="menu-item"]:nth-child(-n+7) {
+  [data-part="menu-root"]:has(.hamburger-open-button):not(:has(.menu__item-icon)) .horizontal-menu li[data-part="menu-item"]:nth-child(-n+7) {
     visibility: hidden !important;
     inline-size: 0 !important;
     max-inline-size: 0 !important;
@@ -24,7 +26,7 @@
     margin-inline-end: -28px !important;
   }
   /* flèches de défilement du menu : inutiles avec 4 liens */
-  [data-part="menu-root"]:has(.hamburger-open-button) .menu__scroll-button {
+  [data-part="menu-root"]:has(.hamburger-open-button):not(:has(.menu__item-icon)) .menu__scroll-button {
     visibility: hidden !important;
   }
 }
