@@ -6474,6 +6474,20 @@ window.addEventListener("message", function (e) {
     };
   }
 
+  /* ---------- 7. Au mur : les couleurs ajoutées (habitat, érablières, milieux humides, profondeurs…)
+     passent au-dessus du rendu 3D. Avant, le rendu 3D les cachait dès qu'il était prêt.
+     Les lacs et les chemins, déjà dans le rendu 3D, ne sont pas dessinés deux fois.
+     En ville, le rendu 3D (bâtiments en volume) reste au-dessus du plan à plat. */
+  {
+    const st2 = document.createElement("style");
+    st2.textContent = "#murRot2{z-index:3}body:not(.g-ville) #mur3d{z-index:2}" +
+      "body:not(.g-ville) #murCarte:has(#mur3d.pret) #murLeaflet2 .mur-eau,body:not(.g-ville) #murCarte:has(#mur3d.pret) #murLeaflet2 .routes-gris{visibility:hidden}";
+    document.head.appendChild(st2);
+    const marquer = () => { try { document.body.classList.toggle("g-ville", estVille()); } catch (e) {} };
+    if (typeof appliquerProfil === "function") { const _ap = appliquerProfil; appliquerProfil = function () { const r = _ap.apply(this, arguments); marquer(); return r; }; }
+    marquer();
+  }
+
   /* ---------- 4. Barre de chargement : toute la préparation ---------- */
   const st = document.createElement("style");
   st.textContent = "#zoneCarte .g-charge{top:62px;z-index:1400}body.g-charge-actif .vt-msg,body.g-charge-actif #murAttente{display:none!important}";
