@@ -2,81 +2,93 @@
    Georama — global.css (Wix Studio, Code > CSS)
    18 oct. 2026 : corrections pour le mobile (50 % des visites).
    Copie de travail : georama-outil/wix/global.css
+
+   Règles de Wix Studio pour ce fichier (vérifiées dans l'éditeur) :
+   - écrire les classes sans « wixui- » : .button, .rich-text__text, .menu__item ;
+   - les id (#…, [id…]) et les noms de classes internes ne fonctionnent pas ;
+   - display, width, height, margin, padding, border, position, top, order
+     sont retirés : utiliser les propriétés logiques (inline-size, block-size,
+     margin-block, padding-inline, border-block-end…) ;
+   - cacher un élément sur un écran : le faire dans l'éditeur (DS), pas ici.
    ========================================================================== */
 
-/* --- Ordinateur et tablette : les 7 liens des types de maquettes du menu
-       principal restent réservés au menu mobile (le bouton vert les offre déjà) --- */
+/* --- Ordinateur et tablette : le menu principal garde ses 4 liens.
+       Les 7 premiers liens (types de maquettes) sont pour le menu mobile. --- */
 @media (min-width: 751px) {
-  [id$="comp-m6z5n1j7"] li[data-part="menu-item"]:nth-child(-n+7) { display: none !important; }
+  .horizontal-menu:has(.hamburger-open-button) li[data-part="menu-item"]:nth-child(-n+7) {
+    visibility: hidden !important;
+    inline-size: 0 !important;
+    max-inline-size: 0 !important;
+    block-size: 0 !important;
+    overflow: hidden !important;
+    margin-inline-end: calc(-1 * var(--georama-nav-gap, 0px)) !important;
+  }
 }
 
 @media (max-width: 750px) {
 
-  /* ---------- En-tête : logo, panier, menu. Le reste passe dans le menu ---------- */
-  [id$="comp-mp39q6vo"] { display: none !important; }          /* Se connecter (8 px de large, inutilisable) */
-  [id$="comp-mqachpeh"] { display: none !important; }          /* bouton vert « Voir ma propriété en 3D » : dans le menu */
-
-  /* ---------- Menu hamburger : fond foncé, liens pâles et gros ---------- */
-  [id$="comp-m6z5qjfh5"],
-  [id$="comp-m6z5qjfh5"] [class*="HamburgerMenuContainer"] { background: #111311 !important; }
-  [id$="comp-m6z5qjfi4"] [class*="wixui-horizontal-menu__item"],
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"] > div { background: transparent !important; width: 100% !important; height: auto !important; }
-  [id$="comp-m6z64st3"] { display: none !important; }        /* réseaux sociaux : déjà dans le pied de page */
-  [id$="comp-m6z5qjfi4"] {
-    width: calc(100vw - 48px) !important;
-    max-width: 380px !important;
-    height: auto !important;
-    max-height: calc(100vh - 110px) !important;
-    margin-top: 80px !important;
+  /* ---------- Menu hamburger : liens pâles, gros et faciles à toucher ----------
+     Le menu du hamburger = un menu horizontal sans bouton hamburger
+     ni icône (l'icône, c'est le bouton vert « Voir ma propriété en 3D »). */
+  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) {
+    max-block-size: calc(100vh - 120px) !important;
     overflow-y: auto !important;
-    justify-self: center !important;
-    margin-left: auto !important; margin-right: auto !important;
-    left: auto !important; right: auto !important;
+    background-color: transparent !important;
   }
-  [id$="comp-m6z5qjfi4"] nav,
-  [id$="comp-m6z5qjfi4"] ul { background: transparent !important; height: auto !important; overflow: visible !important; }
-  [id$="comp-m6z5qjfi4"] ul { gap: 0 !important; row-gap: 0 !important; padding: 0 !important; }
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"] a {
-    width: 100% !important;
-    display: flex !important; align-items: center !important; justify-content: center !important;
-    min-height: 50px !important; padding: 6px 12px !important; box-sizing: border-box !important;
-    border-bottom: 1px solid rgba(242, 241, 234, .14) !important;
+  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) ul {
+    gap: 0 !important;
+    row-gap: 0 !important;
   }
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"] a,
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"] a * {
-    color: #f2f1ea !important; font-size: 19px !important; line-height: 1.3 !important;
-    white-space: normal !important; text-align: center !important; height: auto !important;
+  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) li[data-part="menu-item"] {
+    inline-size: 100% !important;
+  }
+  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) .menu__item {
+    background-color: transparent !important;
+    inline-size: 100% !important;
+    min-block-size: 50px !important;
+    padding-block: 6px !important;
+    padding-inline: 12px !important;
+    box-sizing: border-box !important;
+    border-block-end: 1px solid rgba(242, 241, 234, .14) !important;
+  }
+  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) .menu__item-label {
+    color: #f2f1ea !important;
+    font-size: 19px !important;
+    line-height: 1.3 !important;
+    white-space: normal !important;
+    text-align: center !important;
   }
   /* 1er lien : « Voir ma propriété en 3D » en bouton vert */
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"]:first-child a {
-    background: #9aa85c !important; border-radius: 8px !important; border-bottom: 0 !important; margin: 4px 0 10px !important;
+  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) li[data-part="menu-item"]:first-child .menu__item {
+    background-color: #9aa85c !important;
+    border-radius: 8px !important;
+    border-block-end: 0 !important;
+    margin-block: 4px 10px !important;
   }
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"]:first-child a,
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"]:first-child a * { color: #111311 !important; font-weight: 700 !important; }
+  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) li[data-part="menu-item"]:first-child .menu__item-label {
+    color: #111311 !important;
+    font-weight: 700 !important;
+  }
   /* 2e à 7e : les types de maquettes, un peu plus discrets */
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"]:nth-child(n+2):nth-child(-n+7) a,
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"]:nth-child(n+2):nth-child(-n+7) a * { font-size: 17px !important; color: #d9dcc8 !important; }
-  /* fermer et réseaux sociaux : zones tactiles de 44 px */
-  [id$="comp-m6z5qjfj"] { min-width: 44px !important; min-height: 44px !important; }
-  [id$="comp-m6z5qjfj"] svg { fill: #f2f1ea !important; }
+  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) li[data-part="menu-item"]:nth-child(n+2):nth-child(-n+7) .menu__item-label {
+    font-size: 17px !important;
+    color: #d9dcc8 !important;
+  }
 
   /* ---------- Textes : tailles lisibles sur téléphone ----------
-     « html body » : plus précis que les tailles réduites que Wix met par élément sur mobile */
-  html body .wixui-rich-text__text.font_8 { font-size: 16px !important; line-height: 1.5 !important; }
-  html body .wixui-rich-text__text.font_7 { font-size: 16px !important; line-height: 1.5 !important; }
-  html body .wixui-rich-text__text.font_9 { font-size: 13px !important; line-height: 1.45 !important; }
-  html body .wixui-rich-text__text.font_6 { font-size: 18px !important; line-height: 1.3 !important; }
-  html body .wixui-rich-text__text.font_5 { font-size: 20px !important; line-height: 1.3 !important; }
-  html body .wixui-rich-text__text.font_4 { font-size: 22px !important; line-height: 1.25 !important; }
-  html body h2.wixui-rich-text__text.font_2 { font-size: 28px !important; line-height: 1.2 !important; }
-  html body h1.wixui-rich-text__text.font_2,
-  html body h1.wixui-rich-text__text.font_0 { font-size: 34px !important; line-height: 1.15 !important; }
-  html body p.wixui-rich-text__text span, html body h1.wixui-rich-text__text span, html body h2.wixui-rich-text__text span, html body h6.wixui-rich-text__text span { font-size: inherit !important; }
-  /* boutons : texte et zone tactile */
-  .wixui-button__label, [data-testid="stylablebutton-label"] { font-size: 16px !important; }
-  a.wixui-button, button.wixui-button { min-height: 48px !important; }
+     Classe répétée : plus précise que les tailles réduites que Wix met
+     sur chaque texte en mobile (8 à 10 px). */
+  p.rich-text__text.rich-text__text.rich-text__text { font-size: 16px !important; line-height: 1.5 !important; }
+  li.rich-text__text.rich-text__text.rich-text__text { font-size: 16px !important; line-height: 1.5 !important; }
+  h6.rich-text__text.rich-text__text.rich-text__text { font-size: 18px !important; line-height: 1.3 !important; }
+  h5.rich-text__text.rich-text__text.rich-text__text { font-size: 20px !important; line-height: 1.3 !important; }
+  h4.rich-text__text.rich-text__text.rich-text__text { font-size: 22px !important; line-height: 1.25 !important; }
+  h3.rich-text__text.rich-text__text.rich-text__text { font-size: 24px !important; line-height: 1.2 !important; }
+  h2.rich-text__text.rich-text__text.rich-text__text { font-size: 26px !important; line-height: 1.2 !important; }
+  h1.rich-text__text.rich-text__text.rich-text__text { font-size: 32px !important; line-height: 1.15 !important; }
+  .rich-text__text.rich-text__text span { font-size: inherit !important; }
 
-  /* ---------- Bulle de clavardage : ne cache plus les boutons ---------- */
-  #wix-chat-widget, [id^="comp-"][id*="wixchat"], iframe[title*="clavardage"], iframe[title*="chat" i] { bottom: 76px !important; }
+  /* boutons : texte lisible, zone tactile de 48 px */
+  .button__label { font-size: 16px !important; }
+  .button { min-block-size: 48px !important; }
 }
