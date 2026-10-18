@@ -72,7 +72,7 @@
   html body h2.wixui-rich-text__text.font_2 { font-size: 28px !important; line-height: 1.2 !important; }
   html body h1.wixui-rich-text__text.font_2,
   html body h1.wixui-rich-text__text.font_0 { font-size: 34px !important; line-height: 1.15 !important; }
-  html body .wixui-rich-text__text span { font-size: inherit !important; }
+  html body p.wixui-rich-text__text span, html body h1.wixui-rich-text__text span, html body h2.wixui-rich-text__text span, html body h6.wixui-rich-text__text span { font-size: inherit !important; }
   /* boutons : texte et zone tactile */
   .wixui-button__label, [data-testid="stylablebutton-label"] { font-size: 16px !important; }
   a.wixui-button, button.wixui-button { min-height: 48px !important; }
