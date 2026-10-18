@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v2.1 (2026-10-18) -->
+<!-- Outil Georama v2.2 (2026-10-18) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -315,11 +315,11 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <label class="chk"><input type="checkbox" id="arb"> Texture d’arbres (hauteur de la forêt, en relief) <em id="h_arb"></em></label>
 <div class="g-site" id="gSite"><b>Mon site en 3D</b> <small>(relevé automatique OpenStreetMap, vérifié par Georama)</small></div>
 <label class="chk"><input type="checkbox" id="sb"> Bâtiments et installations en 3D (usines, pavillons, réservoirs, cheminées) <em id="h_sb"></em></label>
-<label class="chk"><input type="checkbox" id="sk"> Pistes de ski et remontées mécaniques <em id="h_sk"></em></label>
-<label class="chk"><input type="checkbox" id="sg"> Terrain de golf (allées, verts, fosses de sable) <em id="h_sg"></em></label>
+<label class="chk"><input type="checkbox" id="sk"> Pistes de ski (couleur de difficulté), remontées et pylônes <em id="h_sk"></em></label>
+<label class="chk"><input type="checkbox" id="sg"> Terrain de golf (allées, verts avec drapeau, départs, fosses de sable) <em id="h_sg"></em></label>
 <label class="chk"><input type="checkbox" id="si"> Zones industrielles, carrières et stationnements <em id="h_si"></em></label>
 <label class="chk"><input type="checkbox" id="sr"> Voies ferrées et lignes électriques <em id="h_sr"></em></label>
-<label class="chk"><input type="checkbox" id="sp"> Parcs et terrains de sport <em id="h_sp"></em></label>
+<label class="chk"><input type="checkbox" id="sp"> Parcs, sentiers, arbres et terrains de sport <em id="h_sp"></em></label>
 <div class="g-site" id="gForet" hidden><b>Forêt, faune et plans d’eau</b> <small>(sociétés sylvicoles, coupe forestière, pourvoiries, ZEC, clubs de chasse et pêche)</small></div>
 <label class="chk"><input type="checkbox" id="hab"> Habitat de l’orignal <em id="h_hab"></em></label>
 <div id="leg_hab" aria-label="Légende de l’habitat de l’orignal">
@@ -387,7 +387,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v2.1 · 2026-10-18</p>
+<p class="g-version">Outil Georama v2.2 · 2026-10-18</p>
 </div>
 </aside>
 </div>
@@ -5006,11 +5006,15 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
   }
   function classer(els) {
     const r = { bats: [], tanks: [], cheminees: [], pistes: [], nordique: [], remontees: [], golf: { fairway: [], green: [], tee: [], bunker: [], eau: [] },
-      indus: [], carriere: [], parking: [], rail: [], electrique: [], sport: [], parc: [], sable: [] };
+      indus: [], carriere: [], parking: [], rail: [], electrique: [], sport: [], parc: [], sable: [],
+      routes: [], sentiers: [], pylones: [], arbres: [], camping: [], chutes: [] };
     const vu = new Set();
     els.forEach((el) => {
       const t = el.tags || {};
       if (el.type === "node") {
+        if (t.aerialway === "pylon") { r.pylones.push({ lat: el.lat, lon: el.lon }); return; }
+        if (t.natural === "tree") { r.arbres.push({ lat: el.lat, lon: el.lon }); return; }
+        if (t.waterway === "waterfall") { r.chutes.push({ lat: el.lat, lon: el.lon }); return; }
         if (/^(storage_tank|silo|water_tower)$/.test(t.man_made || "")) r.tanks.push({ lat: el.lat, lon: el.lon, r: 6, h: hauteurTags(t) || 14 });
         else if (/^(chimney|tower|mast)$/.test(t.man_made || "")) r.cheminees.push({ lat: el.lat, lon: el.lon, h: hauteurTags(t) || (t.man_made === "chimney" ? 40 : 25), l: t.man_made === "chimney" ? 4 : 5 });
         return;
@@ -5030,14 +5034,20 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
         if (t.man_made === "works") rings.forEach((pts) => r.bats.push({ pts, h: hauteurTags(t) || 10, indus: true }));
         else { const c = centre(ligne); r.cheminees.push({ lat: c[0], lon: c[1], h: hauteurTags(t) || 35, l: Math.max(3, 2 * rayon(ligne, c)) }); }
       } else if (t["piste:type"]) {
-        if (/^(downhill|snow_park|sled)$/.test(t["piste:type"])) (ferme(ligne) ? rings : [ligne]).forEach((p) => p && r.pistes.push({ pts: p, aire: ferme(ligne) }));
+        if (/^(downhill|snow_park|sled)$/.test(t["piste:type"])) (ferme(ligne) && t.area !== "no" ? rings : [ligne]).forEach((p) => p && r.pistes.push({ pts: p, aire: ferme(ligne) && t.area !== "no", diff: t["piste:difficulty"] || "" }));
+        else if (t["piste:type"] === "hike") { if (ligne) r.sentiers.push(ligne); }
         else if (ligne) r.nordique.push(ligne);
       } else if (t.aerialway && ligne && !/^(station|pylon)$/.test(t.aerialway)) r.remontees.push(ligne);
       else if (t.golf) {
         const g = { fairway: "fairway", green: "green", tee: "tee", bunker: "bunker", water_hazard: "eau", lateral_water_hazard: "eau", driving_range: "fairway", rough: null }[t.golf];
         if (g) rings.forEach((p) => r.golf[g].push(p));
       } else if (/^(industrial|railway|port|military|commercial|retail)$/.test(t.landuse || "")) rings.forEach((p) => r.indus.push(p));
-      else if (t.landuse === "quarry") rings.forEach((p) => r.carriere.push(p));
+      else if (/^(quarry|landfill)$/.test(t.landuse || "")) rings.forEach((p) => r.carriere.push(p));
+      else if (t.tourism === "camp_site") rings.forEach((p) => r.camping.push(p));
+      else if (t.highway && ligne) {
+        if (/^(path|footway|track|bridleway|cycleway|steps)$/.test(t.highway)) r.sentiers.push(ligne);
+        else r.routes.push({ pts: ligne, cls: t.highway });
+      }
       else if (t.amenity === "parking" && t.parking !== "underground") rings.forEach((p) => r.parking.push(p));
       else if (/^(rail|light_rail|tram|narrow_gauge)$/.test(t.railway || "") && ligne && t.tunnel !== "yes") r.rail.push(ligne);
       else if (t.power === "line" && ligne) r.electrique.push(ligne);
@@ -5049,6 +5059,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     r.bats.sort((a, b) => aireDeg(b.pts) - aireDeg(a.pts));
     const maxBats = typeof profilActif !== "undefined" && profilActif === "ville" ? 6000 : 2500;
     if (r.bats.length > maxBats) r.bats.length = maxBats;
+    if (r.arbres.length > 2500) r.arbres.length = 2500;
     return r;
   }
   const centre = (pts) => [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
@@ -5076,14 +5087,14 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     return classer(await overpassEl(q));
   }
   /* ---------- Cases de l'étape 3 (Georama Entreprise) : ce qui est montré ---------- */
-  const CASES = { sb: ["bats", "tanks", "cheminees"], sk: ["pistes", "nordique", "remontees"], sg: ["golf"],
-    si: ["indus", "carriere", "parking", "sable"], sr: ["rail", "electrique"], sp: ["sport", "parc"] };
+  const CASES = { sb: ["bats", "tanks", "cheminees"], sk: ["pistes", "nordique", "remontees", "pylones"], sg: ["golf"],
+    si: ["indus", "carriere", "parking", "sable"], sr: ["rail", "electrique"], sp: ["sport", "parc", "sentiers", "arbres", "camping"] };
   function filtrer(s) {
     if (!s || profilActif !== "entreprise") return s;
     const r = Object.assign({}, s);
     Object.keys(CASES).forEach((id) => {
       const el = document.getElementById(id);
-      if (el && !el.checked) CASES[id].forEach((k) => { r[k] = Array.isArray(s[k]) ? [] : { fairway: [], green: [], tee: [], bunker: [], eau: [] }; });
+      if (el && !el.checked) CASES[id].forEach((k) => { r[k] = Array.isArray(s[k]) || !s[k] ? [] : { fairway: [], green: [], tee: [], bunker: [], eau: [] }; });
     });
     return r;
   }
@@ -5162,7 +5173,8 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     let cBat = clair ? [0.96, 0.95, 0.92] : [0.62, 0.62, 0.64], cInd = clair ? [0.78, 0.77, 0.76] : [0.5, 0.5, 0.52], cToit = clair ? [0.88, 0.87, 0.84] : [0.56, 0.56, 0.58];
     { const vg = typeof window.georamaVilleGamme === "function" && window.georamaVilleGamme(); if (vg && vg.bat) { cBat = hexRVB(vg.bat); cToit = cBat.map((x) => Math.min(1, x * 1.1 + 0.03)); } }
     // Ville : hauteur fixe à l'échelle de la maquette (environ 4 mm pour une maison sur 1 km), sans l'exagération du relief
-    const fBati = typeof window.georamaVilleGamme === "function" && window.georamaVilleGamme() ? 2.2 : exa * EXAG_BATI;
+    // Ville et Entreprise : hauteur fixe à l'échelle de la maquette (environ 4 mm pour une maison sur 1 km), sans l'exagération du relief
+    const fBati = typeof window.georamaVilleGamme === "function" && window.georamaVilleGamme() ? 2.2 : 2.5;
     const hm = (h) => (h / 1000) * u * fBati;      // mètres -> unités du modèle
     const tri = (a, b, c, nn, col) => { P.push(...a, ...b, ...c); N.push(...nn, ...nn, ...nn); C.push(...col, ...col, ...col); };
     const quad = (a, b, c, e2, nn, col) => { tri(a, b, c, nn, col); tri(a, c, e2, nn, col); };
@@ -5219,10 +5231,46 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     s.bats.forEach((b) => prisme(b.pts, b.h, b.indus ? cInd : cBat, b.indus ? cInd : cToit));
     s.tanks.forEach((t) => cylindre(t.lat, t.lon, t.r, t.h, cInd));
     s.cheminees.forEach((c) => boite(c.lat, c.lon, c.l, c.h, cInd));
+    // boîte posée entre deux hauteurs (mètres au-dessus du sol)
+    function bloc(lat, lon, lx, lz, h0, h1, col, dx) {
+      const [x, y] = versZone(d, lat, lon);
+      if (!dansZone(x, y)) return;
+      const sol = base(d.altFn(lat, lon)), y0 = sol + hm(h0), y1 = sol + hm(h1);
+      const X = x * u + ((dx || 0) / 1000) * u, Z = -y * u, a = (lx / 2000) * u, b = (lz / 2000) * u;
+      const c = [[X - a, Z - b], [X + a, Z - b], [X + a, Z + b], [X - a, Z + b]];
+      for (let i = 0; i < 4; i++) {
+        const [ax, az] = c[i], [bx, bz] = c[(i + 1) % 4], nx = bz - az, nz = -(bx - ax), l = Math.hypot(nx, nz) || 1;
+        quad([ax, y0, az], [bx, y0, bz], [bx, y1, bz], [ax, y1, az], [-nx / l, 0, -nz / l], col);
+      }
+      quad([X - a, y1, Z - b], [X - a, y1, Z + b], [X + a, y1, Z + b], [X + a, y1, Z - b], [0, 1, 0], col);
+    }
+    // pylônes des remontées : petites tours sombres
+    (s.pylones || []).forEach((p) => bloc(p.lat, p.lon, 2.2, 2.2, -1, 11, [0.25, 0.25, 0.27]));
+    // golf : un drapeau rouge au centre de chaque vert
+    if (s.golf && s.golf.green) s.golf.green.forEach((g) => {
+      const [la, lo] = centreLL(g);
+      bloc(la, lo, 0.9, 0.9, -1, 9, [0.97, 0.97, 0.95]);
+      bloc(la, lo, 5, 0.6, 6, 9, [0.84, 0.0, 0.11], 2.8);
+    });
+    // arbres isolés : petits cônes vert foncé
+    if (s.arbres && s.arbres.length && profilActif !== "ville") {
+      const cA = [0.03, 0.36, 0.18];
+      s.arbres.forEach((t) => {
+        const [x, y] = versZone(d, t.lat, t.lon);
+        if (!dansZone(x, y)) return;
+        const sol = base(d.altFn(t.lat, t.lon)) - 0.002, top = sol + hm(9), R = (2.6 / 1000) * u, X = x * u, Z = -y * u, n = 6;
+        for (let i = 0; i < n; i++) {
+          const a0 = (i / n) * 2 * Math.PI, a1 = ((i + 1) / n) * 2 * Math.PI;
+          const p0 = [X + R * Math.cos(a0), sol, Z + R * Math.sin(a0)], p1 = [X + R * Math.cos(a1), sol, Z + R * Math.sin(a1)];
+          const am = (a0 + a1) / 2;
+          tri(p0, [X, top, Z], p1, [Math.cos(am) * 0.8, 0.6, Math.sin(am) * 0.8], cA);
+        }
+      });
+    }
   };
 
   /* ---------- Couleurs au sol ---------- */
-  window.georamaSitePeindre = function ({ g, d, t, px, k, TW, TH }) {
+  window.georamaSitePeindre = function ({ g, d, t, px, k, pal, TW, TH }) {
     const e = donnees(d);
     if (!e || !e.donnees) return;
     const s = filtrer(e.donnees);
@@ -5237,25 +5285,66 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
       lignes.forEach((l) => { g.beginPath(); l.forEach((p, i) => { const [x, y] = px(p[0], p[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); g.stroke(); });
       g.setLineDash([]);
     };
-    remplir(s.indus, "rgba(165,160,158,0.5)");
-    remplir(s.carriere, "rgba(205,190,165,0.8)");
-    remplir(s.parc, "rgba(150,195,115,0.55)");
-    remplir(s.sport, "rgba(135,190,110,0.7)");
-    remplir(s.sable, "rgba(225,210,170,0.85)");
-    remplir(s.golf.fairway, "rgba(150,205,110,0.9)");
-    remplir(s.golf.green, "rgba(110,200,85,0.95)");
-    remplir(s.golf.tee, "rgba(110,200,85,0.95)");
-    remplir(s.golf.bunker, "rgba(235,220,175,0.97)");
-    remplir(s.golf.eau, "rgba(140,200,236,0.95)");
-    remplir(s.parking, "rgba(150,150,150,0.85)");
-    // Pistes de ski : couloirs clairs ; nordique : fin trait blanc ; remontées : trait sombre
-    const aires = s.pistes.filter((p) => p.aire).map((p) => p.pts), lignes = s.pistes.filter((p) => !p.aire).map((p) => p.pts);
-    remplir(aires, "rgba(255,255,255,0.88)");
-    tracer(lignes, "rgba(255,255,255,0.88)", w(28, 3));
-    tracer(s.nordique, "rgba(255,255,255,0.7)", w(6, 1.5), [6 * k, 4 * k]);
-    tracer(s.remontees, "rgba(60,60,64,0.85)", w(3, 1.2));
-    tracer(s.rail, "rgba(70,70,70,0.9)", w(4, 1.5), [5 * k, 3 * k]);
-    tracer(s.electrique, "rgba(70,70,74,0.6)", w(2.5, 1));
+    const contour = (rings, col, lw) => { if (!rings.length) return; g.strokeStyle = col; g.lineWidth = lw; g.lineJoin = "round"; rings.forEach((r) => { poly(r); g.stroke(); }); };
+    const lig = (pal && pal.ligne) || "#DBC8B6";
+    remplir(s.parc, "rgba(120,190,95,0.55)");
+    remplir(s.camping || [], "rgba(205,190,150,0.6)");
+    remplir(s.indus, "rgba(156,153,148,0.94)");
+    contour(s.indus, "rgba(90,90,90,0.5)", Math.max(1, k));
+    // Carrières, mines et sablières : sable ombré par le relief (les paliers restent visibles)
+    const ombrer = (rings, rgb) => {
+      if (!rings.length || !t || !t.A) return;
+      const m = document.createElement("canvas"); m.width = TW; m.height = TH;
+      const mg = m.getContext("2d"); mg.fillStyle = "#fff";
+      rings.forEach((r) => { mg.beginPath(); r.forEach((p, i) => { const [x, y] = px(p[0], p[1]); i ? mg.lineTo(x, y) : mg.moveTo(x, y); }); mg.closePath(); mg.fill(); });
+      const md = mg.getImageData(0, 0, TW, TH).data, im = g.getImageData(0, 0, TW, TH), o = im.data, A = t.A, mpp = t.mpp;
+      const at = (i, j) => A[Math.max(0, Math.min(TH - 1, j)) * TW + Math.max(0, Math.min(TW - 1, i))];
+      const L = [-0.5, 0.5, 0.707];
+      for (let j = 0; j < TH; j++) for (let i = 0; i < TW; i++) {
+        const q = j * TW + i;
+        if (md[4 * q + 3] < 128) continue;
+        const gx = ((at(i + 1, j) - at(i - 1, j)) / (2 * mpp)) * 1.6, gy = ((at(i, j - 1) - at(i, j + 1)) / (2 * mpp)) * 1.6;
+        const nl = Math.hypot(gx, gy, 1), sh = Math.max(0, (-gx * L[0] - gy * L[1] + L[2]) / nl), f = 0.5 + 0.62 * sh;
+        o[4 * q] = Math.min(255, rgb[0] * f); o[4 * q + 1] = Math.min(255, rgb[1] * f); o[4 * q + 2] = Math.min(255, rgb[2] * f);
+      }
+      g.putImageData(im, 0, 0);
+    };
+    ombrer(s.carriere, [222, 204, 168]);
+    contour(s.carriere, "rgba(120,100,70,0.6)", Math.max(1, k));
+    remplir(s.sport, "rgba(118,190,96,0.95)");
+    contour(s.sport, "rgba(255,255,255,0.9)", Math.max(1, 1.2 * k));
+    remplir(s.sable, "rgba(232,216,172,0.95)");
+    // Golf : allées vert tendre, verts presque blancs, départs, fosses de sable, obstacles d'eau, contours foncés
+    remplir(s.golf.fairway, "rgba(140,205,95,1)");
+    contour(s.golf.fairway, "rgba(20,90,40,0.85)", Math.max(1, 1.4 * k));
+    remplir(s.golf.tee, "rgba(170,222,120,1)");
+    contour(s.golf.tee, "rgba(20,90,40,0.85)", Math.max(1, 1.2 * k));
+    remplir(s.golf.green, "rgba(205,240,150,1)");
+    contour(s.golf.green, "rgba(20,90,40,0.95)", Math.max(1.2, 1.8 * k));
+    remplir(s.golf.bunker, "rgba(244,232,196,1)");
+    contour(s.golf.bunker, "rgba(150,125,80,0.7)", Math.max(1, k));
+    remplir(s.golf.eau, "rgba(140,200,236,1)");
+    remplir(s.parking, "rgba(128,128,128,0.95)");
+    // Routes et sentiers (tuiles OpenStreetMap)
+    const LR = { motorway: 16, trunk: 14, primary: 12, secondary: 11, tertiary: 10, unclassified: 8, residential: 8, minor: 8, living_street: 7, pedestrian: 6, service: 5, track: 4 };
+    const enVille = typeof profilActif !== "undefined" && profilActif === "ville";
+    const routes = enVille ? [] : (s.routes || []).slice().sort((a, b) => (LR[a.cls] || 7) - (LR[b.cls] || 7));
+    routes.forEach((r) => tracer([r.pts], "rgba(0,0,0,0.35)", w((LR[r.cls] || 7) + 3, 2)));
+    routes.forEach((r) => tracer([r.pts], lig, w(LR[r.cls] || 7, 1.4)));
+    if (!enVille) tracer(s.sentiers || [], "rgba(255,250,235,0.8)", w(2.5, 1), [5 * k, 3 * k]);
+    // Pistes de ski : couloirs blancs bordés de la couleur de difficulté
+    const DIFF = { novice: "#2E9E3E", easy: "#2E9E3E", intermediate: "#1F5FBF", advanced: "#111111", expert: "#111111", freeride: "#FF671F", extreme: "#FF671F" };
+    s.pistes.forEach((p) => {
+      const col = DIFF[p.diff] || "#7a7a7a";
+      if (p.aire) { remplir([p.pts], "rgba(255,255,255,0.93)"); contour([p.pts], col, Math.max(1.5, 2.2 * k)); }
+      else { tracer([p.pts], col, w(34, 4)); tracer([p.pts], "rgba(255,255,255,0.95)", w(26, 3)); }
+    });
+    tracer(s.nordique, "rgba(255,255,255,0.55)", w(4, 1), [6 * k, 4 * k]);
+    tracer(s.remontees, "rgba(40,40,44,0.95)", w(3, 1.4));
+    tracer(s.rail, "rgba(60,60,60,0.95)", w(4, 1.5), [5 * k, 3 * k]);
+    tracer(s.electrique, "rgba(60,60,64,0.75)", w(2.2, 1));
+    // Chutes : écume blanche
+    (s.chutes || []).forEach((c) => { const [x, y] = px(c.lat, c.lon), r = w(16, 3); const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, "rgba(255,255,255,0.95)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); });
   };
   window.georamaSite = { attendre, donnees: (d) => (donnees(d) || {}).donnees || null };
   // Changement de segment : le maillage se refait avec ou sans le site
@@ -5515,7 +5604,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
   el("ongletMur").onclick = () => montrerMur(true);
   function montrerTable(signaler) {
     if (!aMarqueur()) { if (signaler) dire("Choisissez d’abord votre lieu : cherchez-le ou cliquez sur la carte."); return; }
-    if (!window.georamaTable) { montrerMur(signaler); return; }
+    if (!window.georamaTable || (window.georamaSansApercu3D && window.georamaSansApercu3D())) { montrerMur(signaler); return; }
     const pal = el("v3pal"), g = el("murGamme").value;
     if (pal && pal.querySelector('option[value="' + g + '"]')) pal.value = g;
     window.georamaTable.ouvrir();
@@ -6132,12 +6221,15 @@ window.addEventListener("message", function (e) {
   const way = (id, tags, pts) => ({ type: "way", id, tags, geometry: pts.map((p) => ({ lat: p[0], lon: p[1] })) });
   /* ---------- Bâtiments Overture Maps (PMTiles) : OpenStreetMap + empreintes Microsoft, Google, Esri ----------
      Beaucoup de petites villes du Québec ont peu de bâtiments dans OpenStreetMap ; Overture les complète. */
-  const PMT = {
-    url: "https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/2026-09-23.1/buildings.pmtiles",
-    entete: null, dirs: new Map(),
-  };
-  async function pmtOctets(deb, long) {
-    const r = await fetch(PMT.url, { headers: { Range: "bytes=" + deb + "-" + (deb + long - 1) } });
+  // Archives PMTiles d'Overture Maps (lecture par plages d'octets, sans serveur)
+  const OVERTURE = "https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/2026-09-23.1/";
+  const archives = new Map();
+  function archive(nom) {
+    if (!archives.has(nom)) archives.set(nom, { url: OVERTURE + nom + ".pmtiles", entete: null, dirs: new Map(), tuiles: new Map() });
+    return archives.get(nom);
+  }
+  async function pmtOctets(A, deb, long) {
+    const r = await fetch(A.url, { headers: { Range: "bytes=" + deb + "-" + (deb + long - 1) } });
     if (!(r.status === 206 || r.status === 200)) throw new Error("pmtiles " + r.status);
     return new Uint8Array(await r.arrayBuffer());
   }
@@ -6148,15 +6240,16 @@ window.addEventListener("message", function (e) {
     return new Uint8Array(await new Response(s).arrayBuffer());
   }
   const u64 = (v, o) => v.getUint32(o, true) + v.getUint32(o + 4, true) * 4294967296;
-  async function pmtEntete() {
-    if (!PMT.entete) PMT.entete = (async () => {
-      const b = await pmtOctets(0, 16384), v = new DataView(b.buffer);
+  async function pmtEntete(A) {
+    A = A || archive("buildings");
+    if (!A.entete) A.entete = (async () => {
+      const b = await pmtOctets(A, 0, 16384), v = new DataView(b.buffer);
       if (String.fromCharCode(...b.slice(0, 7)) !== "PMTiles" || b[7] !== 3) throw new Error("pmtiles format");
       const h = { rootOff: u64(v, 8), rootLen: u64(v, 16), leafOff: u64(v, 40), dataOff: u64(v, 56), compInt: b[97], compTuile: b[98], zMin: b[100], zMax: b[101] };
       h.racine = pmtLireDir(await pmtDecomp(b.slice(h.rootOff, h.rootOff + h.rootLen), h.compInt));
       return h;
-    })().catch((e) => { PMT.entete = null; throw e; });
-    return PMT.entete;
+    })().catch((e) => { A.entete = null; throw e; });
+    return A.entete;
   }
   function pmtLireDir(b) {
     const r = new Lecteur(b), n = r.varint(), e = [];
@@ -6188,18 +6281,46 @@ window.addEventListener("message", function (e) {
     if (b >= 0 && (e[b].run === 0 || id - e[b].id < e[b].run)) return e[b];
     return null;
   }
-  async function pmtTuile(z, x, y) {
-    const h = await pmtEntete(), id = pmtId(z, x, y);
-    let dir = h.racine;
-    for (let p = 0; p < 4; p++) {
-      const e = pmtChercher(dir, id);
-      if (!e) return null;
-      if (e.run > 0) return lireTuile(await pmtDecomp(await pmtOctets(h.dataOff + e.off, e.len), h.compTuile));
-      const k = h.leafOff + e.off;
-      if (!PMT.dirs.has(k)) PMT.dirs.set(k, pmtOctets(k, e.len).then((b) => pmtDecomp(b, h.compInt)).then(pmtLireDir).catch((er) => { PMT.dirs.delete(k); throw er; }));
-      dir = await PMT.dirs.get(k);
+  async function pmtTuileDe(nom, z, x, y) {
+    const A = archive(nom), k = z + "/" + x + "/" + y;
+    if (A.tuiles.has(k)) return A.tuiles.get(k);
+    const p = (async () => {
+      const h = await pmtEntete(A), id = pmtId(z, x, y);
+      let dir = h.racine;
+      for (let n = 0; n < 4; n++) {
+        const e = pmtChercher(dir, id);
+        if (!e) return null;
+        if (e.run > 0) return lireTuile(await pmtDecomp(await pmtOctets(A, h.dataOff + e.off, e.len), h.compTuile));
+        const kd = h.leafOff + e.off;
+        if (!A.dirs.has(kd)) A.dirs.set(kd, pmtOctets(A, kd, e.len).then((b) => pmtDecomp(b, h.compInt)).then(pmtLireDir).catch((er) => { A.dirs.delete(kd); throw er; }));
+        dir = await A.dirs.get(kd);
+      }
+      return null;
+    })().catch((e) => { A.tuiles.delete(k); throw e; });
+    A.tuiles.set(k, p);
+    if (A.tuiles.size > 200) A.tuiles.delete(A.tuiles.keys().next().value);
+    return p;
+  }
+  const pmtTuile = (z, x, y) => pmtTuileDe("buildings", z, x, y);
+  // objets d'une archive Overture pour une emprise, en lat/lon (même forme que objets())
+  async function objetsOverture(nom, emprise, couches, zMax) {
+    let z = zMax || 14, t0, t1;
+    for (;; z--) {
+      t0 = versTuile(emprise[2], emprise[1], z); t1 = versTuile(emprise[0], emprise[3], z);
+      if ((Math.floor(t1[0]) - Math.floor(t0[0]) + 1) * (Math.floor(t1[1]) - Math.floor(t0[1]) + 1) <= 36 || z <= 8) break;
     }
-    return null;
+    const jobs = [];
+    for (let x = Math.floor(t0[0]); x <= Math.floor(t1[0]); x++)
+      for (let y = Math.floor(t0[1]); y <= Math.floor(t1[1]); y++) jobs.push(pmtTuileDe(nom, z, x, y).then((c) => ({ c, x, y })));
+    const res = await Promise.all(jobs);
+    const out = {}; couches.forEach((n) => (out[n] = []));
+    res.forEach(({ c, x, y }) => c && couches.forEach((n) => {
+      const L = c[n]; if (!L) return;
+      const f = versLL(z, x, y, L.ext);
+      L.objets.forEach((o) => out[n].push({ id: o.id, type: o.type, props: o.props, traits: o.traits.map((t) => t.map(f)), cle: z + "/" + x + "/" + y }));
+    }));
+    out._z = z;
+    return out;
   }
   // bâtiments Overture d'une emprise [s, w, n, e] : [{ ring, h }] (h en mètres ou 0)
   async function batimentsOverture(emprise) {
@@ -6226,7 +6347,7 @@ window.addEventListener("message", function (e) {
     });
     return out;
   }
-  window.georamaTuiles = { objets, polygones, pmtTuile, pmtEntete, batimentsOverture };
+  window.georamaTuiles = { objets, polygones, pmtTuile, pmtTuileDe, pmtEntete, archive, objetsOverture, batimentsOverture };
 
   /* ---------- 1. Lacs et rivières de l'aperçu 3D ---------- */
   if (typeof v3ChargerEau === "function") {
@@ -6359,7 +6480,51 @@ window.addEventListener("message", function (e) {
     };
   }
 
-  /* ---------- 3. Bâtiments 3D de Ville et Entreprise (requête « site ») ---------- */
+  /* ---------- 3. Le site en 3D (Ville et Entreprise) : requête « site » ----------
+     Bâtiments Overture ; golf, pistes de ski, remontées et pylônes, carrières, zones industrielles,
+     stationnements, réservoirs, lignes électriques, arbres (Overture base) ; rues et sentiers,
+     parcs et terrains de sport (tuiles OpenStreetMap). Overpass reste en secours. */
+  const tagsSource = (pr) => { try { return JSON.parse(pr.source_tags || "{}"); } catch (e) { return {}; } };
+  function elementsBase(b, way0) {
+    const els = []; let id = way0;
+    const poly = (f, tags) => polygones(f).forEach((pp) => els.push(way(id++, tags, pp[0])));
+    const ligne = (f, tags) => f.traits.forEach((pts) => pts.length > 1 && els.push(way(id++, tags, pts)));
+    const point = (f, tags) => f.traits[0] && f.traits[0][0] && els.push({ type: "node", id: id++, lat: f.traits[0][0][0], lon: f.traits[0][0][1], tags });
+    (b.land_use || []).forEach((f) => {
+      const st = f.props.subtype, cl = f.props.class;
+      if (st === "golf") {
+        const g = { fairway: "fairway", green: "green", tee: "tee", bunker: "bunker", water_hazard: "water_hazard", lateral_water_hazard: "water_hazard", driving_range: "driving_range" }[cl];
+        if (g && f.type === 3) poly(f, { golf: g });
+      } else if (st === "winter_sports" && /^(downhill|sled|snow_park|nordic|hike)$/.test(cl)) {
+        const t = tagsSource(f.props), tags = { "piste:type": cl, "piste:difficulty": t["piste:difficulty"] || "" };
+        if (f.type === 3) poly(f, tags); else if (f.type === 2) ligne(f, Object.assign({ area: "no" }, tags));
+      } else if (f.type === 3) {
+        const tags = st === "resource_extraction" ? { landuse: "quarry" } : st === "landfill" ? { landuse: "landfill" }
+          : st === "developed" && /^(industrial|commercial|retail)$/.test(cl) ? { landuse: cl }
+          : st === "recreation" && /^(pitch|track|stadium|sports_centre)$/.test(cl) ? { leisure: cl }
+          : st === "campground" ? { tourism: "camp_site" }
+          : (st === "park" || st === "cemetery" || (st === "recreation" && /^(recreation_ground|playground)$/.test(cl)) || (st === "managed" && cl === "grass") || st === "entertainment") ? { leisure: "park" }
+          : null;
+        if (tags) poly(f, tags);
+      }
+    });
+    (b.infrastructure || []).forEach((f) => {
+      const st = f.props.subtype, cl = f.props.class;
+      if (st === "aerialway") {
+        if (cl === "pylon" && f.type === 1) point(f, { aerialway: "pylon" });
+        else if (f.type === 2 && !/^(station|pylon)$/.test(cl)) ligne(f, { aerialway: cl });
+      } else if (st === "power" && cl === "power_line" && f.type === 2) ligne(f, { power: "line" });
+      else if (st === "power" && cl === "substation" && f.type === 3) poly(f, { landuse: "industrial" });
+      else if (st === "transit" && cl === "parking" && f.type === 3) poly(f, { amenity: "parking" });
+      else if (st === "utility" && /^(storage_tank|silo|water_tower)$/.test(cl)) {
+        if (f.type === 3) poly(f, { man_made: cl }); else if (f.type === 1) point(f, { man_made: cl });
+      }
+    });
+    (b.land || []).forEach((f) => { if (f.props.subtype === "tree" && f.props.class === "tree" && f.type === 1) point(f, { natural: "tree" }); });
+    (b.water || []).forEach((f) => { if (f.props.class === "waterfall" && f.type === 1) point(f, { waterway: "waterfall" }); });
+    return els;
+  }
+  const ROUTES_SITE = { motorway: "motorway", trunk: "trunk", primary: "primary", secondary: "secondary", tertiary: "tertiary", minor: "residential", service: "service", track: "track", path: "path" };
   if (typeof overpassEl === "function") {
     const _op = overpassEl;
     overpassEl = async function (q) {
@@ -6368,29 +6533,39 @@ window.addEventListener("message", function (e) {
         const m = /way\["building"\]\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\)/.exec(q);
         if (!m) throw new Error("bbox");
         const emprise = [+m[1], +m[2], +m[3], +m[4]];
-        const [o, ov] = await Promise.all([objets(emprise, ["building", "landuse", "park", "transportation", "landcover"], 14), batimentsOverture(emprise).catch(() => null)]);
+        const [o, ov, b] = await Promise.all([
+          objets(emprise, ["building", "landuse", "park", "transportation", "landcover"], 14),
+          batimentsOverture(emprise).catch(() => null),
+          objetsOverture("base", emprise, ["land_use", "infrastructure", "land", "water"], 13).catch(() => null),
+        ]);
         const els = []; let id = 1; const vus = new Set();
-        if (ov && ov.length) ov.forEach((b) => els.push(way(id++, Object.assign({ building: "yes" }, b.h ? { height: String(b.h) } : {}), b.ring)));
+        if (ov && ov.length) ov.forEach((bt) => els.push(way(id++, Object.assign({ building: "yes" }, bt.h ? { height: String(bt.h) } : {}), bt.ring)));
         else o.building.forEach((f) => {
           if (f.type !== 3 || f.props.hide_3d) return;
-          polygones(f).forEach((p) => {
-            const ring = p[0], c = ring.reduce((a, q2) => [a[0] + q2[0] / ring.length, a[1] + q2[1] / ring.length], [0, 0]);
+          polygones(f).forEach((pp) => {
+            const ring = pp[0], c = ring.reduce((a, q2) => [a[0] + q2[0] / ring.length, a[1] + q2[1] / ring.length], [0, 0]);
             const k = (f.id || "") + ":" + c[0].toFixed(5) + "," + c[1].toFixed(5);
             if (vus.has(k)) return; vus.add(k);
             const h = +f.props.render_height;
             els.push(way(id++, Object.assign({ building: "yes" }, h ? { height: String(h) } : {}), ring));
           });
         });
-        o.landuse.forEach((f) => {
-          const c = f.props.class;
-          if (f.type !== 3) return;
-          const tags = /^(industrial|commercial|retail|railway|quarry)$/.test(c) ? { landuse: c } : /^(cemetery|grass)$/.test(c) ? { landuse: c } : /^(pitch|stadium|track)$/.test(c) ? { leisure: c } : null;
-          if (tags) polygones(f).forEach((p) => els.push(way(id++, tags, p[0])));
-        });
-        o.park.forEach((f) => { if (f.type === 3) polygones(f).forEach((p) => els.push(way(id++, { leisure: "park" }, p[0]))); });
-        o.landcover.forEach((f) => { if (f.type === 3 && f.props.class === "sand") polygones(f).forEach((p) => els.push(way(id++, { natural: "sand" }, p[0]))); });
+        if (b) { const eb = elementsBase(b, id); id += eb.length + 1; eb.forEach((x) => els.push(x)); }
+        else {
+          o.landuse.forEach((f) => {
+            const c = f.props.class;
+            if (f.type !== 3) return;
+            const tags = /^(industrial|commercial|retail|railway|quarry)$/.test(c) ? { landuse: c } : /^(cemetery|grass)$/.test(c) ? { landuse: c } : /^(pitch|stadium|track)$/.test(c) ? { leisure: c } : null;
+            if (tags) polygones(f).forEach((pp) => els.push(way(id++, tags, pp[0])));
+          });
+        }
+        o.park.forEach((f) => { if (f.type === 3) polygones(f).forEach((pp) => els.push(way(id++, { leisure: "park" }, pp[0]))); });
+        o.landcover.forEach((f) => { if (f.type === 3 && f.props.class === "sand") polygones(f).forEach((pp) => els.push(way(id++, { natural: "sand" }, pp[0]))); });
         o.transportation.forEach((f) => {
-          if (f.type === 2 && f.props.class === "rail" && f.props.brunnel !== "tunnel") f.traits.forEach((pts) => els.push(way(id++, { railway: f.props.subclass || "rail" }, pts)));
+          if (f.type !== 2 || f.props.brunnel === "tunnel") return;
+          const cl = f.props.class;
+          if (cl === "rail") f.traits.forEach((pts) => els.push(way(id++, { railway: f.props.subclass || "rail" }, pts)));
+          else if (ROUTES_SITE[cl]) f.traits.forEach((pts) => pts.length > 1 && els.push(way(id++, { highway: ROUTES_SITE[cl] }, pts)));
         });
         return els;
       } catch (e) {
@@ -6487,6 +6662,119 @@ window.addEventListener("message", function (e) {
     const marquer = () => { try { document.body.classList.toggle("g-ville", estVille()); } catch (e) {} };
     if (typeof appliquerProfil === "function") { const _ap = appliquerProfil; appliquerProfil = function () { const r = _ap.apply(this, arguments); marquer(); return r; }; }
     marquer();
+  }
+
+  /* ---------- 8. v2.2 : la vue 3D s'ouvre dans la zone d'aperçu (comme la table et le mur),
+     avec les mêmes choix que la commande (couleurs, cadre). Mention « aperçu indicatif » sur chaque vue.
+     Chasse : pas de table ni de 3D (l'habitat de l'orignal ne s'y voit pas). ---------- */
+  {
+    const CADRE_3D = { bois: "#D9BE96", noir: "#2B2B2B", blanc: "#F2F1EC" };
+    const cadreChoisi = () => (($("murCadre") || {}).value || "bois");
+    const estChasse = () => typeof profilActif !== "undefined" && profilActif === "chasse";
+    const estPeche = () => typeof profilActif !== "undefined" && profilActif === "peche";
+    window.georamaSansApercu3D = estChasse;
+    if (typeof V3_PALETTES !== "undefined") Object.keys(V3_PALETTES).forEach((g) => {
+      const p = V3_PALETTES[g], orig = p.cadre;
+      Object.defineProperty(p, "cadre", { get: () => CADRE_3D[cadreChoisi()] || orig, enumerable: true, configurable: true });
+    });
+    const st3 = document.createElement("style");
+    st3.textContent =
+      "#zoneCarte>#vue3d{position:absolute;inset:0;z-index:1250;border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px #d2d7cd}" +
+      "body.v3-ouvert{overflow:visible!important}" +
+      "#vue3d .v3-barre{background:#fff!important;border-bottom:1px solid #e3e0d8;padding:8px 14px;gap:8px 12px}" +
+      "#vue3d .v3-barre strong{color:#2A2F2B!important;font-size:15px;font-weight:600}" +
+      "#vue3d .v3-barre label{color:#2A2F2B!important;font-size:13px;font-weight:600}" +
+      "#vue3d .v3-barre select{border:1px solid #c9cec3;border-radius:8px;background:#fff!important;color:#2A2F2B!important;padding:5px 8px;font:500 13.5px Montserrat,system-ui,sans-serif}" +
+      "#vue3d #v3fermer{border:1px solid #d2d7cd!important;background:#fff!important;color:#2A2F2B!important;border-radius:999px;padding:6px 12px;font:600 13px Montserrat,system-ui,sans-serif}" +
+      "#vue3d .v3-note{background:#fff;color:#4a524b!important;font-size:12px;padding:6px 12px}" +
+      "@media (max-width:700px){#vue3d .v3-barre strong,#vue3d #v3fermer,#v3src{display:none}#vue3d .v3-barre{padding:6px 8px;gap:6px 10px}" +
+      "#vue3d .v3-barre label{font-size:12px;gap:4px}#vue3d .v3-barre select{font-size:12.5px;padding:3px 4px;max-width:120px}#vue3d .v3-note{display:none}" +
+      ".g-indicatif{font-size:11.5px;padding:5px 8px;left:6px;top:6px}}" +
+      ".g-indicatif{position:absolute;left:10px;top:10px;z-index:40;max-width:min(440px,calc(100% - 20px));padding:7px 11px;border-radius:8px;background:rgba(17,19,17,.82);color:#f3f3ef;font:500 12.5px/1.4 Montserrat,system-ui,sans-serif;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.2);text-align:left}" +
+      ".g-indicatif b{color:#cfdc9e;font-weight:700}" +
+      "body.g-charge-actif .g-indicatif{visibility:hidden}" +
+      "body.g-chasse #ongletTable,body.g-chasse #apercu3d{display:none!important}";
+    document.head.appendChild(st3);
+
+    // Vue 3D dans la zone d'aperçu, barre comme la table et le mur
+    const v = $("vue3d"), barre = v && v.querySelector(".v3-barre"), cb = $("v3cadre");
+    if (v && barre && cb && $("zoneCarte")) {
+      $("zoneCarte").appendChild(v);
+      v.removeAttribute("role");
+      const t = barre.querySelector("strong"); if (t) t.textContent = "Votre maquette en 3D";
+      const lab = cb.closest("label"); if (lab) lab.hidden = true;
+      const sel = document.createElement("select");
+      sel.id = "v3cadreSel";
+      sel.innerHTML = '<option value="sans">Sans cadre</option><option value="bois">Bois pâle</option><option value="noir">Noir</option><option value="blanc">Blanc</option>';
+      const l2 = document.createElement("label");
+      l2.append("Cadre ", sel);
+      barre.insertBefore(l2, lab || $("v3fermer"));
+      const pal = $("v3pal"), lp = pal && pal.closest("label");
+      if (lp && lp.firstChild && lp.firstChild.nodeType === 3) lp.firstChild.textContent = "Couleurs ";
+      const ferm = $("v3fermer"); if (ferm) ferm.textContent = "Retour à la carte";
+      const note = v.querySelector(".v3-note");
+      if (note) { const src = $("v3src"); note.textContent = "Glissez pour tourner, pincez ou utilisez la molette pour zoomer. "; if (src) note.appendChild(src); }
+      // le cadre 3D ne se montre que dans la vue 3D (le mur dessine déjà son propre cadre)
+      const majCadre = () => {
+        sel.value = cadreChoisi();
+        const voulu = !v.hidden && sel.value !== "sans";
+        if (cb.checked !== voulu) { cb.checked = voulu; try { if (v3.donnees) v3Reconstruire(); } catch (e) {} }
+      };
+      sel.onchange = () => {
+        const mc = $("murCadre");
+        if (mc && mc.value !== sel.value) {
+          mc.value = sel.value;
+          mc.dispatchEvent(new Event("change", { bubbles: true }));
+          try { murChoixConstruire(); } catch (e) {}
+          try { murCadreDessiner(); } catch (e) {}
+        }
+        majCadre();
+        try { v3Reconstruire(); } catch (e) {}
+      };
+      if ($("murCadre")) $("murCadre").addEventListener("change", majCadre);
+      new MutationObserver(() => { majCadre(); $("zoneCarte").classList.toggle("v3z", !v.hidden); }).observe(v, { attributes: true, attributeFilter: ["hidden"] });
+      majCadre();
+      // la 3D ferme la table et le mur ; fermer la 3D revient à la carte
+      if (typeof ouvrir3D === "function") {
+        const _o3 = ouvrir3D;
+        ouvrir3D = function () {
+          if (estChasse()) { const m = $("ongletMur"); if (m) m.click(); return; }
+          try { if (!$("vueMur").hidden) fermerMur(); } catch (e) {}
+          try { if (window.georamaTable) window.georamaTable.fermer(); } catch (e) {}
+          const r = _o3.apply(this, arguments);
+          setTimeout(() => { try { window.dispatchEvent(new Event("resize")); } catch (e) {} }, 60);
+          return r;
+        };
+      }
+    }
+
+    // Mention « aperçu indicatif » sur la table, le mur et la 3D
+    const mobile = () => window.matchMedia && window.matchMedia("(max-width:700px)").matches;
+    const texteIndic = () => mobile()
+      ? (estPeche() ? "<b>Aperçu à titre indicatif.</b> Fond du lac simulé : votre maquette aura le vrai fond du lac." : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise.")
+      : estPeche()
+      ? "<b>Aperçu à titre indicatif.</b> Le fond du lac est simulé ici : votre maquette reproduira le vrai fond du lac, beaucoup plus précis."
+      : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise : relief LiDAR détaillé et données vérifiées par Georama.";
+    const poserIndic = (hote) => {
+      if (!hote) return;
+      let b = hote.querySelector(":scope > .g-indicatif");
+      if (!b) { b = document.createElement("div"); b.className = "g-indicatif"; hote.appendChild(b); }
+      const h = texteIndic(); if (b.innerHTML !== h) b.innerHTML = h;
+    };
+    const majIndic = () => { poserIndic(document.querySelector("#vueTable .vt-zone")); poserIndic($("murZone")); poserIndic($("v3Scene")); };
+    setInterval(majIndic, 1000);
+    majIndic();
+
+    // Chasse : table et 3D retirées
+    const marquerChasse = () => {
+      const c = estChasse();
+      document.body.classList.toggle("g-chasse", c);
+      if (!c) return;
+      try { if (window.georamaTable && $("vueTable") && !$("vueTable").hidden) { window.georamaTable.fermer(); const m = $("ongletMur"); if (m) m.click(); } } catch (e) {}
+      try { if (!$("vue3d").hidden) { fermer3D(); const m = $("ongletMur"); if (m) m.click(); } } catch (e) {}
+    };
+    if (typeof appliquerProfil === "function") { const _ap2 = appliquerProfil; appliquerProfil = function () { const r = _ap2.apply(this, arguments); marquerChasse(); return r; }; }
+    marquerChasse();
   }
 
   /* ---------- 4. Barre de chargement : toute la préparation ---------- */
