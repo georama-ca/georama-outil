@@ -17,7 +17,16 @@
   [id$="comp-mqachpeh"] { display: none !important; }          /* bouton vert « Voir ma propriété en 3D » : dans le menu */
 
   /* ---------- Menu hamburger : fond foncé, liens pâles et gros ---------- */
-  [id$="comp-m6z5qjfh5"] { background: #111311 !important; }
+  [id$="comp-m6z5qjfh5"],
+  [id$="comp-m6z5qjfh5"] [class*="HamburgerMenuContainer"] { background: #111311 !important; }
+  [id$="comp-m6z5qjfi4"] [class*="wixui-horizontal-menu__item"],
+  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"] > div { background: transparent !important; width: 100% !important; height: auto !important; }
+  [id$="comp-m6z64st3"] {                                          /* réseaux sociaux : en bas de l'écran */
+    position: fixed !important; top: auto !important; bottom: 28px !important;
+    left: 50% !important; transform: translateX(-50%) !important;
+  }
+  [id$="comp-m6z64st3"] li, [id$="comp-m6z64st3"] a { min-width: 40px !important; min-height: 40px !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+  [id$="comp-m6z64st3"] img { filter: invert(1) !important; }
   [id$="comp-m6z5qjfi4"] {
     width: calc(100vw - 48px) !important;
     max-width: 380px !important;
