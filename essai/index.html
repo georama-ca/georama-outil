@@ -6132,12 +6132,15 @@ window.addEventListener("message", function (e) {
   const way = (id, tags, pts) => ({ type: "way", id, tags, geometry: pts.map((p) => ({ lat: p[0], lon: p[1] })) });
   /* ---------- Bâtiments Overture Maps (PMTiles) : OpenStreetMap + empreintes Microsoft, Google, Esri ----------
      Beaucoup de petites villes du Québec ont peu de bâtiments dans OpenStreetMap ; Overture les complète. */
-  const PMT = {
-    url: "https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/2026-09-23.1/buildings.pmtiles",
-    entete: null, dirs: new Map(),
-  };
-  async function pmtOctets(deb, long) {
-    const r = await fetch(PMT.url, { headers: { Range: "bytes=" + deb + "-" + (deb + long - 1) } });
+  // Archives PMTiles d'Overture Maps (lecture par plages d'octets, sans serveur)
+  const OVERTURE = "https://overturemaps-extras-us-west-2.s3.us-west-2.amazonaws.com/tiles/2026-09-23.1/";
+  const archives = new Map();
+  function archive(nom) {
+    if (!archives.has(nom)) archives.set(nom, { url: OVERTURE + nom + ".pmtiles", entete: null, dirs: new Map(), tuiles: new Map() });
+    return archives.get(nom);
+  }
+  async function pmtOctets(A, deb, long) {
+    const r = await fetch(A.url, { headers: { Range: "bytes=" + deb + "-" + (deb + long - 1) } });
     if (!(r.status === 206 || r.status === 200)) throw new Error("pmtiles " + r.status);
     return new Uint8Array(await r.arrayBuffer());
   }
@@ -6148,15 +6151,16 @@ window.addEventListener("message", function (e) {
     return new Uint8Array(await new Response(s).arrayBuffer());
   }
   const u64 = (v, o) => v.getUint32(o, true) + v.getUint32(o + 4, true) * 4294967296;
-  async function pmtEntete() {
-    if (!PMT.entete) PMT.entete = (async () => {
-      const b = await pmtOctets(0, 16384), v = new DataView(b.buffer);
+  async function pmtEntete(A) {
+    A = A || archive("buildings");
+    if (!A.entete) A.entete = (async () => {
+      const b = await pmtOctets(A, 0, 16384), v = new DataView(b.buffer);
       if (String.fromCharCode(...b.slice(0, 7)) !== "PMTiles" || b[7] !== 3) throw new Error("pmtiles format");
       const h = { rootOff: u64(v, 8), rootLen: u64(v, 16), leafOff: u64(v, 40), dataOff: u64(v, 56), compInt: b[97], compTuile: b[98], zMin: b[100], zMax: b[101] };
       h.racine = pmtLireDir(await pmtDecomp(b.slice(h.rootOff, h.rootOff + h.rootLen), h.compInt));
       return h;
-    })().catch((e) => { PMT.entete = null; throw e; });
-    return PMT.entete;
+    })().catch((e) => { A.entete = null; throw e; });
+    return A.entete;
   }
   function pmtLireDir(b) {
     const r = new Lecteur(b), n = r.varint(), e = [];
@@ -6188,18 +6192,46 @@ window.addEventListener("message", function (e) {
     if (b >= 0 && (e[b].run === 0 || id - e[b].id < e[b].run)) return e[b];
     return null;
   }
-  async function pmtTuile(z, x, y) {
-    const h = await pmtEntete(), id = pmtId(z, x, y);
-    let dir = h.racine;
-    for (let p = 0; p < 4; p++) {
-      const e = pmtChercher(dir, id);
-      if (!e) return null;
-      if (e.run > 0) return lireTuile(await pmtDecomp(await pmtOctets(h.dataOff + e.off, e.len), h.compTuile));
-      const k = h.leafOff + e.off;
-      if (!PMT.dirs.has(k)) PMT.dirs.set(k, pmtOctets(k, e.len).then((b) => pmtDecomp(b, h.compInt)).then(pmtLireDir).catch((er) => { PMT.dirs.delete(k); throw er; }));
-      dir = await PMT.dirs.get(k);
+  async function pmtTuileDe(nom, z, x, y) {
+    const A = archive(nom), k = z + "/" + x + "/" + y;
+    if (A.tuiles.has(k)) return A.tuiles.get(k);
+    const p = (async () => {
+      const h = await pmtEntete(A), id = pmtId(z, x, y);
+      let dir = h.racine;
+      for (let n = 0; n < 4; n++) {
+        const e = pmtChercher(dir, id);
+        if (!e) return null;
+        if (e.run > 0) return lireTuile(await pmtDecomp(await pmtOctets(A, h.dataOff + e.off, e.len), h.compTuile));
+        const kd = h.leafOff + e.off;
+        if (!A.dirs.has(kd)) A.dirs.set(kd, pmtOctets(A, kd, e.len).then((b) => pmtDecomp(b, h.compInt)).then(pmtLireDir).catch((er) => { A.dirs.delete(kd); throw er; }));
+        dir = await A.dirs.get(kd);
+      }
+      return null;
+    })().catch((e) => { A.tuiles.delete(k); throw e; });
+    A.tuiles.set(k, p);
+    if (A.tuiles.size > 200) A.tuiles.delete(A.tuiles.keys().next().value);
+    return p;
+  }
+  const pmtTuile = (z, x, y) => pmtTuileDe("buildings", z, x, y);
+  // objets d'une archive Overture pour une emprise, en lat/lon (même forme que objets())
+  async function objetsOverture(nom, emprise, couches, zMax) {
+    let z = zMax || 14, t0, t1;
+    for (;; z--) {
+      t0 = versTuile(emprise[2], emprise[1], z); t1 = versTuile(emprise[0], emprise[3], z);
+      if ((Math.floor(t1[0]) - Math.floor(t0[0]) + 1) * (Math.floor(t1[1]) - Math.floor(t0[1]) + 1) <= 36 || z <= 8) break;
     }
-    return null;
+    const jobs = [];
+    for (let x = Math.floor(t0[0]); x <= Math.floor(t1[0]); x++)
+      for (let y = Math.floor(t0[1]); y <= Math.floor(t1[1]); y++) jobs.push(pmtTuileDe(nom, z, x, y).then((c) => ({ c, x, y })));
+    const res = await Promise.all(jobs);
+    const out = {}; couches.forEach((n) => (out[n] = []));
+    res.forEach(({ c, x, y }) => c && couches.forEach((n) => {
+      const L = c[n]; if (!L) return;
+      const f = versLL(z, x, y, L.ext);
+      L.objets.forEach((o) => out[n].push({ id: o.id, type: o.type, props: o.props, traits: o.traits.map((t) => t.map(f)), cle: z + "/" + x + "/" + y }));
+    }));
+    out._z = z;
+    return out;
   }
   // bâtiments Overture d'une emprise [s, w, n, e] : [{ ring, h }] (h en mètres ou 0)
   async function batimentsOverture(emprise) {
@@ -6226,7 +6258,7 @@ window.addEventListener("message", function (e) {
     });
     return out;
   }
-  window.georamaTuiles = { objets, polygones, pmtTuile, pmtEntete, batimentsOverture };
+  window.georamaTuiles = { objets, polygones, pmtTuile, pmtTuileDe, pmtEntete, archive, objetsOverture, batimentsOverture };
 
   /* ---------- 1. Lacs et rivières de l'aperçu 3D ---------- */
   if (typeof v3ChargerEau === "function") {
