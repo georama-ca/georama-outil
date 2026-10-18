@@ -5007,13 +5007,14 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
   function classer(els) {
     const r = { bats: [], tanks: [], cheminees: [], pistes: [], nordique: [], remontees: [], golf: { fairway: [], green: [], tee: [], bunker: [], eau: [] },
       indus: [], carriere: [], parking: [], rail: [], electrique: [], sport: [], parc: [], sable: [],
-      routes: [], sentiers: [], pylones: [], arbres: [], camping: [] };
+      routes: [], sentiers: [], pylones: [], arbres: [], camping: [], chutes: [] };
     const vu = new Set();
     els.forEach((el) => {
       const t = el.tags || {};
       if (el.type === "node") {
         if (t.aerialway === "pylon") { r.pylones.push({ lat: el.lat, lon: el.lon }); return; }
         if (t.natural === "tree") { r.arbres.push({ lat: el.lat, lon: el.lon }); return; }
+        if (t.waterway === "waterfall") { r.chutes.push({ lat: el.lat, lon: el.lon }); return; }
         if (/^(storage_tank|silo|water_tower)$/.test(t.man_made || "")) r.tanks.push({ lat: el.lat, lon: el.lon, r: 6, h: hauteurTags(t) || 14 });
         else if (/^(chimney|tower|mast)$/.test(t.man_made || "")) r.cheminees.push({ lat: el.lat, lon: el.lon, h: hauteurTags(t) || (t.man_made === "chimney" ? 40 : 25), l: t.man_made === "chimney" ? 4 : 5 });
         return;
@@ -5290,7 +5291,25 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     remplir(s.camping || [], "rgba(205,190,150,0.6)");
     remplir(s.indus, "rgba(156,153,148,0.94)");
     contour(s.indus, "rgba(90,90,90,0.5)", Math.max(1, k));
-    remplir(s.carriere, "rgba(203,186,150,0.96)");
+    // Carrières, mines et sablières : sable ombré par le relief (les paliers restent visibles)
+    const ombrer = (rings, rgb) => {
+      if (!rings.length || !t || !t.A) return;
+      const m = document.createElement("canvas"); m.width = TW; m.height = TH;
+      const mg = m.getContext("2d"); mg.fillStyle = "#fff";
+      rings.forEach((r) => { mg.beginPath(); r.forEach((p, i) => { const [x, y] = px(p[0], p[1]); i ? mg.lineTo(x, y) : mg.moveTo(x, y); }); mg.closePath(); mg.fill(); });
+      const md = mg.getImageData(0, 0, TW, TH).data, im = g.getImageData(0, 0, TW, TH), o = im.data, A = t.A, mpp = t.mpp;
+      const at = (i, j) => A[Math.max(0, Math.min(TH - 1, j)) * TW + Math.max(0, Math.min(TW - 1, i))];
+      const L = [-0.5, 0.5, 0.707];
+      for (let j = 0; j < TH; j++) for (let i = 0; i < TW; i++) {
+        const q = j * TW + i;
+        if (md[4 * q + 3] < 128) continue;
+        const gx = ((at(i + 1, j) - at(i - 1, j)) / (2 * mpp)) * 1.6, gy = ((at(i, j - 1) - at(i, j + 1)) / (2 * mpp)) * 1.6;
+        const nl = Math.hypot(gx, gy, 1), sh = Math.max(0, (-gx * L[0] - gy * L[1] + L[2]) / nl), f = 0.5 + 0.62 * sh;
+        o[4 * q] = Math.min(255, rgb[0] * f); o[4 * q + 1] = Math.min(255, rgb[1] * f); o[4 * q + 2] = Math.min(255, rgb[2] * f);
+      }
+      g.putImageData(im, 0, 0);
+    };
+    ombrer(s.carriere, [222, 204, 168]);
     contour(s.carriere, "rgba(120,100,70,0.6)", Math.max(1, k));
     remplir(s.sport, "rgba(118,190,96,0.95)");
     contour(s.sport, "rgba(255,255,255,0.9)", Math.max(1, 1.2 * k));
@@ -5324,6 +5343,8 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     tracer(s.remontees, "rgba(40,40,44,0.95)", w(3, 1.4));
     tracer(s.rail, "rgba(60,60,60,0.95)", w(4, 1.5), [5 * k, 3 * k]);
     tracer(s.electrique, "rgba(60,60,64,0.75)", w(2.2, 1));
+    // Chutes : écume blanche
+    (s.chutes || []).forEach((c) => { const [x, y] = px(c.lat, c.lon), r = w(16, 3); const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, "rgba(255,255,255,0.95)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); });
   };
   window.georamaSite = { attendre, donnees: (d) => (donnees(d) || {}).donnees || null };
   // Changement de segment : le maillage se refait avec ou sans le site
@@ -6500,6 +6521,7 @@ window.addEventListener("message", function (e) {
       }
     });
     (b.land || []).forEach((f) => { if (f.props.subtype === "tree" && f.props.class === "tree" && f.type === 1) point(f, { natural: "tree" }); });
+    (b.water || []).forEach((f) => { if (f.props.class === "waterfall" && f.type === 1) point(f, { waterway: "waterfall" }); });
     return els;
   }
   const ROUTES_SITE = { motorway: "motorway", trunk: "trunk", primary: "primary", secondary: "secondary", tertiary: "tertiary", minor: "residential", service: "service", track: "track", path: "path" };
@@ -6514,7 +6536,7 @@ window.addEventListener("message", function (e) {
         const [o, ov, b] = await Promise.all([
           objets(emprise, ["building", "landuse", "park", "transportation", "landcover"], 14),
           batimentsOverture(emprise).catch(() => null),
-          objetsOverture("base", emprise, ["land_use", "infrastructure", "land"], 13).catch(() => null),
+          objetsOverture("base", emprise, ["land_use", "infrastructure", "land", "water"], 13).catch(() => null),
         ]);
         const els = []; let id = 1; const vus = new Set();
         if (ov && ov.length) ov.forEach((bt) => els.push(way(id++, Object.assign({ building: "yes" }, bt.h ? { height: String(bt.h) } : {}), bt.ring)));
