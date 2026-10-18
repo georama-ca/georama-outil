@@ -15,43 +15,77 @@
 /* --- Ordinateur et tablette : le menu principal garde ses 4 liens.
        Les 7 premiers liens (types de maquettes) sont pour le menu mobile. --- */
 @media (min-width: 751px) {
-  :has(.hamburger-open-button) > .horizontal-menu li[data-part="menu-item"]:nth-child(-n+7) {
+  [data-part="menu-root"]:has(.hamburger-open-button) .horizontal-menu li[data-part="menu-item"]:nth-child(-n+7) {
     visibility: hidden !important;
     inline-size: 0 !important;
     max-inline-size: 0 !important;
     block-size: 0 !important;
     overflow: hidden !important;
-    margin-inline-end: calc(-1 * 28px) !important;
+    margin-inline-end: -28px !important;
   }
 }
 
 @media (max-width: 750px) {
 
-  /* ---------- Menu hamburger : liens pâles, gros et faciles à toucher ----------
-     Le menu du hamburger = un menu horizontal sans bouton hamburger à côté
-     ni icône (l'icône, c'est le bouton vert « Voir ma propriété en 3D »). */
-  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) {
-    max-block-size: calc(100vh - 120px) !important;
-    overflow-y: auto !important;
-    background-color: transparent !important;
+  /* ---------- En-tête : logo, panier et menu. Le reste passe dans le menu ---------- */
+  .login-social-bar,
+  [data-part="menu-root"]:has(.menu__item-icon) {
+    visibility: hidden !important;
+    inline-size: 0 !important;
+    max-inline-size: 0 !important;
+    overflow: hidden !important;
   }
-  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) ul {
+
+  /* ---------- Menu hamburger : fond foncé, liens pâles, gros et faciles à toucher ---------- */
+  [data-part="hamburger-overlay"] div:has(> div > .horizontal-menu) {
+    background-color: #111311 !important;
+  }
+  /* boîte du menu : presque toute la largeur, centrée, défile si l'écran est court */
+  [data-part="hamburger-overlay"] div:has(> .horizontal-menu) {
+    inline-size: calc(100vw - 48px) !important;
+    max-inline-size: 380px !important;
+    block-size: auto !important;
+    max-block-size: calc(100vh - 110px) !important;
+    margin-block-start: 80px !important;
+    margin-inline: auto !important;
+    justify-self: center !important;
+    inset-inline: auto !important;
+    overflow-y: auto !important;
+  }
+  /* réseaux sociaux du menu : liens du gabarit Wix, on les retire */
+  [data-part="hamburger-overlay"] div:has(> ul[aria-label="Barre de réseaux sociaux"]) {
+    visibility: hidden !important;
+    block-size: 0 !important;
+    overflow: hidden !important;
+  }
+  [data-part="hamburger-overlay"] .horizontal-menu,
+  [data-part="hamburger-overlay"] .horizontal-menu ul {
+    background-color: transparent !important;
+    block-size: auto !important;
+    overflow: visible !important;
     gap: 0 !important;
     row-gap: 0 !important;
   }
-  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) li[data-part="menu-item"] {
+  [data-part="hamburger-overlay"] li[data-part="menu-item"],
+  [data-part="hamburger-overlay"] li[data-part="menu-item"] > div {
     inline-size: 100% !important;
+    block-size: auto !important;
   }
-  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) .menu__item {
+  [data-part="hamburger-overlay"] .menu__item {
     background-color: transparent !important;
     inline-size: 100% !important;
+    block-size: auto !important;
     min-block-size: 50px !important;
     padding-block: 6px !important;
     padding-inline: 12px !important;
     box-sizing: border-box !important;
     border-block-end: 1px solid rgba(242, 241, 234, .14) !important;
   }
-  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) .menu__item-label {
+  [data-part="hamburger-overlay"] .menu__item a {
+    inline-size: 100% !important;
+    min-block-size: 44px !important;
+  }
+  [data-part="hamburger-overlay"] .menu__item-label {
     color: #f2f1ea !important;
     font-size: 19px !important;
     line-height: 1.3 !important;
@@ -59,21 +93,28 @@
     text-align: center !important;
   }
   /* 1er lien : « Voir ma propriété en 3D » en bouton vert */
-  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) li[data-part="menu-item"]:first-child .menu__item {
+  [data-part="hamburger-overlay"] li[data-part="menu-item"]:first-child .menu__item {
     background-color: #9aa85c !important;
     border-radius: 8px !important;
     border-block-end: 0 !important;
     margin-block: 4px 10px !important;
   }
-  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) li[data-part="menu-item"]:first-child .menu__item-label {
+  [data-part="hamburger-overlay"] li[data-part="menu-item"]:first-child .menu__item-label {
     color: #111311 !important;
     font-weight: 700 !important;
   }
   /* 2e à 7e : les types de maquettes, un peu plus discrets */
-  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) li[data-part="menu-item"]:nth-child(n+2):nth-child(-n+7) .menu__item-label {
+  [data-part="hamburger-overlay"] li[data-part="menu-item"]:nth-child(n+2):nth-child(-n+7) .menu__item-label {
     font-size: 17px !important;
     color: #d9dcc8 !important;
   }
+  /* bouton fermer : visible et zone tactile de 44 px */
+  .hamburger-close-button {
+    min-inline-size: 44px !important;
+    min-block-size: 44px !important;
+  }
+  .hamburger-close-button__icon,
+  .hamburger-close-button__icon svg { fill: #f2f1ea !important; color: #f2f1ea !important; }
 
   /* ---------- Textes : tailles lisibles sur téléphone ----------
      Classe répétée : plus précise que les tailles réduites que Wix met
