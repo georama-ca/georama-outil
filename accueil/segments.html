@@ -9,8 +9,8 @@
 <style>
   :root { --fond: #1a1d19; --carte: #222621; --ligne: #343a31; --texte: #f2f1ea; --doux: #b3b7aa; --accent: #9aa85c; --accent-pale: #e6eac8; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--fond); color: var(--texte); font-family: 'Montserrat', sans-serif; font-size: 16px; line-height: 1.5; }
-  .page { max-width: 1240px; margin: 0 auto; padding: 48px 32px; display: flex; gap: 40px; align-items: stretch; }
+  html, body { margin: 0; height: 100%; background: transparent; color: var(--texte); font-family: 'Montserrat', sans-serif; font-size: 16px; line-height: 1.5; }
+  .page { min-height: 100%; background: var(--fond); border-radius: 16px; margin: 0; padding: 40px 36px; display: flex; gap: 40px; align-items: stretch; }
   .gauche { flex: 0 0 36%; display: flex; flex-direction: column; gap: 16px; }
   .surtitre { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .16em; color: var(--doux); }
   h2 { margin: 0; font-size: 34px; line-height: 1.12; font-weight: 700; }
