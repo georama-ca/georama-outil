@@ -5047,7 +5047,8 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     });
     // les plus gros bâtiments d'abord (si on doit en couper)
     r.bats.sort((a, b) => aireDeg(b.pts) - aireDeg(a.pts));
-    if (r.bats.length > 2500) r.bats.length = 2500;
+    const maxBats = typeof profilActif !== "undefined" && profilActif === "ville" ? 6000 : 2500;
+    if (r.bats.length > maxBats) r.bats.length = maxBats;
     return r;
   }
   const centre = (pts) => [pts.reduce((s, p) => s + p[0], 0) / pts.length, pts.reduce((s, p) => s + p[1], 0) / pts.length];
