@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v1.8 (2026-10-18) -->
+<!-- Outil Georama v1.9 (2026-10-18) -->
 <html lang="fr">
 <head>
 <meta name="robots" content="noindex">
@@ -388,7 +388,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v1.8 · 2026-10-18</p>
+<p class="g-version">Outil Georama v1.9 · 2026-10-18</p>
 </div>
 </aside>
 </div>
@@ -469,7 +469,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <div class="choix-groupe"><span class="choix-titre">2. Votre cadre</span><div id="choixCadres" class="choix-liste" role="radiogroup" aria-label="Cadre"></div></div>
 </div>
 </div>
-<div id="murZone"><div id="murFlou"></div><div id="murSrc">Fond : © contributeurs OpenStreetMap · Relief, lacs et rivières : LiDAR MRNF (CC-BY 4.0).</div><div id="murBadge"></div><div id="murScene"><svg id="tableDessous" class="table-svg" aria-hidden="true"></svg><img id="murImg" alt="Mur avec un cadre"><svg id="murCadreSvg" viewBox="0 0 1300 982" preserveAspectRatio="none" aria-hidden="true"></svg><svg id="tableDessus" class="table-svg" aria-hidden="true"></svg><div id="murQuad" style="width:340px;height:440px"><div id="murFondCadre" style="width:340px;height:440px"></div><div id="murCarte" style="width:340px;height:440px"><canvas id="murCouleurs"></canvas><div id="murLegende" hidden></div><div id="murAttente">Préparation des couleurs…</div><div id="murRot"><div id="murLeaflet"></div></div><div id="murRot2"><div id="murLeaflet2"></div></div><div id="murFiligrane" aria-hidden="true"></div></div></div></div></div>
+<div id="murZone"><div id="murFlou"></div><div id="murSrc">Fond : © contributeurs OpenStreetMap · Relief, lacs et rivières : LiDAR MRNF (CC-BY 4.0).</div><div id="murBadge"></div><div id="murScene"><svg id="tableDessous" class="table-svg" aria-hidden="true"></svg><img id="murImg" alt="Mur avec un cadre"><svg id="murCadreSvg" viewBox="0 0 1300 982" preserveAspectRatio="none" aria-hidden="true"></svg><svg id="tableDessus" class="table-svg" aria-hidden="true"></svg><div id="murQuad" style="width:340px;height:408px"><div id="murFondCadre" style="width:340px;height:408px"></div><div id="murCarte" style="width:340px;height:408px"><canvas id="murCouleurs"></canvas><div id="murLegende" hidden></div><div id="murAttente">Préparation des couleurs…</div><div id="murRot"><div id="murLeaflet"></div></div><div id="murRot2"><div id="murLeaflet2"></div></div><div id="murFiligrane" aria-hidden="true"></div></div></div></div></div>
 </div>
 <div id="vue3d" hidden role="dialog" aria-label="Aperçu 3D de votre maquette">
 <div class="v3-barre">
@@ -5401,10 +5401,11 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     '<label>Hauteur (cm) <input type="number" id="gSmH" min="20" max="200" step="1" value="100"></label><span class="g-aide">Le rendu à l\'écran garde le format 10 × 12 ; votre soumission montrera le vrai format et ses plaques.</span></div>' +
     '<p class="g-aide" id="gFormatAide"></p>';
   el("gChoixHote").insertBefore(blocTaille, choix);
+  // v1.9 : « Sans cadre » est offert pour tous les formats (même prix pour les grands formats)
   function cadreObligatoire() {
     const sans = document.querySelector('#choixCadres [data-cd="sans"]');
-    if (sans) sans.hidden = format.plaques > 1;
-    if (format.plaques > 1 && el("murCadre").value === "sans") {
+    if (sans) sans.hidden = false;
+    if (false) {
       el("murCadre").value = "bois";
       el("murCadre").dispatchEvent(new Event("change", { bubbles: true }));
       try { murChoixConstruire(); } catch (e) {}
@@ -5417,9 +5418,9 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     murChoixConstruire = function () {
       const r = _mcc.apply(this, arguments);
       const sans = document.querySelector('#choixCadres [data-cd="sans"]');
-      if (sans) sans.hidden = format.plaques > 1;
+      if (sans) sans.hidden = false;
       // grand format : couleurs et cadre inclus dans le prix
-      if (format.plaques > 1) document.querySelectorAll("#choixCouleurs small, #choixCadres small").forEach((x) => { x.textContent = "inclus"; });
+      if (format.plaques > 1) document.querySelectorAll('#choixCouleurs small, #choixCadres [data-cd]:not([data-cd="sans"]) small').forEach((x) => { x.textContent = "inclus"; });
       return r;
     };
   }
@@ -5678,7 +5679,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
       ["Format", format.nom + " (" + format.cm + ")" + (format.plaques > 1 ? " · " + format.plaques + " plaques assemblées" : "")],
       ["Ajouts", ajoutsResume()],
       ["Maquette", produit + " · " + texteOption("murGamme")],
-      ["Cadre", format.plaques > 1 || format.entreprise ? texteOption("murCadre").replace(/\s*\(\+30 \$\)/, "") + " (inclus)" : texteOption("murCadre")],
+      ["Cadre", el("murCadre").value === "sans" ? "Sans cadre" : format.plaques > 1 || format.entreprise ? texteOption("murCadre").replace(/\s*\(\+30 \$\)/, "") + " (inclus)" : texteOption("murCadre")],
       ["Total", profilActif === "entreprise" ? "Sur soumission (dès 900 $)" : format.entreprise ? "Sur soumission" + (format.plaques > 1 ? " (dès 549 $)" : "") : prix],
     ].map(([a, v]) => "<div><dt>" + echHtml(a) + "</dt><dd>" + echHtml(v) + "</dd></div>").join("");
     el("gStatut").textContent = pas === NB && el("msg").textContent !== msgRef ? el("msg").textContent : "";
