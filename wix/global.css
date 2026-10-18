@@ -136,6 +136,8 @@
   .rich-text__text[class~=font_10]:not(#georama) { font-size: 13px !important; line-height: 1.4 !important; }
   /* le grand titre de chaque page */
   h1.rich-text__text[class]:not(#georama) { font-size: 32px !important; line-height: 1.15 !important; }
+  /* petit surtitre juste au-dessus du grand titre (ex. « TERRE À BOIS · ÉRABLIÈRE ») */
+  .rich-text:has(+ .rich-text h1) .rich-text__text[class]:not(#georama) { font-size: 14px !important; line-height: 1.4 !important; }
   .rich-text__text.rich-text__text span:not(#georama) { font-size: inherit !important; }
 
   /* boutons : texte lisible, zone tactile de 48 px */
