@@ -23,6 +23,10 @@
     overflow: hidden !important;
     margin-inline-end: -28px !important;
   }
+  /* flèches de défilement du menu : inutiles avec 4 liens */
+  [data-part="menu-root"]:has(.hamburger-open-button) .menu__scroll-button {
+    visibility: hidden !important;
+  }
 }
 
 @media (max-width: 750px) {
