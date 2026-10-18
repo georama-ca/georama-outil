@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Georama — Choisir son type de maquette</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+  :root { --fond: #1a1d19; --carte: #222621; --ligne: #343a31; --texte: #f2f1ea; --doux: #b3b7aa; --accent: #9aa85c; --accent-pale: #e6eac8; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fond); color: var(--texte); font-family: 'Montserrat', sans-serif; font-size: 16px; line-height: 1.5; }
+  .page { max-width: 1240px; margin: 0 auto; padding: 48px 32px; display: flex; gap: 40px; align-items: stretch; }
+  .gauche { flex: 0 0 36%; display: flex; flex-direction: column; gap: 16px; }
+  .surtitre { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .16em; color: var(--doux); }
+  h2 { margin: 0; font-size: 34px; line-height: 1.12; font-weight: 700; }
+  .aide { margin: 0; font-size: 15px; color: var(--doux); }
+  .choix { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 6px; }
+  .choix button { display: flex; gap: 12px; align-items: center; min-height: 64px; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--ligne); background: var(--carte); color: var(--texte); font: inherit; text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
+  .choix button:hover { border-color: #5b6340; }
+  .choix button[aria-pressed="true"] { border-color: var(--accent); background: #2a3022; }
+  .choix button:focus-visible { outline: 3px solid var(--accent-pale); outline-offset: 2px; }
+  .choix svg { flex: none; width: 26px; height: 26px; }
+  .choix .nom { display: block; font-size: 14px; font-weight: 700; line-height: 1.25; }
+  .choix .court { display: block; font-size: 12px; color: var(--doux); line-height: 1.3; }
+  .panneau { flex: 1 1 auto; min-width: 0; background: var(--carte); border: 1px solid var(--ligne); border-radius: 14px; overflow: hidden; display: flex; flex-direction: column; }
+  .photo { position: relative; aspect-ratio: 16 / 8; background: #2b2f29; }
+  .photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .etiquette { position: absolute; left: 14px; top: 14px; background: #111311; color: var(--texte); font-size: 11px; font-weight: 600; letter-spacing: .08em; padding: 6px 11px; border-radius: 999px; }
+  .contenu { padding: 22px 26px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .promesse { margin: 0; font-size: 24px; line-height: 1.2; font-weight: 700; }
+  .petit { margin: 0 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .14em; color: var(--doux); }
+  .couches { margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 7px; }
+  .couches li { font-size: 13px; font-weight: 600; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--accent); color: var(--accent-pale); }
+  .champ { margin: 0; font-size: 14px; color: var(--doux); }
+  .champ strong { color: var(--texte); font-weight: 600; }
+  .bas { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; justify-content: space-between; border-top: 1px solid var(--ligne); padding-top: 16px; }
+  .prix { margin: 0; font-size: 14px; color: var(--doux); }
+  .prix strong { color: var(--texte); font-size: 18px; margin-right: 4px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; min-height: 46px; padding: 0 18px; border-radius: 6px; font-weight: 700; font-size: 14px; text-decoration: none; }
+  .btn.plein { background: var(--accent); color: #111311; }
+  .btn.plein:hover { background: #aab86c; }
+  .btn.ligne { border: 1px solid var(--texte); color: var(--texte); }
+  .btn.ligne:hover { background: #2f342c; }
+  .btn:focus-visible { outline: 3px solid var(--accent-pale); outline-offset: 2px; }
+  @media (max-width: 1000px) {
+    .page { padding: 36px 24px; gap: 28px; }
+    .gauche { flex-basis: 40%; }
+    h2 { font-size: 28px; }
+    .promesse { font-size: 21px; }
+    .photo { aspect-ratio: 16 / 9; }
+  }
+  @media (max-width: 760px) {
+    .page { flex-direction: column; padding: 32px 16px; gap: 22px; }
+    h2 { font-size: 26px; }
+    .contenu { padding: 18px 18px 20px; }
+    .actions { width: 100%; }
+    .btn { flex: 1 1 auto; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <div class="gauche">
+    <p class="surtitre">SIX FAÇONS DE VOIR VOTRE COIN DE PAYS</p>
+    <h2>Que voulez-vous mettre en relief ?</h2>
+    <p class="aide">Choisissez votre type de maquette pour voir ce qu'elle montre, son prix et sa page.</p>
+    <div class="choix" role="group" aria-label="Choisir un type de maquette" id="choix"></div>
+  </div>
+  <article class="panneau" aria-live="polite">
+    <div class="photo"><img id="photo" alt=""><span class="etiquette" id="etiquette"></span></div>
+    <div class="contenu">
+      <h3 class="promesse" id="promesse"></h3>
+      <div>
+        <p class="petit">CE QUE LA MAQUETTE MONTRE</p>
+        <ul class="couches" id="couches"></ul>
+      </div>
+      <p class="champ">Dans l'outil, entrez : <strong id="champ"></strong></p>
+      <div class="bas">
+        <p class="prix"><strong id="prix"></strong><span id="prixNote"></span></p>
+        <div class="actions">
+          <a class="btn plein" id="outil" href="https://www.georama.ca/zone" target="_top">Voir en 3D, gratuitement</a>
+          <a class="btn ligne" id="page" href="#" target="_top"></a>
+        </div>
+      </div>
+    </div>
+  </article>
+</main>
+<script>
+(function () {
+  var media = function (id, nom, w, h) { return 'https://static.wixstatic.com/media/' + id + '/v1/fill/w_' + w + ',h_' + h + ',al_c,q_80,enc_auto/' + nom; };
+  var SEG = [
+    { id: 'terre', nom: 'Terre à bois', court: 'Érablière et chalet', etiquette: 'TERRE À BOIS · ÉRABLIÈRE · CHALET',
+      promesse: "Votre terre comme vous ne l'avez jamais vue.",
+      couches: ['Lignes de lot', 'Coteaux et ruisseaux', 'Érablières', 'Cabane et chemins'],
+      champ: 'le numéro de lot (sur votre compte de taxes)', prix: 'Dès 175 $', prixNote: '8,5 × 11 po, une couleur',
+      url: 'https://www.georama.ca/terre-%C3%A9rabli%C3%A8re-chalet', lien: 'Terre à bois',
+      img: media('7477d2_d6dd4848d4a145ae998b0f55ab7eecab~mv2.jpg', 'maquette-3d-erabliere-chalet-terrain-georama.jpg', 1100, 620), alt: "Maquette 3D d'une érablière et d'un terrain de chalet",
+      icon: 'M12 3l-5 7h3l-4 6h12l-4-6h3z M12 16v5' },
+    { id: 'chasse', nom: 'Territoire de chasse', court: 'Orignal, camp, postes', etiquette: 'ORIGNAL · TERRITOIRE · CAMP',
+      promesse: 'Votre territoire de chasse, en relief, sur le mur du camp.',
+      couches: ["Habitat de l'orignal", 'Peuplements forestiers', 'Densité de la forêt', 'Vos postes'],
+      champ: 'un lac, un chemin ou des coordonnées GPS', prix: 'Dès 175 $', prixNote: '8,5 × 11 po, une couleur',
+      url: 'https://www.georama.ca/territoire-de-chasse', lien: 'Chasse',
+      img: media('7477d2_548847e79a4b4071a86848739580f8b4~mv2.jpg', 'maquette-topographique-chasse-salon-georama.jpg', 1100, 620), alt: "Maquette 3D d'un territoire de chasse sur une tablette du salon",
+      icon: 'M7 12a5 5 0 1 0 10 0a5 5 0 1 0 -10 0 M12 2v5 M12 17v5 M2 12h5 M17 12h5' },
+    { id: 'peche', nom: 'Pêche et fond de lac', court: 'Bathymétrie', etiquette: 'LAC · PÊCHE · BATHYMÉTRIE',
+      promesse: 'Le fond de votre lac, enfin visible.',
+      couches: ['Bathymétrie', 'Fosses et hauts-fonds', 'Profondeurs en couleur', 'Rives et relief'],
+      champ: 'le nom du lac ou de la ville la plus proche', prix: 'Dès 175 $', prixNote: '8,5 × 11 po, une couleur',
+      url: 'https://www.georama.ca/terre-%C3%A9rabli%C3%A8re-chalet-2', lien: 'Pêche',
+      img: media('7477d2_129ac50aadea48a4bbf30cbd14e3efad~mv2.jpg', 'maquette-3d-lac-bathymetrie-cadre-georama.jpg', 1100, 620), alt: 'Maquette 3D de lac et bathymétrie dans un cadre',
+      icon: 'M2 8c2.5-2 5-2 7.5 0s5 2 7.5 0s3.5-1.5 5-1 M2 13c2.5-2 5-2 7.5 0s5 2 7.5 0s3.5-1.5 5-1 M6 18c2-1.5 4-1.5 6 0s4 1.5 6 0' },
+    { id: 'sommet', nom: 'Sommet et sentier', court: 'Randonnée, tracé GPS', etiquette: 'SOMMET · SENTIER · TRACÉ GPS',
+      promesse: 'Le sommet que vous avez gravi, sur votre mur.',
+      couches: ['Relief exact', 'Sentiers', 'Votre tracé GPS', 'Lacs et rivières'],
+      champ: 'le nom de la montagne, du sentier ou de la ville', prix: 'Dès 175 $', prixNote: '8,5 × 11 po, une couleur',
+      url: 'https://www.georama.ca/terre-%C3%A9rabli%C3%A8re-chalet-1', lien: 'Sommet',
+      img: media('7477d2_45b9104911d14541ad2374ebdc4dae1b~mv2.jpg', 'maquette-3d-mont-sentier-randonnee-georama.jpg', 1100, 620), alt: "Maquette 3D d'un mont et de son sentier de randonnée",
+      icon: 'M2 20l7-12 4 6 3-4 6 10z' },
+    { id: 'ville', nom: 'Ville et quartier', court: 'Rues et bâtiments', etiquette: 'VILLE · QUARTIER · BÂTIMENTS',
+      promesse: 'Votre quartier en relief, rue par rue.',
+      couches: ['Bâtiments en 3D', 'Rues et parcs', 'Relief de la ville', 'Votre maison en vedette'],
+      champ: 'votre adresse, votre quartier ou votre ville', prix: 'Dès 175 $', prixNote: '8,5 × 11 po, une couleur',
+      url: 'https://www.georama.ca/villeetquartier', lien: 'Ville',
+      img: media('7477d2_e3930cd8d5fb44209f6544787c97ab48~mv2.jpg', 'maquette-3d-vieux-quebec-batiments-georama.jpg', 1100, 620), alt: 'Maquette 3D du Vieux-Québec et de ses bâtiments',
+      icon: 'M3 21h18 M5 21V9l5-3v15 M10 21V4h9v17 M13 8h3 M13 12h3 M13 16h3' },
+    { id: 'entreprise', nom: 'Entreprises', court: 'Municipalités, institutions', etiquette: 'ENTREPRISES · MUNICIPALITÉS',
+      promesse: "Votre site en grand format, compris en un coup d'œil.",
+      couches: ['Grand format', 'Bâtiments en 3D', 'Couches sur mesure', 'Cadre inclus'],
+      champ: "l'adresse ou le nom de votre site", prix: 'Dès 900 $', prixNote: 'sur soumission',
+      url: 'https://www.georama.ca/terre-%C3%A9rabli%C3%A8re-chalet-3', lien: 'Entreprises',
+      img: media('7477d2_3c73d063db3d420d987185fced2e13d7~mv2.jpg', 'maquette-3d-chantier-maritime-entreprise-georama.jpg', 1100, 620), alt: "Maquette 3D grand format d'un chantier maritime",
+      icon: 'M3 21h18 M4 21V10h6v11 M10 21V5h10v16 M6 13h2 M6 17h2 M13 9h4 M13 13h4 M13 17h4' }
+  ];
+  var $ = function (id) { return document.getElementById(id); };
+  var boite = $('choix');
+  var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+  SEG.forEach(function (s) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.setAttribute('aria-pressed', 'false');
+    b.dataset.id = s.id;
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + s.icon + '"/></svg>' +
+      '<span><span class="nom">' + esc(s.nom) + '</span><span class="court">' + esc(s.court) + '</span></span>';
+    b.addEventListener('click', function () { choisir(s.id); });
+    boite.appendChild(b);
+    var pre = new Image(); pre.src = s.img;
+  });
+  function choisir(id) {
+    var s = SEG.filter(function (x) { return x.id === id; })[0] || SEG[0];
+    [].forEach.call(boite.children, function (b) { b.setAttribute('aria-pressed', b.dataset.id === s.id ? 'true' : 'false'); });
+    $('photo').src = s.img; $('photo').alt = s.alt;
+    $('etiquette').textContent = s.etiquette;
+    $('promesse').textContent = s.promesse;
+    $('couches').innerHTML = s.couches.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('');
+    $('champ').textContent = s.champ;
+    $('prix').textContent = s.prix;
+    $('prixNote').textContent = s.prixNote;
+    $('page').href = s.url;
+    $('page').textContent = 'Découvrir : ' + s.lien + ' →';
+  }
+  var depart = (location.hash || '').replace('#', '');
+  choisir(depart || 'terre');
+})();
+</script>
+</body>
+</html>
