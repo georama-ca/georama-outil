@@ -26,7 +26,8 @@
     width: calc(100vw - 48px) !important;
     max-width: 380px !important;
     height: auto !important;
-    max-height: calc(100vh - 170px) !important;
+    max-height: calc(100vh - 110px) !important;
+    margin-top: 40px !important;
     overflow-y: auto !important;
     justify-self: center !important;
     margin-left: auto !important; margin-right: auto !important;
@@ -34,7 +35,8 @@
   }
   [id$="comp-m6z5qjfi4"] nav,
   [id$="comp-m6z5qjfi4"] ul { background: transparent !important; height: auto !important; overflow: visible !important; }
-  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"] { width: 100% !important; }
+  [id$="comp-m6z5qjfi4"] ul { gap: 0 !important; row-gap: 0 !important; padding: 0 !important; }
+  [id$="comp-m6z5qjfi4"] li[data-part="menu-item"] { width: 100% !important; margin: 0 !important; padding: 0 !important; }
   [id$="comp-m6z5qjfi4"] li[data-part="menu-item"] a {
     width: 100% !important;
     display: flex !important; align-items: center !important; justify-content: center !important;
