@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v2.3 (2026-10-18) -->
+<!-- Outil Georama v2.4 (2026-10-18) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -387,7 +387,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v2.3 · 2026-10-18</p>
+<p class="g-version">Outil Georama v2.4 · 2026-10-18</p>
 </div>
 </aside>
 </div>
@@ -5252,18 +5252,21 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
       bloc(la, lo, 0.9, 0.9, -1, 9, [0.97, 0.97, 0.95]);
       bloc(la, lo, 5, 0.6, 6, 9, [0.84, 0.0, 0.11], 2.8);
     });
-    // arbres isolés : petits cônes vert foncé
+    // arbres isolés : formes trapues comme une impression 3D (fût à 8 pans + pointe), couleur de filament de la gamme
     if (s.arbres && s.arbres.length && profilActif !== "ville") {
-      const cA = [0.03, 0.36, 0.18];
+      const gam = ($("murGamme") || {}).value || "boreal";
+      const cA = hexRVB({ boreal: "#034638", sapiniere: "#034638", terre: "#4F2C1D", arctique: "#7F7E83", unie: "#F2F1EC" }[gam] || "#034638");
+      const n = 8, R0 = (3.4 / 1000) * u, R1 = (2.8 / 1000) * u;
       s.arbres.forEach((t) => {
         const [x, y] = versZone(d, t.lat, t.lon);
         if (!dansZone(x, y)) return;
-        const sol = base(d.altFn(t.lat, t.lon)) - 0.002, top = sol + hm(9), R = (2.6 / 1000) * u, X = x * u, Z = -y * u, n = 6;
+        const sol = base(d.altFn(t.lat, t.lon)) - 0.002, mi = sol + hm(4), top = sol + hm(8.5), X = x * u, Z = -y * u;
         for (let i = 0; i < n; i++) {
-          const a0 = (i / n) * 2 * Math.PI, a1 = ((i + 1) / n) * 2 * Math.PI;
-          const p0 = [X + R * Math.cos(a0), sol, Z + R * Math.sin(a0)], p1 = [X + R * Math.cos(a1), sol, Z + R * Math.sin(a1)];
-          const am = (a0 + a1) / 2;
-          tri(p0, [X, top, Z], p1, [Math.cos(am) * 0.8, 0.6, Math.sin(am) * 0.8], cA);
+          const a0 = (i / n) * 2 * Math.PI, a1 = ((i + 1) / n) * 2 * Math.PI, am = (a0 + a1) / 2;
+          const b0 = [X + R0 * Math.cos(a0), sol, Z + R0 * Math.sin(a0)], b1 = [X + R0 * Math.cos(a1), sol, Z + R0 * Math.sin(a1)];
+          const h0 = [X + R1 * Math.cos(a0), mi, Z + R1 * Math.sin(a0)], h1 = [X + R1 * Math.cos(a1), mi, Z + R1 * Math.sin(a1)];
+          quad(b0, h0, h1, b1, [Math.cos(am), 0.1, Math.sin(am)], cA);
+          tri(h0, [X, top, Z], h1, [Math.cos(am) * 0.75, 0.66, Math.sin(am) * 0.75], cA);
         }
       });
     }
@@ -6757,7 +6760,7 @@ window.addEventListener("message", function (e) {
       ? (estPeche() ? "<b>Aperçu à titre indicatif.</b> Fond du lac simulé : votre maquette aura le vrai fond du lac." : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise.")
       : estPeche()
       ? "<b>Aperçu à titre indicatif.</b> Le fond du lac est simulé ici : votre maquette reproduira le vrai fond du lac, beaucoup plus précis."
-      : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise : relief LiDAR détaillé et données vérifiées par Georama.";
+      : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise, avec le relief LiDAR détaillé.";
     const poserIndic = (hote) => {
       if (!hote) return;
       let b = hote.querySelector(":scope > .g-indicatif");
@@ -6767,6 +6770,35 @@ window.addEventListener("message", function (e) {
     const majIndic = () => { poserIndic(document.querySelector("#vueTable .vt-zone")); poserIndic($("murZone")); poserIndic($("v3Scene")); };
     setInterval(majIndic, 1000);
     majIndic();
+
+    // v2.4 : Entreprise sans l'avis « fond de l'eau » (réservé à la pêche)
+    if (typeof PROFILS !== "undefined" && PROFILS.entreprise) PROFILS.entreprise.eau = false;
+    // v2.4 : au mur, la maquette reste entière entre la mention (en haut) et la bande des couleurs (en bas)
+    if (typeof murPlacer === "function" && typeof scene === "function") {
+      murPlacer = function () {
+        setTimeout(() => { typeof murAppliquerZoom == "function" && murAppliquerZoom(); }, 0);
+        const zone = $("murZone"), n = zone.clientWidth, a0 = zone.clientHeight, t = scene(), r = t.coins.map((p) => p[1]);
+        const haut = 48, bas = 66, a = Math.max(140, a0 - haut - bas);
+        const i = (Math.min(...r) + Math.max(...r)) / 2, l = Math.max(...r) - Math.min(...r);
+        let s = t.cadre ? Math.min(a0, n * t.ratio) : Math.max(Math.min(a0, n * t.ratio), (a * 0.84) / l), c = s / t.ratio;
+        if (c > n * 1.5) { c = n * 1.5; s = c * t.ratio; }
+        const gauche = c > n ? Math.min(0, Math.max(n - c, n / 2 - 0.55 * c)) : (n - c) / 2;
+        let dessus = s > a0 ? haut + a / 2 - i * s : (a0 - s) / 2;
+        if (s > a0) dessus = Math.min(0, Math.max(a0 - s, dessus));
+        $("murFlou").style.backgroundImage = 'url("' + t.img + '")';
+        if ($("murImg").getAttribute("src") !== t.img) $("murImg").src = t.img;
+        $("murTitre").textContent = t.titre;
+        murCadreDessiner();
+        murChoixConstruire();
+        $("murScene").classList.toggle("sur-table", !!t.cadre);
+        const h = $("murScene");
+        h.style.width = c + "px"; h.style.height = s + "px"; h.style.left = gauche + "px"; h.style.top = dessus + "px";
+        const m = t.coins.map(([p, g]) => [p * c, g * s]);
+        if (t.cadre) { murTable(m); return; }
+        $("tableDessous").innerHTML = $("tableDessus").innerHTML = "";
+        $("murQuad").style.transform = murMatrice(MUR_W, MUR_H, m);
+      };
+    }
 
     // Chasse : table et 3D retirées
     const marquerChasse = () => {
