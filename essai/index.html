@@ -374,7 +374,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <textarea id="res" readonly aria-label="Lien de visualisation à coller dans le champ Lieu à géolocaliser"></textarea>
 <details class="infos">
 <summary>Sources et avertissement</summary>
-<p class="sources">Sources : © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a> (fond de carte, plan des villes, noms des lacs, descentes et quais ; licence ODbL) · Gouvernement du Québec, licence <a href="https://creativecommons.org/licenses/by/4.0/deed.fr" target="_blank" rel="noopener">CC-BY 4.0</a> : relief ombragé, lacs, rivières, ruisseaux et hauteur de canopée issus du LiDAR, carte écoforestière (habitat, érablières, volume de bois) et milieux humides d’intérêt, ministère des Ressources naturelles et des Forêts, via Forêt ouverte ; réseau routier AQréseau+ ; milieux humides potentiels et Géobase des bathymétries de lacs du Québec (fond des lacs), ministère de l’Environnement (MELCCFP) · Milieux humides détaillés : Canards Illimités Canada, via Données Québec (CC-BY 4.0) · Altitudes de l’aperçu 3D et noms officiels : Ressources naturelles Canada, Licence du gouvernement ouvert – Canada ; Terrain Tiles (Mapzen, AWS Open Data) · Recherche d’adresses : Photon (komoot) et Nominatim, données OpenStreetMap · Cadastre : © Gouvernement du Québec, affiché à titre indicatif seulement.</p>
+<p class="sources">Sources : © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">contributeurs OpenStreetMap</a> (fond de carte, plan des villes, noms des lacs, descentes et quais ; licence ODbL) · Bâtiments des villes : <a href="https://overturemaps.org/" target="_blank" rel="noopener">Overture Maps Foundation</a> (OpenStreetMap, Microsoft, Google, Esri ; licence ODbL) · Tuiles <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> · Gouvernement du Québec, licence <a href="https://creativecommons.org/licenses/by/4.0/deed.fr" target="_blank" rel="noopener">CC-BY 4.0</a> : relief ombragé, lacs, rivières, ruisseaux et hauteur de canopée issus du LiDAR, carte écoforestière (habitat, érablières, volume de bois) et milieux humides d’intérêt, ministère des Ressources naturelles et des Forêts, via Forêt ouverte ; réseau routier AQréseau+ ; milieux humides potentiels et Géobase des bathymétries de lacs du Québec (fond des lacs), ministère de l’Environnement (MELCCFP) · Milieux humides détaillés : Canards Illimités Canada, via Données Québec (CC-BY 4.0) · Altitudes de l’aperçu 3D et noms officiels : Ressources naturelles Canada, Licence du gouvernement ouvert – Canada ; Terrain Tiles (Mapzen, AWS Open Data) · Recherche d’adresses : Photon (komoot) et Nominatim, données OpenStreetMap · Cadastre : © Gouvernement du Québec, affiché à titre indicatif seulement.</p>
 <p class="avert"><strong>Avertissement :</strong> la maquette Georama est une représentation artistique de données géographiques réelles. Elle est fournie à titre illustratif seulement et ne peut servir à des fins officielles, légales ou de navigation (arpentage, délimitation de propriété, transaction, chasse ou pêche en territoire réglementé, navigation sur l’eau, etc.). Les profondeurs, l’habitat et les autres couches sont des interprétations simplifiées de données publiques qui peuvent être incomplètes, imprécises ou dépassées. Georama n’est pas affiliée aux organismes cités, qui n’approuvent ni ce site ni ses produits. Pour toute information officielle, consultez les sources gouvernementales ou un arpenteur-géomètre.</p>
 </details>
 </div>
@@ -5158,7 +5158,8 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     construitAvec = cleDe(d.zone);
     const lum = (h) => { const [a, b, c] = hexRVB(h); return 0.2126 * a + 0.7152 * b + 0.0722 * c; };
     const clair = lum(pal.bas) <= 0.6;
-    const cBat = clair ? [0.96, 0.95, 0.92] : [0.62, 0.62, 0.64], cInd = clair ? [0.78, 0.77, 0.76] : [0.5, 0.5, 0.52], cToit = clair ? [0.88, 0.87, 0.84] : [0.56, 0.56, 0.58];
+    let cBat = clair ? [0.96, 0.95, 0.92] : [0.62, 0.62, 0.64], cInd = clair ? [0.78, 0.77, 0.76] : [0.5, 0.5, 0.52], cToit = clair ? [0.88, 0.87, 0.84] : [0.56, 0.56, 0.58];
+    { const vg = typeof window.georamaVilleGamme === "function" && window.georamaVilleGamme(); if (vg && vg.bat) { cBat = hexRVB(vg.bat); cToit = cBat.map((x) => Math.min(1, x * 1.1 + 0.03)); } }
     const hm = (h) => (h / 1000) * u * exa * EXAG_BATI;      // mètres -> unités du modèle
     const tri = (a, b, c, nn, col) => { P.push(...a, ...b, ...c); N.push(...nn, ...nn, ...nn); C.push(...col, ...col, ...col); };
     const quad = (a, b, c, e2, nn, col) => { tri(a, b, c, nn, col); tri(a, c, e2, nn, col); };
@@ -6196,7 +6197,32 @@ window.addEventListener("message", function (e) {
     }
     return null;
   }
-  window.georamaTuiles = { objets, polygones, pmtTuile, pmtEntete };
+  // bâtiments Overture d'une emprise [s, w, n, e] : [{ ring, h }] (h en mètres ou 0)
+  async function batimentsOverture(emprise) {
+    const z = 14, t0 = versTuile(emprise[2], emprise[1], z), t1 = versTuile(emprise[0], emprise[3], z);
+    const jobs = [];
+    for (let x = Math.floor(t0[0]); x <= Math.floor(t1[0]); x++)
+      for (let y = Math.floor(t0[1]); y <= Math.floor(t1[1]); y++) jobs.push(pmtTuile(z, x, y).then((c) => ({ c, x, y })));
+    if (jobs.length > 36) throw new Error("zone trop grande");
+    const res = await Promise.race([Promise.all(jobs), new Promise((_, ko) => setTimeout(() => ko(new Error("délai")), 12000))]);
+    const out = [], vus = new Set();
+    res.forEach(({ c, x, y }) => {
+      const L = c && c.building; if (!L) return;
+      const f = versLL(z, x, y, L.ext);
+      L.objets.forEach((o) => {
+        if (o.type !== 3 || o.props.is_underground === true) return;
+        const cle = o.props.id || null;
+        polygones({ traits: o.traits.map((t) => t.map(f)) }).forEach((p, i) => {
+          const ring = p[0], k = (cle || "") + ":" + i + ":" + (cle ? "" : ring[0][0].toFixed(6) + "," + ring[0][1].toFixed(6));
+          if (vus.has(k)) return; vus.add(k);
+          const h = +o.props.height || (+o.props.num_floors ? +o.props.num_floors * 3.2 + 1.5 : 0);
+          out.push({ ring, h });
+        });
+      });
+    });
+    return out;
+  }
+  window.georamaTuiles = { objets, polygones, pmtTuile, pmtEntete, batimentsOverture };
 
   /* ---------- 1. Lacs et rivières de l'aperçu 3D ---------- */
   if (typeof v3ChargerEau === "function") {
@@ -6241,13 +6267,17 @@ window.addEventListener("message", function (e) {
     return out;
   }
   async function elementsVille(emprise, w, avecArbres) {
-    const o = await objets(emprise, ["building", "transportation", "transportation_name", "landcover", "landuse", "park", "place", "poi"], 14);
-    const els = []; let id = 1;
     const r = w <= 4, i = w <= 15;
+    const [o, ov] = await Promise.all([
+      objets(emprise, ["building", "transportation", "transportation_name", "landcover", "landuse", "park", "place", "poi"], 14),
+      r ? batimentsOverture(emprise).catch(() => null) : Promise.resolve(null),
+    ]);
+    const els = []; let id = 1;
     const vus = new Set();
-    // bâtiments (une seule fois s'ils touchent deux tuiles)
+    // bâtiments : Overture (OpenStreetMap + empreintes Microsoft, Google, Esri), sinon OpenStreetMap seul
     const bats = [];
-    o.building.forEach((f) => {
+    if (ov && ov.length) ov.forEach((b) => bats.push({ ring: b.ring, tags: { building: "yes", "building:levels": String(Math.max(1, Math.round((b.h || 6) / 3.2))), height: b.h ? String(b.h) : undefined } }));
+    else o.building.forEach((f) => {
       if (f.type !== 3) return;
       polygones(f).forEach((p) => {
         const ring = p[0];
@@ -6334,9 +6364,10 @@ window.addEventListener("message", function (e) {
         const m = /way\["building"\]\(([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)\)/.exec(q);
         if (!m) throw new Error("bbox");
         const emprise = [+m[1], +m[2], +m[3], +m[4]];
-        const o = await objets(emprise, ["building", "landuse", "park", "transportation", "landcover"], 14);
+        const [o, ov] = await Promise.all([objets(emprise, ["building", "landuse", "park", "transportation", "landcover"], 14), batimentsOverture(emprise).catch(() => null)]);
         const els = []; let id = 1; const vus = new Set();
-        o.building.forEach((f) => {
+        if (ov && ov.length) ov.forEach((b) => els.push(way(id++, Object.assign({ building: "yes" }, b.h ? { height: String(b.h) } : {}), b.ring)));
+        else o.building.forEach((f) => {
           if (f.type !== 3 || f.props.hide_3d) return;
           polygones(f).forEach((p) => {
             const ring = p[0], c = ring.reduce((a, q2) => [a[0] + q2[0] / ring.length, a[1] + q2[1] / ring.length], [0, 0]);
@@ -6361,6 +6392,82 @@ window.addEventListener("message", function (e) {
       } catch (e) {
         return _op.apply(this, arguments);
       }
+    };
+  }
+
+  /* ---------- 5. Habitat de l'orignal, érablières, volume de bois sur le mur : grandes zones ----------
+     La carte forestière du gouvernement est vide quand on la demande de trop loin (au-delà d'environ 10 km
+     par tuile). Sur le mur, on la demande donc toujours d'assez près, en tuiles de 512 px. */
+  const deProche = (l) => { if (!l || !l.options) return l; l.options.minNativeZoom = 12; l.options.tileSize = 512; if (l.wmsParams) l.wmsParams.width = l.wmsParams.height = 512; return l; };
+  if (typeof habCouches === "function") { const _h = habCouches; habCouches = function (e, n) { const r = _h.apply(this, arguments); if (!n) r.forEach(deProche); return r; }; }
+  if (typeof eraCouche === "function") { const _e = eraCouche; eraCouche = function (n) { const l = _e.apply(this, arguments); return n ? l : deProche(l); }; }
+  if (typeof vmbCouche === "function") { const _v = vmbCouche; vmbCouche = function (n) { const l = _v.apply(this, arguments); return n ? l : deProche(l); }; }
+
+  /* ---------- 6. Ville : l'aperçu 3D prend les couleurs de la maquette de ville ----------
+     Sol beige, rues, parcs et arbres, bâtiments gris : comme la maquette imprimée (gamme choisie). */
+  const estVille = () => typeof profilActif !== "undefined" && profilActif === "ville";
+  const villeGamme = () => (typeof MUR_VILLE_GAMMES !== "undefined" && (MUR_VILLE_GAMMES[($("murGamme") || {}).value] || MUR_VILLE_GAMMES.boreal)) || null;
+  window.georamaVilleGamme = () => (estVille() ? villeGamme() : null);
+  if (typeof V3_PALETTES !== "undefined" && typeof MUR_VILLE_GAMMES !== "undefined") {
+    Object.keys(V3_PALETTES).forEach((g) => {
+      const p = V3_PALETTES[g], v = MUR_VILLE_GAMMES[g];
+      if (!p || !v) return;
+      const ville = { bas: v.sol, milieu: v.sol, haut: v.sol, roc: v.sol, eau: v.eau, riviere: v.eau, ligne: v.rue };
+      Object.keys(ville).forEach((k) => {
+        const orig = p[k];
+        Object.defineProperty(p, k, { get: () => (estVille() && ville[k] ? ville[k] : orig), enumerable: true, configurable: true });
+      });
+    });
+  }
+  const villePrete = new Map();
+  const cleV = (a, b, c) => [a, b, c].map((v) => (+v).toFixed(5)).join("|");
+  if (typeof v3Preparer === "function") {
+    const _prep = v3Preparer;
+    v3Preparer = async function (e) {
+      const pv = estVille() && e && typeof villeDonnees === "function"
+        ? villeDonnees(e.lat0, e.lon0, e.w).then((v) => { villePrete.set(cleV(e.lat0, e.lon0, e.w), v); if (villePrete.size > 6) villePrete.delete(villePrete.keys().next().value); }).catch(() => {})
+        : null;
+      const r = await _prep.apply(this, arguments);
+      if (pv) await Promise.race([pv, new Promise((ok) => setTimeout(ok, 20000))]);
+      return r;
+    };
+  }
+  function peindreVille({ g, d, t, px }) {
+    const z = d.zone || {}, v = villePrete.get(cleV(z.lat0, z.lon0, z.w)), pal = villeGamme();
+    if (!v || !pal) return;
+    const mpp = t.mpp, w = (m, mi) => Math.max(mi || 1, m / mpp);
+    const trace = (pts) => { g.beginPath(); pts.forEach((p, i) => { const [x, y] = px(p[0], p[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); };
+    g.save();
+    if (villeOpt("parcs") && pal.parc) {
+      g.fillStyle = pal.parc;
+      v.parcs.forEach((r) => { trace(r); g.closePath(); g.fill(); });
+    }
+    if (pal.rue) {
+      const L = { motorway: 18, trunk: 16, primary: 13, secondary: 12, tertiary: 11, unclassified: 9, residential: 9, living_street: 8, pedestrian: 7, service: 5 };
+      g.strokeStyle = pal.rue; g.lineCap = g.lineJoin = "round";
+      v.routes.slice().sort((a, b) => (L[a.cls] || 8) - (L[b.cls] || 8)).forEach((r) => {
+        if (r.cls === "service" && z.w > 1.5) return;
+        g.lineWidth = w(L[r.cls] || 8, 1.2); trace(r.pts); g.stroke();
+      });
+      if (villeOpt("velo")) {
+        g.strokeStyle = pal.velo || pal.rue; g.lineWidth = w(3, 1); v.velo.forEach((l) => { trace(l); g.stroke(); });
+        g.strokeStyle = pal.rue; g.lineWidth = w(4, 1.2); g.setLineDash([w(10, 3), w(6, 2)]); v.rail.forEach((l) => { trace(l); g.stroke(); }); g.setLineDash([]);
+      }
+    }
+    if (villeOpt("parcs") && v.arbres.length && (pal.arbre || pal.parc)) {
+      g.fillStyle = "rgba(0,0,0,.22)";
+      const rr = w(3.2, 1.1), dx = rr * 0.35;
+      v.arbres.slice(0, 6000).forEach((p) => { const [x, y] = px(p[0], p[1]); g.beginPath(); g.arc(x + dx, y + dx, rr, 0, 7); g.fill(); });
+      g.fillStyle = pal.arbre || pal.parc;
+      v.arbres.slice(0, 6000).forEach((p) => { const [x, y] = px(p[0], p[1]); g.beginPath(); g.arc(x, y, rr, 0, 7); g.fill(); });
+    }
+    g.restore();
+  }
+  {
+    const _sp = window.georamaSitePeindre;
+    window.georamaSitePeindre = function (o) {
+      try { if (estVille()) peindreVille(o); } catch (e) {}
+      if (typeof _sp === "function") return _sp.apply(this, arguments);
     };
   }
 
