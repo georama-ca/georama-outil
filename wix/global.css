@@ -15,34 +15,34 @@
 /* --- Ordinateur et tablette : le menu principal garde ses 4 liens.
        Les 7 premiers liens (types de maquettes) sont pour le menu mobile. --- */
 @media (min-width: 751px) {
-  .horizontal-menu:has(.hamburger-open-button) li[data-part="menu-item"]:nth-child(-n+7) {
+  :has(.hamburger-open-button) > .horizontal-menu li[data-part="menu-item"]:nth-child(-n+7) {
     visibility: hidden !important;
     inline-size: 0 !important;
     max-inline-size: 0 !important;
     block-size: 0 !important;
     overflow: hidden !important;
-    margin-inline-end: calc(-1 * var(--georama-nav-gap, 0px)) !important;
+    margin-inline-end: calc(-1 * 28px) !important;
   }
 }
 
 @media (max-width: 750px) {
 
   /* ---------- Menu hamburger : liens pâles, gros et faciles à toucher ----------
-     Le menu du hamburger = un menu horizontal sans bouton hamburger
+     Le menu du hamburger = un menu horizontal sans bouton hamburger à côté
      ni icône (l'icône, c'est le bouton vert « Voir ma propriété en 3D »). */
-  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) {
+  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) {
     max-block-size: calc(100vh - 120px) !important;
     overflow-y: auto !important;
     background-color: transparent !important;
   }
-  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) ul {
+  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) ul {
     gap: 0 !important;
     row-gap: 0 !important;
   }
-  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) li[data-part="menu-item"] {
+  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) li[data-part="menu-item"] {
     inline-size: 100% !important;
   }
-  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) .menu__item {
+  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) .menu__item {
     background-color: transparent !important;
     inline-size: 100% !important;
     min-block-size: 50px !important;
@@ -51,7 +51,7 @@
     box-sizing: border-box !important;
     border-block-end: 1px solid rgba(242, 241, 234, .14) !important;
   }
-  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) .menu__item-label {
+  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) .menu__item-label {
     color: #f2f1ea !important;
     font-size: 19px !important;
     line-height: 1.3 !important;
@@ -59,18 +59,18 @@
     text-align: center !important;
   }
   /* 1er lien : « Voir ma propriété en 3D » en bouton vert */
-  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) li[data-part="menu-item"]:first-child .menu__item {
+  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) li[data-part="menu-item"]:first-child .menu__item {
     background-color: #9aa85c !important;
     border-radius: 8px !important;
     border-block-end: 0 !important;
     margin-block: 4px 10px !important;
   }
-  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) li[data-part="menu-item"]:first-child .menu__item-label {
+  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) li[data-part="menu-item"]:first-child .menu__item-label {
     color: #111311 !important;
     font-weight: 700 !important;
   }
   /* 2e à 7e : les types de maquettes, un peu plus discrets */
-  .horizontal-menu:not(:has(.hamburger-open-button)):not(:has(.menu__item-icon)) li[data-part="menu-item"]:nth-child(n+2):nth-child(-n+7) .menu__item-label {
+  :not(:has(.hamburger-open-button)) > .horizontal-menu:not(:has(.menu__item-icon)) li[data-part="menu-item"]:nth-child(n+2):nth-child(-n+7) .menu__item-label {
     font-size: 17px !important;
     color: #d9dcc8 !important;
   }
