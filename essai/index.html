@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v2.1 (2026-10-18) -->
+<!-- Outil Georama v2.2 (2026-10-18) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -387,7 +387,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v2.1 · 2026-10-18</p>
+<p class="g-version">Outil Georama v2.2 · 2026-10-18</p>
 </div>
 </aside>
 </div>
@@ -5515,7 +5515,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
   el("ongletMur").onclick = () => montrerMur(true);
   function montrerTable(signaler) {
     if (!aMarqueur()) { if (signaler) dire("Choisissez d’abord votre lieu : cherchez-le ou cliquez sur la carte."); return; }
-    if (!window.georamaTable) { montrerMur(signaler); return; }
+    if (!window.georamaTable || (window.georamaSansApercu3D && window.georamaSansApercu3D())) { montrerMur(signaler); return; }
     const pal = el("v3pal"), g = el("murGamme").value;
     if (pal && pal.querySelector('option[value="' + g + '"]')) pal.value = g;
     window.georamaTable.ouvrir();
@@ -6487,6 +6487,114 @@ window.addEventListener("message", function (e) {
     const marquer = () => { try { document.body.classList.toggle("g-ville", estVille()); } catch (e) {} };
     if (typeof appliquerProfil === "function") { const _ap = appliquerProfil; appliquerProfil = function () { const r = _ap.apply(this, arguments); marquer(); return r; }; }
     marquer();
+  }
+
+  /* ---------- 8. v2.2 : la vue 3D s'ouvre dans la zone d'aperçu (comme la table et le mur),
+     avec les mêmes choix que la commande (couleurs, cadre). Mention « aperçu indicatif » sur chaque vue.
+     Chasse : pas de table ni de 3D (l'habitat de l'orignal ne s'y voit pas). ---------- */
+  {
+    const CADRE_3D = { bois: "#D9BE96", noir: "#2B2B2B", blanc: "#F2F1EC" };
+    const cadreChoisi = () => (($("murCadre") || {}).value || "bois");
+    const estChasse = () => typeof profilActif !== "undefined" && profilActif === "chasse";
+    const estPeche = () => typeof profilActif !== "undefined" && profilActif === "peche";
+    window.georamaSansApercu3D = estChasse;
+    if (typeof V3_PALETTES !== "undefined") Object.keys(V3_PALETTES).forEach((g) => {
+      const p = V3_PALETTES[g], orig = p.cadre;
+      Object.defineProperty(p, "cadre", { get: () => CADRE_3D[cadreChoisi()] || orig, enumerable: true, configurable: true });
+    });
+    const st3 = document.createElement("style");
+    st3.textContent =
+      "#zoneCarte>#vue3d{position:absolute;inset:0;z-index:1250;border-radius:8px;overflow:hidden;box-shadow:0 0 0 1px #d2d7cd}" +
+      "body.v3-ouvert{overflow:visible!important}" +
+      "#vue3d .v3-barre{background:#fff!important;border-bottom:1px solid #e3e0d8;padding:8px 14px;gap:8px 12px}" +
+      "#vue3d .v3-barre strong{color:#2A2F2B!important;font-size:15px;font-weight:600}" +
+      "#vue3d .v3-barre label{color:#2A2F2B!important;font-size:13px;font-weight:600}" +
+      "#vue3d .v3-barre select{border:1px solid #c9cec3;border-radius:8px;background:#fff!important;color:#2A2F2B!important;padding:5px 8px;font:500 13.5px Montserrat,system-ui,sans-serif}" +
+      "#vue3d #v3fermer{border:1px solid #d2d7cd!important;background:#fff!important;color:#2A2F2B!important;border-radius:999px;padding:6px 12px;font:600 13px Montserrat,system-ui,sans-serif}" +
+      "#vue3d .v3-note{background:#fff;color:#4a524b!important;font-size:12px;padding:6px 12px}" +
+      "@media (max-width:700px){#vue3d .v3-barre strong{flex-basis:100%}#vue3d .v3-barre{padding:8px 10px}#vue3d .v3-barre select{font-size:13px;padding:4px 6px}}" +
+      ".g-indicatif{position:absolute;left:10px;top:10px;z-index:40;max-width:min(440px,calc(100% - 20px));padding:7px 11px;border-radius:8px;background:rgba(17,19,17,.82);color:#f3f3ef;font:500 12.5px/1.4 Montserrat,system-ui,sans-serif;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.2);text-align:left}" +
+      ".g-indicatif b{color:#cfdc9e;font-weight:700}" +
+      "body.g-charge-actif .g-indicatif{visibility:hidden}" +
+      "body.g-chasse #ongletTable,body.g-chasse #apercu3d{display:none!important}";
+    document.head.appendChild(st3);
+
+    // Vue 3D dans la zone d'aperçu, barre comme la table et le mur
+    const v = $("vue3d"), barre = v && v.querySelector(".v3-barre"), cb = $("v3cadre");
+    if (v && barre && cb && $("zoneCarte")) {
+      $("zoneCarte").appendChild(v);
+      v.removeAttribute("role");
+      const t = barre.querySelector("strong"); if (t) t.textContent = "Votre maquette en 3D";
+      const lab = cb.closest("label"); if (lab) lab.hidden = true;
+      const sel = document.createElement("select");
+      sel.id = "v3cadreSel";
+      sel.innerHTML = '<option value="sans">Sans cadre</option><option value="bois">Bois pâle</option><option value="noir">Noir</option><option value="blanc">Blanc</option>';
+      const l2 = document.createElement("label");
+      l2.append("Cadre ", sel);
+      barre.insertBefore(l2, lab || $("v3fermer"));
+      const pal = $("v3pal"), lp = pal && pal.closest("label");
+      if (lp && lp.firstChild && lp.firstChild.nodeType === 3) lp.firstChild.textContent = "Couleurs ";
+      const ferm = $("v3fermer"); if (ferm) ferm.textContent = "Retour à la carte";
+      const note = v.querySelector(".v3-note");
+      if (note) { const src = $("v3src"); note.textContent = "Glissez pour tourner, pincez ou utilisez la molette pour zoomer. "; if (src) note.appendChild(src); }
+      // le cadre 3D ne se montre que dans la vue 3D (le mur dessine déjà son propre cadre)
+      const majCadre = () => {
+        sel.value = cadreChoisi();
+        const voulu = !v.hidden && sel.value !== "sans";
+        if (cb.checked !== voulu) { cb.checked = voulu; try { if (v3.donnees) v3Reconstruire(); } catch (e) {} }
+      };
+      sel.onchange = () => {
+        const mc = $("murCadre");
+        if (mc && mc.value !== sel.value) {
+          mc.value = sel.value;
+          mc.dispatchEvent(new Event("change", { bubbles: true }));
+          try { murChoixConstruire(); } catch (e) {}
+          try { murCadreDessiner(); } catch (e) {}
+        }
+        majCadre();
+        try { v3Reconstruire(); } catch (e) {}
+      };
+      if ($("murCadre")) $("murCadre").addEventListener("change", majCadre);
+      new MutationObserver(majCadre).observe(v, { attributes: true, attributeFilter: ["hidden"] });
+      majCadre();
+      // la 3D ferme la table et le mur ; fermer la 3D revient à la carte
+      if (typeof ouvrir3D === "function") {
+        const _o3 = ouvrir3D;
+        ouvrir3D = function () {
+          if (estChasse()) { const m = $("ongletMur"); if (m) m.click(); return; }
+          try { if (!$("vueMur").hidden) fermerMur(); } catch (e) {}
+          try { if (window.georamaTable) window.georamaTable.fermer(); } catch (e) {}
+          const r = _o3.apply(this, arguments);
+          setTimeout(() => { try { window.dispatchEvent(new Event("resize")); } catch (e) {} }, 60);
+          return r;
+        };
+      }
+    }
+
+    // Mention « aperçu indicatif » sur la table, le mur et la 3D
+    const texteIndic = () => estPeche()
+      ? "<b>Aperçu à titre indicatif.</b> Le fond du lac est simulé ici : votre maquette reproduira le vrai fond du lac, beaucoup plus précis."
+      : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise : relief LiDAR détaillé et données vérifiées par Georama.";
+    const poserIndic = (hote) => {
+      if (!hote) return;
+      let b = hote.querySelector(":scope > .g-indicatif");
+      if (!b) { b = document.createElement("div"); b.className = "g-indicatif"; hote.appendChild(b); }
+      const h = texteIndic(); if (b.innerHTML !== h) b.innerHTML = h;
+    };
+    const majIndic = () => { poserIndic(document.querySelector("#vueTable .vt-zone")); poserIndic($("murZone")); poserIndic($("v3Scene")); };
+    setInterval(majIndic, 1000);
+    majIndic();
+
+    // Chasse : table et 3D retirées
+    const marquerChasse = () => {
+      const c = estChasse();
+      document.body.classList.toggle("g-chasse", c);
+      if (!c) return;
+      try { if (window.georamaTable && $("vueTable") && !$("vueTable").hidden) { window.georamaTable.fermer(); const m = $("ongletMur"); if (m) m.click(); } } catch (e) {}
+      try { if (!$("vue3d").hidden) { fermer3D(); const m = $("ongletMur"); if (m) m.click(); } } catch (e) {}
+    };
+    if (typeof appliquerProfil === "function") { const _ap2 = appliquerProfil; appliquerProfil = function () { const r = _ap2.apply(this, arguments); marquerChasse(); return r; }; }
+    marquerChasse();
   }
 
   /* ---------- 4. Barre de chargement : toute la préparation ---------- */
