@@ -6687,7 +6687,9 @@ window.addEventListener("message", function (e) {
       "#vue3d .v3-barre select{border:1px solid #c9cec3;border-radius:8px;background:#fff!important;color:#2A2F2B!important;padding:5px 8px;font:500 13.5px Montserrat,system-ui,sans-serif}" +
       "#vue3d #v3fermer{border:1px solid #d2d7cd!important;background:#fff!important;color:#2A2F2B!important;border-radius:999px;padding:6px 12px;font:600 13px Montserrat,system-ui,sans-serif}" +
       "#vue3d .v3-note{background:#fff;color:#4a524b!important;font-size:12px;padding:6px 12px}" +
-      "@media (max-width:700px){#vue3d .v3-barre strong{flex-basis:100%}#vue3d .v3-barre{padding:8px 10px}#vue3d .v3-barre select{font-size:13px;padding:4px 6px}}" +
+      "@media (max-width:700px){#vue3d .v3-barre strong,#vue3d #v3fermer,#v3src{display:none}#vue3d .v3-barre{padding:6px 8px;gap:6px 10px}" +
+      "#vue3d .v3-barre label{font-size:12px;gap:4px}#vue3d .v3-barre select{font-size:12.5px;padding:3px 4px;max-width:120px}#vue3d .v3-note{font-size:11px;padding:4px 8px}" +
+      ".g-indicatif{font-size:11.5px;padding:5px 8px;left:6px;top:6px}#zoneCarte.v3z{min-height:min(78vh,580px)!important}}" +
       ".g-indicatif{position:absolute;left:10px;top:10px;z-index:40;max-width:min(440px,calc(100% - 20px));padding:7px 11px;border-radius:8px;background:rgba(17,19,17,.82);color:#f3f3ef;font:500 12.5px/1.4 Montserrat,system-ui,sans-serif;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.2);text-align:left}" +
       ".g-indicatif b{color:#cfdc9e;font-weight:700}" +
       "body.g-charge-actif .g-indicatif{visibility:hidden}" +
@@ -6730,7 +6732,7 @@ window.addEventListener("message", function (e) {
         try { v3Reconstruire(); } catch (e) {}
       };
       if ($("murCadre")) $("murCadre").addEventListener("change", majCadre);
-      new MutationObserver(majCadre).observe(v, { attributes: true, attributeFilter: ["hidden"] });
+      new MutationObserver(() => { majCadre(); $("zoneCarte").classList.toggle("v3z", !v.hidden); }).observe(v, { attributes: true, attributeFilter: ["hidden"] });
       majCadre();
       // la 3D ferme la table et le mur ; fermer la 3D revient à la carte
       if (typeof ouvrir3D === "function") {
@@ -6747,7 +6749,10 @@ window.addEventListener("message", function (e) {
     }
 
     // Mention « aperçu indicatif » sur la table, le mur et la 3D
-    const texteIndic = () => estPeche()
+    const mobile = () => window.matchMedia && window.matchMedia("(max-width:700px)").matches;
+    const texteIndic = () => mobile()
+      ? (estPeche() ? "<b>Aperçu à titre indicatif.</b> Fond du lac simulé : votre maquette aura le vrai fond du lac." : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise.")
+      : estPeche()
       ? "<b>Aperçu à titre indicatif.</b> Le fond du lac est simulé ici : votre maquette reproduira le vrai fond du lac, beaucoup plus précis."
       : "<b>Aperçu à titre indicatif.</b> Votre maquette finale sera plus précise : relief LiDAR détaillé et données vérifiées par Georama.";
     const poserIndic = (hote) => {
