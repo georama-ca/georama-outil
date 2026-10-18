@@ -1,0 +1,362 @@
+{
+ "gyche": {
+  "textes": [
+   [
+    "TERRE À BOIS · ÉRABLIÈRE · CHALET",
+    "VILLE · QUARTIER · BÂTIMENTS"
+   ],
+   [
+    "Votre terre comme vous ne l",
+    "Votre quartier en relief, rue par rue."
+   ],
+   [
+    "Vos lignes de lot, vos coteaux",
+    "Les rues, les parcs, les bâtiments et le relief de votre coin de ville, réunis dans une maquette 3D. Votre maison peut même y être mise en évidence."
+   ],
+   [
+    "Le numéro est sur votre compte de taxes",
+    "Gratuit, sans inscription : entrez votre adresse, votre quartier s'encadre tout seul. Places limitées pour Noël : commandez avant le 1er décembre."
+   ],
+   [
+    "Votre terre en relief, en 30 secondes",
+    "Votre quartier en relief, en 30 secondes"
+   ],
+   [
+    "Entrez votre numéro de lot",
+    "Entrez votre adresse, choisissez votre bâtiment, puis voyez votre maquette accrochée au mur. Rien à payer pour essayer."
+   ],
+   [
+    "CE QUE L'OUTIL AJOUTE À VOTRE TERRE",
+    "CE QUE L'OUTIL AJOUTE À VOTRE QUARTIER"
+   ],
+   [
+    "Trois étapes, et votre terre",
+    "Trois étapes, et votre quartier prend du relief"
+   ],
+   [
+    "Je cadre ma propriété",
+    "Je cadre mon quartier"
+   ],
+   [
+    "L'outil s'ouvre avec le cadastre",
+    "L'outil s'ouvre avec les rues, les bâtiments en 3D, les parcs et les plans d'eau. Je déplace le cadre et je choisis mon bâtiment."
+   ],
+   [
+    "Mon lot en vedette",
+    "Mon bâtiment en vedette"
+   ],
+   [
+    "Votre terre ressort en relief",
+    "Votre maison, votre immeuble ou votre commerce ressort, bien identifié."
+   ],
+   [
+    "Cabane à sucre, chalet, camp",
+    "École, parc, commerce préféré : placez-les sur la carte, ils deviennent de petits repères imprimés sur la maquette."
+   ],
+   [
+    "Vos sentiers et chemins",
+    "Vos rues et vos parcs"
+   ],
+   [
+    "Tracez-les à la main",
+    "Les rues, les parcs, l'eau et les bâtiments en 3D s'affichent tout seuls."
+   ],
+   [
+    "Votre forêt",
+    "Le relief de la ville"
+   ],
+   [
+    "Érablières, essences",
+    "Les côtes et les vallées de votre quartier, à partir des données LiDAR du Québec."
+   ]
+  ],
+  "boutons": [
+   [
+    "Voir ma terre en couleurs",
+    "Voir mon quartier en couleurs"
+   ],
+   [
+    "Essayer avec ma terre",
+    "Essayer avec mon quartier"
+   ],
+   [
+    "Voir ma terre",
+    "Voir mon quartier"
+   ]
+  ]
+ },
+ "ze6cr": {
+  "textes": [
+   [
+    "TERRE À BOIS · ÉRABLIÈRE · CHALET",
+    "LAC · FOND · PROFONDEURS"
+   ],
+   [
+    "Votre terre comme vous ne l",
+    "Le fond de votre lac, enfin visible."
+   ],
+   [
+    "Vos lignes de lot, vos coteaux",
+    "Les fosses, les hauts-fonds et les pentes du fond, en 3D et en couleur. Une maquette pour mieux connaître votre lac et retrouver vos meilleurs coins de pêche."
+   ],
+   [
+    "Le numéro est sur votre compte de taxes",
+    "Gratuit, sans inscription : l'outil indique si la carte du fond existe pour votre lac. Places limitées pour Noël : commandez avant le 1er décembre."
+   ],
+   [
+    "Votre terre en relief, en 30 secondes",
+    "Votre lac en relief, en 30 secondes"
+   ],
+   [
+    "Entrez votre numéro de lot",
+    "Cherchez votre lac, ajoutez vos quais et vos coins de pêche, puis voyez votre maquette accrochée au mur. Rien à payer pour essayer."
+   ],
+   [
+    "CE QUE L'OUTIL AJOUTE À VOTRE TERRE",
+    "CE QUE L'OUTIL AJOUTE À VOTRE LAC"
+   ],
+   [
+    "Trois étapes, et votre terre",
+    "Trois étapes, et votre lac prend du relief"
+   ],
+   [
+    "Je cadre ma propriété",
+    "Je trouve mon lac"
+   ],
+   [
+    "L'outil s'ouvre avec le cadastre",
+    "L'outil indique si la carte du fond (bathymétrie) existe pour mon lac. J'ajoute mes quais, mes repères et mes coins de pêche."
+   ],
+   [
+    "Mon lot en vedette",
+    "Le fond en vedette"
+   ],
+   [
+    "Votre terre ressort en relief",
+    "Les profondeurs se lisent en couleurs : hauts-fonds, pentes et fosses."
+   ],
+   [
+    "Cabane à sucre, chalet, camp",
+    "Quai, chalet, bouée, coin de pêche : placez-les sur la carte, ils deviennent de petits repères imprimés sur la maquette."
+   ],
+   [
+    "Vos sentiers et chemins",
+    "Les berges en relief"
+   ],
+   [
+    "Tracez-les à la main",
+    "Le terrain autour du lac, les ruisseaux et les chemins d'accès, en relief."
+   ],
+   [
+    "Votre forêt",
+    "Les profondeurs écrites"
+   ],
+   [
+    "Érablières, essences",
+    "La légende indique les profondeurs : haut-fond, profond, fosse."
+   ]
+  ],
+  "boutons": [
+   [
+    "Voir ma terre en couleurs",
+    "Voir mon lac en couleurs"
+   ],
+   [
+    "Essayer avec ma terre",
+    "Essayer avec mon lac"
+   ],
+   [
+    "Voir ma terre",
+    "Voir mon lac"
+   ]
+  ]
+ },
+ "bi6t7": {
+  "textes": [
+   [
+    "TERRE À BOIS · ÉRABLIÈRE · CHALET",
+    "SOMMET · SENTIER · TRACÉ GPS"
+   ],
+   [
+    "Votre terre comme vous ne l",
+    "Le sommet que vous avez gravi, posé sur votre mur."
+   ],
+   [
+    "Vos lignes de lot, vos coteaux",
+    "Votre randonnée, votre course en sentier ou votre ascension préférée devient une maquette 3D : le relief exact, les sentiers et votre tracé GPS imprimés en couleur."
+   ],
+   [
+    "Le numéro est sur votre compte de taxes",
+    "Gratuit, sans inscription : cherchez votre sommet ou importez votre tracé GPS. Places limitées pour Noël : commandez avant le 1er décembre."
+   ],
+   [
+    "Votre terre en relief, en 30 secondes",
+    "Votre sommet en relief, en 30 secondes"
+   ],
+   [
+    "Entrez votre numéro de lot",
+    "Cherchez votre sommet, ajoutez votre tracé GPS, puis voyez votre maquette accrochée au mur. Rien à payer pour essayer."
+   ],
+   [
+    "CE QUE L'OUTIL AJOUTE À VOTRE TERRE",
+    "CE QUE L'OUTIL AJOUTE À VOTRE SOMMET"
+   ],
+   [
+    "Trois étapes, et votre terre",
+    "Trois étapes, et votre sommet prend du relief"
+   ],
+   [
+    "Je cadre ma propriété",
+    "Je trouve mon sommet"
+   ],
+   [
+    "L'outil s'ouvre avec le cadastre",
+    "L'outil s'ouvre avec le relief, les lacs et les sentiers déjà affichés. J'ajoute mon tracé GPS (GPX ou KML) ou je le dessine sur la carte."
+   ],
+   [
+    "Mon lot en vedette",
+    "Votre tracé en vedette"
+   ],
+   [
+    "Votre terre ressort en relief",
+    "Votre parcours GPS (GPX ou KML) imprimé en relief, du départ jusqu'au sommet."
+   ],
+   [
+    "Cabane à sucre, chalet, camp",
+    "Refuge, belvédère, point de départ : placez-les sur la carte, ils deviennent de petits objets imprimés sur la maquette."
+   ],
+   [
+    "Vos sentiers et chemins",
+    "Vos sentiers"
+   ],
+   [
+    "Tracez-les à la main",
+    "Les sentiers s'affichent tout seuls. Ajoutez les vôtres à la main ou par fichier GPS."
+   ],
+   [
+    "Votre forêt",
+    "Le relief exact"
+   ],
+   [
+    "Érablières, essences",
+    "Le terrain vient des données LiDAR du Québec : chaque crête et chaque vallée est à sa place."
+   ]
+  ],
+  "boutons": [
+   [
+    "Voir ma terre en couleurs",
+    "Voir mon sommet en couleurs"
+   ],
+   [
+    "Essayer avec ma terre",
+    "Essayer avec mon sommet"
+   ],
+   [
+    "Voir ma terre",
+    "Voir mon sommet"
+   ]
+  ]
+ },
+ "s1nt8": {
+  "textes": [
+   [
+    "TERRE À BOIS · ÉRABLIÈRE · CHALET",
+    "PARCS · SKI · GOLF · MUNICIPALITÉS · INDUSTRIES"
+   ],
+   [
+    "Votre terre comme vous ne l",
+    "Votre territoire en maquette, pour vos clients et vos équipes."
+   ],
+   [
+    "Vos lignes de lot, vos coteaux",
+    "Une maquette 3D sur mesure pour un comptoir d'accueil, une salle du conseil ou une présentation de projet. Grand format assemblé, cadre de bois inclus, sur soumission."
+   ],
+   [
+    "Le numéro est sur votre compte de taxes",
+    "Gratuit, sans inscription : explorez votre site, puis demandez votre soumission. Projets dès 900 $."
+   ],
+   [
+    "Votre terre en relief, en 30 secondes",
+    "Votre site en relief, en 30 secondes"
+   ],
+   [
+    "Entrez votre numéro de lot",
+    "Cadrez votre site, activez les couches utiles à votre équipe, puis demandez votre soumission. Rien à payer pour essayer."
+   ],
+   [
+    "CE QUE L'OUTIL AJOUTE À VOTRE TERRE",
+    "CE QUE L'OUTIL AJOUTE À VOTRE SITE"
+   ],
+   [
+    "Trois étapes, et votre terre",
+    "Trois étapes, et votre site prend du relief"
+   ],
+   [
+    "Je cadre ma propriété",
+    "Je cadre mon site"
+   ],
+   [
+    "L'outil s'ouvre avec le cadastre",
+    "L'outil affiche le relief, les bâtiments en 3D et les couches pro : pistes de ski, golf, zones industrielles, territoires fauniques, pentes, forêt, bathymétrie."
+   ],
+   [
+    "Je la vois au mur",
+    "Je choisis le format"
+   ],
+   [
+    "Une couleur (Essentiel) ou une gamme",
+    "Du 8,5 × 11 po au grand format de plusieurs plaques assemblées, ou une taille sur mesure. Couleurs et cadre de bois inclus."
+   ],
+   [
+    "Je commande, j'approuve",
+    "Je demande ma soumission"
+   ],
+   [
+    "Tous mes choix sont déjà remplis",
+    "Je reçois une soumission détaillée et un aperçu 3D à approuver. Projets dès 900 $."
+   ],
+   [
+    "Mon lot en vedette",
+    "Votre site en 3D"
+   ],
+   [
+    "Votre terre ressort en relief",
+    "Bâtiments, installations, pistes de ski, golf et stationnements en relief."
+   ],
+   [
+    "Cabane à sucre, chalet, camp",
+    "Pavillon, usine, réservoir, belvédère, enseigne : vos repères deviennent de petits objets imprimés."
+   ],
+   [
+    "Vos sentiers et chemins",
+    "Les couches pro"
+   ],
+   [
+    "Tracez-les à la main",
+    "Territoires fauniques et parcs, classes de pente, forêt et bathymétrie, pour les équipes qui gèrent un territoire."
+   ],
+   [
+    "Votre forêt",
+    "Le grand format"
+   ],
+   [
+    "Érablières, essences",
+    "Plusieurs plaques assemblées dans un cadre de bois, du comptoir d'accueil à la salle du conseil."
+   ]
+  ],
+  "boutons": [
+   [
+    "Voir ma terre en couleurs",
+    "Voir mon site en couleurs"
+   ],
+   [
+    "Essayer avec ma terre",
+    "Essayer avec mon site"
+   ],
+   [
+    "Voir ma terre",
+    "Voir mon site"
+   ]
+  ]
+ }
+}
