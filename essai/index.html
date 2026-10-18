@@ -5160,7 +5160,9 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     const clair = lum(pal.bas) <= 0.6;
     let cBat = clair ? [0.96, 0.95, 0.92] : [0.62, 0.62, 0.64], cInd = clair ? [0.78, 0.77, 0.76] : [0.5, 0.5, 0.52], cToit = clair ? [0.88, 0.87, 0.84] : [0.56, 0.56, 0.58];
     { const vg = typeof window.georamaVilleGamme === "function" && window.georamaVilleGamme(); if (vg && vg.bat) { cBat = hexRVB(vg.bat); cToit = cBat.map((x) => Math.min(1, x * 1.1 + 0.03)); } }
-    const hm = (h) => (h / 1000) * u * exa * EXAG_BATI;      // mètres -> unités du modèle
+    // Ville : hauteur fixe à l'échelle de la maquette (environ 4 mm pour une maison sur 1 km), sans l'exagération du relief
+    const fBati = typeof window.georamaVilleGamme === "function" && window.georamaVilleGamme() ? 2.2 : exa * EXAG_BATI;
+    const hm = (h) => (h / 1000) * u * fBati;      // mètres -> unités du modèle
     const tri = (a, b, c, nn, col) => { P.push(...a, ...b, ...c); N.push(...nn, ...nn, ...nn); C.push(...col, ...col, ...col); };
     const quad = (a, b, c, e2, nn, col) => { tri(a, b, c, nn, col); tri(a, c, e2, nn, col); };
     const dansZone = (x, y) => Math.abs(x) <= d.w / 2 + 0.02 && Math.abs(y) <= d.hh + 0.02;
