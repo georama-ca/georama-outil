@@ -7001,9 +7001,14 @@ window.addEventListener("message", function (e) {
   if (typeof v3Preparer === "function") {
     const _p10 = v3Preparer;
     v3Preparer = async function (e) {
-      // après le relief (pas en même temps) : le relief LiDAR garde toute la bande passante
+      // après le relief (pas en même temps) et sans le retarder : la maquette s'affiche aussi vite qu'avant,
+      // les arbres apparaissent quelques secondes plus tard
       const r = await _p10.apply(this, arguments);
-      if (e && arbresVoulus() && e.w <= CANOPEE_MAX_KM) await Promise.race([chargerArbres(e, r && r.source === "lidar" ? r.altFn : null).catch(() => null), new Promise((ok) => setTimeout(ok, 25000))]);
+      if (e && arbresVoulus() && e.w <= CANOPEE_MAX_KM && !canopees.has(cleArbres(e))) {
+        chargerArbres(e, r && r.source === "lidar" ? r.altFn : null).then(() => {
+          setTimeout(() => { try { if (v3.donnees === r && !$("vue3d").hidden) v3Reconstruire(); } catch (x) {} }, 50);
+        }).catch(() => {});
+      }
       return r;
     };
   }
