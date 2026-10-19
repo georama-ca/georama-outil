@@ -7016,6 +7016,21 @@ window.addEventListener("message", function (e) {
     if (canopees.size > 4) canopees.delete(canopees.keys().next().value);
     return c;
   }
+  // petite mention pendant que les arbres arrivent (la maquette est déjà affichée)
+  function avisArbres(on) {
+    ["vue3d", "murCarte", "vtZone"].forEach((id) => {
+      const boite = $(id); if (!boite) return;
+      let a = boite.querySelector(":scope > .g-avis-arbres");
+      if (!on) { if (a) a.remove(); return; }
+      if (!a) {
+        a = document.createElement("div"); a.className = "g-avis-arbres"; a.setAttribute("role", "status");
+        a.textContent = "Ajout des arbres en relief…";
+        a.style.cssText = "position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:1500;background:rgba(20,24,20,.82);color:#fff;font:600 13px Montserrat,sans-serif;padding:7px 14px;border-radius:999px;pointer-events:none;white-space:nowrap";
+        if (getComputedStyle(boite).position === "static") boite.style.position = "relative";
+        boite.appendChild(a);
+      }
+    });
+  }
   // reconstruit le modèle puis met à jour la vue ouverte (3D, au mur ou sur la table)
   function rafraichirVues() {
     try { v3Reconstruire(); } catch (x) {}
@@ -7032,9 +7047,10 @@ window.addEventListener("message", function (e) {
       if (veut) prechauffer(e).catch(() => {});
       const r = await _p10.apply(this, arguments);
       if (veut) {
+        avisArbres(true);
         chargerArbres(e, r && r.source === "lidar" ? r.altFn : null).then(() => {
-          setTimeout(() => { if (v3.donnees === r) rafraichirVues(); }, 50);
-        }).catch(() => {});
+          setTimeout(() => { avisArbres(false); if (v3.donnees === r) rafraichirVues(); }, 50);
+        }).catch(() => avisArbres(false));
       }
       return r;
     };
