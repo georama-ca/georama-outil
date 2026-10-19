@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Test intégration</title>
+<style>body{margin:0;font-family:sans-serif;background:#eee}.haut{height:860px;background:#1b1d1a;color:#fff;padding:20px}iframe{border:0;width:100%;height:820px;display:block}.bas{height:1200px}</style>
+</head><body>
+<div class="haut">Haut de page (test : la page doit rester ici à l'arrivée)</div>
+<iframe id="f" src="index.html?v=34"></iframe>
+<div class="bas"></div>
+<script>
+var f=document.getElementById('f');
+window.addEventListener('message',function(e){ if(e.source===f.contentWindow && e.data && e.data.type==='georama-pret') f.contentWindow.postMessage({type:'georama-profil',p:new URLSearchParams(location.search).get('p')||'chasse'},'*'); });
+</script>
+</body></html>
