@@ -6936,11 +6936,12 @@ window.addEventListener("message", function (e) {
   const tiffs = new Map();
   const tiff = (h) => { if (!tiffs.has(h)) tiffs.set(h, GeoTIFF.fromUrl(h).catch((e) => { tiffs.delete(h); throw e; })); return tiffs.get(h); };
   // hauteur de la forêt (m) sur une grille, à partir du MNS et du MNT LiDAR 1 m de RNCan
-  async function canopeeLidar(z) {
+  async function canopeeLidar(z, sol) {
     await geotiff();
     const ll = versLLZone(z), hw = z.w / 2, hh = demiHauteur(z.w, z.shape);
     const coins = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].map(([x, y]) => ll(x * 1.02, y * 1.02));
-    const res = z.w <= 1.6 ? 2 : z.w <= 3.2 ? 4 : 8;
+    // résolution assez fine pour l'espacement des arbres (1,6 mm sur la maquette), pas plus : téléchargement léger
+    const res = Math.pow(2, Math.max(1, Math.floor(Math.log2((1.6 * z.w * 1000) / 254 / 2))));
     const pts = coins.map(([a, b]) => lccA(a, b));
     const minx = Math.floor(Math.min(...pts.map((p) => p[0])) / res) * res - 2 * res, maxx = Math.ceil(Math.max(...pts.map((p) => p[0])) / res) * res + 2 * res;
     const miny = Math.floor(Math.min(...pts.map((p) => p[1])) / res) * res - 2 * res, maxy = Math.ceil(Math.max(...pts.map((p) => p[1])) / res) * res + 2 * res;
@@ -6958,14 +6959,16 @@ window.addEventListener("message", function (e) {
       const src = r[0];
       for (let k = 0; k < src.length; k++) { const v = src[k]; if (v > -500 && v < 9000 && isNaN(dest[k])) dest[k] = v; }
     };
-    await delai(Promise.all(items.flatMap((it) => [lire(it.assets.dsm.href, S), lire(it.assets.dtm.href, T)])), 40000);
-    const C = new Float32Array(W * H);
+    // le terrain LiDAR déjà chargé pour le relief sert de base (sinon on lit aussi le MNT)
+    await delai(Promise.all(items.flatMap((it) => sol ? [lire(it.assets.dsm.href, S)] : [lire(it.assets.dsm.href, S), lire(it.assets.dtm.href, T)])), 40000);
     let ok = 0;
-    for (let k = 0; k < C.length; k++) { const v = S[k] - T[k]; if (v === v) { C[k] = Math.max(0, Math.min(45, v)); ok++; } }
-    if (ok < C.length * 0.6) throw new Error("hors couverture");
+    for (let k = 0; k < S.length; k++) if (S[k] === S[k]) ok++;
+    if (ok < S.length * 0.6) throw new Error("hors couverture");
     return { src: "lidar", h: (lat, lon) => {
       const [X, Y] = lccA(lat, lon), x = Math.round((X - minx) / res - 0.5), y = Math.round((maxy - Y) / res - 0.5);
-      return x < 0 || y < 0 || x >= W || y >= H ? 0 : C[y * W + x];
+      if (x < 0 || y < 0 || x >= W || y >= H) return 0;
+      const k = y * W + x, t = sol ? sol(lat, lon) : T[k], v = S[k] - t;
+      return v === v ? Math.max(0, Math.min(45, v)) : 0;
     } };
   }
   // secours : forêts de la carte (tuiles OpenStreetMap), hauteur moyenne de 15 m
@@ -6986,11 +6989,11 @@ window.addEventListener("message", function (e) {
     } };
   }
   function cleArbres(z) { return z ? cleV(z.lat0, z.lon0, z.w) + "|" + z.deg + "|" + z.shape : ""; }
-  async function chargerArbres(z) {
+  async function chargerArbres(z, sol) {
     const k = cleArbres(z);
     if (canopees.has(k)) return canopees.get(k);
     let c = null;
-    try { c = await canopeeLidar(z); } catch (e) { try { c = await canopeeCarte(z); } catch (e2) { c = { src: "aucune", h: () => 0 }; } }
+    try { c = await canopeeLidar(z, sol); } catch (e) { try { c = await canopeeCarte(z); } catch (e2) { c = { src: "aucune", h: () => 0 }; } }
     canopees.set(k, c);
     if (canopees.size > 4) canopees.delete(canopees.keys().next().value);
     return c;
@@ -7000,7 +7003,7 @@ window.addEventListener("message", function (e) {
     v3Preparer = async function (e) {
       // après le relief (pas en même temps) : le relief LiDAR garde toute la bande passante
       const r = await _p10.apply(this, arguments);
-      if (e && arbresVoulus() && e.w <= CANOPEE_MAX_KM) await Promise.race([chargerArbres(e).catch(() => null), new Promise((ok) => setTimeout(ok, 25000))]);
+      if (e && arbresVoulus() && e.w <= CANOPEE_MAX_KM) await Promise.race([chargerArbres(e, r && r.source === "lidar" ? r.altFn : null).catch(() => null), new Promise((ok) => setTimeout(ok, 25000))]);
       return r;
     };
   }
@@ -7076,7 +7079,7 @@ window.addEventListener("message", function (e) {
     const z = v3.donnees.zone;
     if (arbresVoulus() && z.w <= CANOPEE_MAX_KM && !canopees.has(cleArbres(z))) {
       const m = $("v3msg"); if (m) { m.textContent = "Ajout des arbres…"; m.hidden = false; }
-      await chargerArbres(z).catch(() => null);
+      await chargerArbres(z, v3.donnees.source === "lidar" ? v3.donnees.altFn : null).catch(() => null);
       if (m) m.hidden = true;
     }
     try { v3Reconstruire(); } catch (e) {}
