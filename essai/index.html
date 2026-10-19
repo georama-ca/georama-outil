@@ -6998,9 +6998,9 @@ window.addEventListener("message", function (e) {
   if (typeof v3Preparer === "function") {
     const _p10 = v3Preparer;
     v3Preparer = async function (e) {
-      const pa = e && arbresVoulus() && e.w <= CANOPEE_MAX_KM ? chargerArbres(e).catch(() => null) : null;
+      // après le relief (pas en même temps) : le relief LiDAR garde toute la bande passante
       const r = await _p10.apply(this, arguments);
-      if (pa) await Promise.race([pa, new Promise((ok) => setTimeout(ok, 25000))]);
+      if (e && arbresVoulus() && e.w <= CANOPEE_MAX_KM) await Promise.race([chargerArbres(e).catch(() => null), new Promise((ok) => setTimeout(ok, 25000))]);
       return r;
     };
   }
