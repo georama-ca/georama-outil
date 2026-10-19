@@ -7330,9 +7330,11 @@ window.addEventListener("message", function (e) {
         let n = 0;
         for (let j = 0; j < TH; j++) for (let i = 0; i < TW; i++) {
           let e = t.eau && t.eau[j * TW + i];
-          if (!e && d.eau && d.N) {
-            const gi = Math.round(((i + 0.5) / TW) * d.N), gj = Math.round((1 - (j + 0.5) / TH) * d.M);
-            e = d.eau[gj * (d.N + 1) + gi];
+          if (!e && d.eau && d.N) {                       // grille des lacs, interpolée : rives lisses, sans escalier
+            const fx = ((i + 0.5) / TW) * d.N, fy = (1 - (j + 0.5) / TH) * d.M;
+            const x0 = Math.min(d.N - 1, Math.floor(fx)), y0 = Math.min(d.M - 1, Math.floor(fy)), ax = fx - x0, ay = fy - y0, W1 = d.N + 1;
+            const v = (a, b) => (d.eau[(y0 + b) * W1 + x0 + a] ? 1 : 0);
+            e = (v(0, 0) * (1 - ax) + v(1, 0) * ax) * (1 - ay) + (v(0, 1) * (1 - ax) + v(1, 1) * ax) * ay > 0.5;
           }
           if (e) { M[j * TW + i] = 1; n++; }
         }
