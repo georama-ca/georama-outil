@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v3.2 (2026-10-19) -->
+<!-- Outil Georama v3.3 (2026-10-19) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -387,7 +387,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v3.2 · 2026-10-19</p>
+<p class="g-version">Outil Georama v3.3 · 2026-10-19</p>
 </div>
 </aside>
 </div>
@@ -5201,7 +5201,11 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
       const cx = xy.reduce((s2, p) => s2 + p[0], 0) / xy.length, cy = xy.reduce((s2, p) => s2 + p[1], 0) / xy.length;
       if (!dansZone(cx, cy)) return;
       let y0 = Infinity;
-      ring.forEach((p) => { y0 = Math.min(y0, base(d.altFn(p[0], p[1]))); });
+      for (let i = 0; i < ring.length; i++) {         // v3.3 : échantillons le long des murs (ravins, berges)
+        const a = ring[i], b = ring[(i + 1) % ring.length], L = Math.hypot((b[0] - a[0]) * 111000, (b[1] - a[1]) * 76000);
+        const n = Math.min(12, Math.max(1, Math.ceil(L / 6)));
+        for (let s = 0; s < n; s++) { const t = s / n; y0 = Math.min(y0, base(d.altFn(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))); }
+      }
       y0 -= 0.004;
       const y1 = Math.max(y0, base(d.altFn(...centreLL(ring)))) + hm(h);
       // orientation anti-horaire (dans le plan x, y)
@@ -6862,9 +6866,10 @@ window.addEventListener("message", function (e) {
   function pontsMaillage({ d, exa, u, base, versZone, P, N, C, pal }) {
     const z = d.zone || {}, liste = ponts.get(cleV(z.lat0, z.lon0, z.w));
     if (!liste || !liste.length || !d.altFn) return;
-    const route = hexRVB((pal && pal.ligne) || "#DBC8B6"), rail = [0.3, 0.3, 0.32], pil = [0.58, 0.58, 0.6];
+    const route = [0.5, 0.5, 0.51], rail = [0.34, 0.33, 0.33], pil = [0.7, 0.7, 0.68], beton = [0.76, 0.76, 0.74], dessous = [0.6, 0.6, 0.6], garde = [0.9, 0.9, 0.88];  // v3.3 : béton gris
     const mH = (x) => (x / 1000) * u;                       // mètres -> unités horizontales
-    const ep = Math.max(0.0055, (1.8 / 1000) * u * exa), leve = Math.max(0.004, (3 / 1000) * u * exa);
+    const ep = Math.max(0.0022, (1.6 / 1000) * u * Math.max(1, exa)), leve = Math.max(0.003, (2.5 / 1000) * u * exa);
+    const hGarde = Math.max(0.0011, (1.1 / 1000) * u * Math.max(1, exa)), epGarde = Math.max(0.0006, (0.6 / 1000) * u);
     const dans = (x, y) => Math.abs(x) <= d.w / 2 && Math.abs(y) <= d.hh;
     const tri = (a, b, c, nn, col) => { P.push(...a, ...b, ...c); N.push(...nn, ...nn, ...nn); C.push(...col, ...col, ...col); };
     const quad = (a, b, c, e, nn, col) => { tri(a, b, c, nn, col); tri(a, c, e, nn, col); };
@@ -6877,7 +6882,7 @@ window.addEventListener("message", function (e) {
       const a0 = d.altFn(p.pts[0][0], p.pts[0][1]), a1 = d.altFn(p.pts[p.pts.length - 1][0], p.pts[p.pts.length - 1][1]);
       // dessus du tablier : droite d'une rive à l'autre, jamais sous le terrain
       const haut = xy.map((q, i) => Math.max(base(a0 + ((a1 - a0) * L[i]) / tot), base(d.altFn(p.pts[i][0], p.pts[i][1]))) + leve);
-      const col = p.rail ? rail : route, cote = col.map((v) => v * 0.7), hw = mH(p.l / 2);
+      const col = p.rail ? rail : route, cote = beton, hw = mH(p.l / 2);
       for (let i = 0; i + 1 < xy.length; i++) {
         const [x0, y0] = xy[i], [x1, y1] = xy[i + 1];
         if (!dans(x0, y0) && !dans(x1, y1)) continue;
@@ -6889,7 +6894,15 @@ window.addEventListener("message", function (e) {
         quad([g0[0], h0, g0[1]], [g1[0], h1, g1[1]], [d1[0], h1, d1[1]], [d0[0], h0, d0[1]], [0, 1, 0], col);
         quad([g0[0], h0 - ep, g0[1]], [g1[0], h1 - ep, g1[1]], [g1[0], h1, g1[1]], [g0[0], h0, g0[1]], [nx, 0, -ny], cote);
         quad([d1[0], h1 - ep, d1[1]], [d0[0], h0 - ep, d0[1]], [d0[0], h0, d0[1]], [d1[0], h1, d1[1]], [-nx, 0, ny], cote);
-        quad([d0[0], h0 - ep, d0[1]], [d1[0], h1 - ep, d1[1]], [g1[0], h1 - ep, g1[1]], [g0[0], h0 - ep, g0[1]], [0, -1, 0], cote);
+        quad([d0[0], h0 - ep, d0[1]], [d1[0], h1 - ep, d1[1]], [g1[0], h1 - ep, g1[1]], [g0[0], h0 - ep, g0[1]], [0, -1, 0], dessous);
+        // garde-corps de béton des deux côtés (pas sur les rails)
+        if (!p.rail) [[g0, g1, 1], [d0, d1, -1]].forEach(([a, b, sg]) => {
+          const ix = (-nx * sg * epGarde) , iz = (ny * sg * epGarde);
+          const ai = [a[0] + ix, a[1] + iz], bi = [b[0] + ix, b[1] + iz];
+          quad([a[0], h0, a[1]], [b[0], h1, b[1]], [b[0], h1 + hGarde, b[1]], [a[0], h0 + hGarde, a[1]], [nx * sg, 0, -ny * sg], garde);
+          quad([bi[0], h1, bi[1]], [ai[0], h0, ai[1]], [ai[0], h0 + hGarde, ai[1]], [bi[0], h1 + hGarde, bi[1]], [-nx * sg, 0, ny * sg], garde);
+          quad([a[0], h0 + hGarde, a[1]], [b[0], h1 + hGarde, b[1]], [bi[0], h1 + hGarde, bi[1]], [ai[0], h0 + hGarde, ai[1]], [0, 1, 0], garde);
+        });
       }
       // piliers tous les 40 m environ, là où le tablier est au-dessus du sol
       const pas = 0.04, n = Math.floor(tot / pas);
@@ -6902,8 +6915,11 @@ window.addEventListener("message", function (e) {
         const lat = p.pts[i - 1][0] + (p.pts[i][0] - p.pts[i - 1][0]) * t, lon = p.pts[i - 1][1] + (p.pts[i][1] - p.pts[i - 1][1]) * t;
         const sol = base(d.altFn(lat, lon)) - 0.004, dessus = haut[i - 1] + (haut[i] - haut[i - 1]) * t - ep;
         if (dessus - sol < ep) continue;
-        const r = mH(Math.max(2, p.l * 0.2)), X = x * u, Z = -y * u;
-        const c = [[X - r, Z - r], [X + r, Z - r], [X + r, Z + r], [X - r, Z + r]];
+        // pilier-voile : mince dans le sens du pont, presque aussi large que le tablier
+        const ux = (xy[i][0] - xy[i - 1][0]), uy = (xy[i][1] - xy[i - 1][1]), ul = Math.hypot(ux, uy) || 1e-9;
+        const ax = (ux / ul) * u, az = (-uy / ul) * u, bx = (uy / ul) * u, bz = (ux / ul) * u;   // axe du pont et travers (unités du modèle)
+        const ra = Math.max(mH(1.2), 0.0008) / u, rb = Math.max(mH(p.l * 0.36), 0.0012) / u, X = x * u, Z = -y * u;
+        const c = [[X - ax * ra - bx * rb, Z - az * ra - bz * rb], [X + ax * ra - bx * rb, Z + az * ra - bz * rb], [X + ax * ra + bx * rb, Z + az * ra + bz * rb], [X - ax * ra + bx * rb, Z - az * ra + bz * rb]];
         for (let j = 0; j < 4; j++) {
           const [ax, az] = c[j], [bx, bz] = c[(j + 1) % 4], qx = bz - az, qz = -(bx - ax), ql = Math.hypot(qx, qz) || 1;
           quad([ax, sol, az], [bx, sol, bz], [bx, dessus, bz], [ax, dessus, az], [-qx / ql, 0, -qz / ql], pil);
@@ -7200,6 +7216,7 @@ window.addEventListener("message", function (e) {
       b.querySelector(".g-charge-txt").textContent = txt;
     });
   }, 250);
+  window.__georamaTuiles = { objets, objetsOverture, cleV, facteurs };
 })();
 
 /* ---------- 12. v2.9 : Georama Entreprise — « Au mur » dans une salle de conférence ---------- */
@@ -7428,6 +7445,246 @@ window.addEventListener("message", function (e) {
       }
     } catch (e) {}
   };
+})();
+
+/* ---------- 14. v3.3 : barrages et seuils en béton gris, pour tous les segments ----------
+   Données : Overture base (infrastructure « water » : dam, weir, issus d'OpenStreetMap) ; tuiles OpenFreeMap
+   (landuse « dam ») en secours. Rendu : empreinte peinte en béton sur la texture, corps du barrage en 3D à parois
+   droites (bas des parois plus foncé, comme le béton mouillé), crête plate au niveau de l'eau en amont,
+   garde-corps le long de la crête. Les barrages en ligne (sans contour) reçoivent une épaisseur de 8 m.
+   S'il échoue, l'aperçu reste comme avant. */
+(function () {
+  "use strict";
+  const T = window.__georamaTuiles;
+  if (!T || typeof v3Preparer !== "function") return;
+  const barrages = new Map();
+  const C_MUR = [0.72, 0.72, 0.7], C_BAS = [0.55, 0.56, 0.56], C_CRETE = [0.84, 0.84, 0.82], C_GARDE = [0.93, 0.93, 0.91], C_SEUIL = [0.66, 0.66, 0.64];
+  const aire = (r) => { let a = 0; for (let i = 0; i < r.length; i++) { const p = r[i], q = r[(i + 1) % r.length]; a += p[0] * q[1] - q[0] * p[1]; } return a / 2; };
+  // anneaux extérieurs d'un polygone MVT (les trous, de sens inverse, sont ignorés : un barrage n'en a pas)
+  function exterieurs(f) {
+    const out = []; let sens = 0;
+    f.traits.forEach((r) => {
+      if (r.length < 4) return;
+      const s = Math.sign(aire(r.map((p) => [p[1], p[0]]))) || 1;
+      if (!sens) sens = s;
+      const ferme = Math.abs(r[0][0] - r[r.length - 1][0]) < 1e-9 && Math.abs(r[0][1] - r[r.length - 1][1]) < 1e-9;
+      if (s === sens) out.push(ferme ? r.slice(0, -1) : r.slice());
+    });
+    return out;
+  }
+  async function charger(em) {
+    const r = { aires: [], lignes: [] };
+    let b = null;
+    try { b = await T.objetsOverture("base", em, ["infrastructure"], 13); } catch (e) { b = null; }
+    if (b && b.infrastructure) {
+      b.infrastructure.forEach((f) => {
+        if (f.props.subtype !== "water" || !/^(dam|weir)$/.test(f.props.class)) return;
+        const seuil = f.props.class === "weir";
+        if (f.type === 3) exterieurs(f).forEach((pts) => pts.length > 2 && r.aires.push({ pts, seuil }));
+        else if (f.type === 2) f.traits.forEach((pts) => pts.length > 1 && r.lignes.push({ pts, seuil }));
+      });
+    } else {
+      const o = await T.objets(em, ["landuse"], 14);
+      o.landuse.forEach((f) => { if (f.type === 3 && f.props.class === "dam") exterieurs(f).forEach((pts) => pts.length > 2 && r.aires.push({ pts, seuil: false })); });
+    }
+    // une ligne qui court déjà dans un contour de barrage n'est pas doublée
+    const dedans = (p, ring) => { let c = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const a = ring[i], q = ring[j]; if ((a[0] > p[0]) !== (q[0] > p[0]) && p[1] < ((q[1] - a[1]) * (p[0] - a[0])) / (q[0] - a[0]) + a[1]) c = !c; } return c; };
+    r.lignes = r.lignes.filter((l) => { const m = l.pts[Math.floor(l.pts.length / 2)]; return !r.aires.some((a) => dedans(m, a.pts)); });
+    return r;
+  }
+  const _p14 = v3Preparer;
+  v3Preparer = async function (e) {
+    const k = e ? T.cleV(e.lat0, e.lon0, e.w) : null;
+    const pp = e && !barrages.has(k) ? (async () => {
+      const f0 = T.facteurs(e.lat0), dl = (e.w * 0.8) / f0.kLat, dn = (e.w * 0.8) / f0.kLon;
+      barrages.set(k, await charger([e.lat0 - dl, e.lon0 - dn, e.lat0 + dl, e.lon0 + dn]));
+      if (barrages.size > 8) barrages.delete(barrages.keys().next().value);
+    })().catch(() => {}) : null;
+    const r = await _p14.apply(this, arguments);
+    if (pp) await Promise.race([pp, new Promise((ok) => setTimeout(ok, 8000))]);
+    return r;
+  };
+
+  /* ---------- géométrie dans le plan de la zone (km) ---------- */
+  // découpe d'un anneau par le rectangle de la zone (Sutherland-Hodgman)
+  function couper(xy, W, H) {
+    const bords = [[(p) => p[0] >= -W, (a, b) => { const t = (-W - a[0]) / (b[0] - a[0]); return [-W, a[1] + t * (b[1] - a[1])]; }],
+      [(p) => p[0] <= W, (a, b) => { const t = (W - a[0]) / (b[0] - a[0]); return [W, a[1] + t * (b[1] - a[1])]; }],
+      [(p) => p[1] >= -H, (a, b) => { const t = (-H - a[1]) / (b[1] - a[1]); return [a[0] + t * (b[0] - a[0]), -H]; }],
+      [(p) => p[1] <= H, (a, b) => { const t = (H - a[1]) / (b[1] - a[1]); return [a[0] + t * (b[0] - a[0]), H]; }]];
+    let out = xy;
+    for (const [inn, cut] of bords) {
+      const src = out; out = [];
+      for (let i = 0; i < src.length; i++) {
+        const a = src[i], b = src[(i + 1) % src.length];
+        if (inn(a)) { out.push(a); if (!inn(b)) out.push(cut(a, b)); } else if (inn(b)) out.push(cut(a, b));
+      }
+      if (out.length < 3) return [];
+    }
+    return out;
+  }
+  // triangulation par oreilles (anneau anti-horaire)
+  function oreilles(p) {
+    const idx = p.map((_, i) => i), out = [];
+    const cr = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+    const dans = (q, a, b, c) => cr(a, b, q) > 0 && cr(b, c, q) > 0 && cr(c, a, q) > 0;
+    let garde = 0;
+    while (idx.length > 3 && garde++ < 5000) {
+      let coupe = false;
+      for (let i = 0; i < idx.length; i++) {
+        const ia = idx[(i + idx.length - 1) % idx.length], ib = idx[i], ic = idx[(i + 1) % idx.length];
+        const a = p[ia], b = p[ib], c = p[ic];
+        if (cr(a, b, c) <= 1e-14) continue;
+        if (idx.some((j) => j !== ia && j !== ib && j !== ic && dans(p[j], a, b, c))) continue;
+        out.push([ia, ib, ic]); idx.splice(i, 1); coupe = true; break;
+      }
+      if (!coupe) break;
+    }
+    if (idx.length === 3) out.push([idx[0], idx[1], idx[2]]);
+    return out;
+  }
+  // une ligne de barrage devient un ruban de largeur l (km)
+  function ruban(xy, l) {
+    const g = [], dr = [], n = xy.length;
+    for (let i = 0; i < n; i++) {
+      const a = xy[Math.max(0, i - 1)], b = xy[Math.min(n - 1, i + 1)];
+      const dx = b[0] - a[0], dy = b[1] - a[1], q = Math.hypot(dx, dy) || 1e-9;
+      g.push([xy[i][0] - (dy / q) * l / 2, xy[i][1] + (dx / q) * l / 2]);
+      dr.push([xy[i][0] + (dy / q) * l / 2, xy[i][1] - (dx / q) * l / 2]);
+    }
+    return dr.concat(g.reverse());
+  }
+
+  /* ---------- 3D ---------- */
+  function maillage({ d, exa, u, base, versZone, P, N, C }) {
+    const z = d.zone || {}, e = barrages.get(T.cleV(z.lat0, z.lon0, z.w));
+    if (!e || !d.altFn || (!e.aires.length && !e.lignes.length)) return;
+    const tri = (a, b, c, nn, col) => { P.push(...a, ...b, ...c); N.push(...nn, ...nn, ...nn); C.push(...col, ...col, ...col); };
+    const quad = (a, b, c, f, nn, col) => { tri(a, b, c, nn, col); tri(a, c, f, nn, col); };
+    const X = (p) => p[0] * u, Z = (p) => -p[1] * u;
+    const f0 = T.facteurs(z.lat0), ca = Math.cos(((z.deg || 0) * Math.PI) / 180), sa = Math.sin(((z.deg || 0) * Math.PI) / 180);
+    const ll = (p) => [z.lat0 + (-p[0] * sa + p[1] * ca) / f0.kLat, z.lon0 + (p[0] * ca + p[1] * sa) / f0.kLon];
+    const alt = (p) => { const q = ll(p); return q ? d.altFn(q[0], q[1]) : NaN; };
+    const mH = (m) => (m / 1000) * u;
+    function corps(xy, seuil, ligne) {
+      xy = couper(xy, d.w / 2, d.hh);
+      if (xy.length < 3) return;
+      if (aire(xy) < 0) xy.reverse();
+      const A = aire(xy);
+      if (A < 1e-7 || A > 0.3) return;                       // moins de 0,1 m² ou plus de 0,3 km² : peint seulement
+      // altitudes : contour tous les ~4 m et grille intérieure
+      const echant = [], basBord = [];
+      for (let i = 0; i < xy.length; i++) {
+        const a = xy[i], b = xy[(i + 1) % xy.length], L = Math.hypot(b[0] - a[0], b[1] - a[1]) * 1000;
+        const n = Math.min(40, Math.max(1, Math.ceil(L / 4)));
+        let mi = Infinity;
+        for (let s = 0; s <= n; s++) {
+          const t = s / n, v = alt([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+          if (isFinite(v)) { echant.push(v); mi = Math.min(mi, v); }
+        }
+        basBord.push(mi);
+      }
+      const xs = xy.map((p) => p[0]), ys = xy.map((p) => p[1]);
+      const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+      const dansP = (p) => { let c = false; for (let i = 0, j = xy.length - 1; i < xy.length; j = i++) { const a = xy[i], q = xy[j]; if ((a[1] > p[1]) !== (q[1] > p[1]) && p[0] < ((q[0] - a[0]) * (p[1] - a[1])) / (q[1] - a[1]) + a[0]) c = !c; } return c; };
+      for (let i = 1; i < 9; i++) for (let j = 1; j < 9; j++) {
+        const p = [x0 + ((x1 - x0) * i) / 9, y0 + ((y1 - y0) * j) / 9];
+        if (dansP(p)) { const v = alt(p); if (isFinite(v)) echant.push(v); }
+      }
+      if (!echant.length) return;
+      echant.sort((a, b) => a - b);
+      const q = echant[Math.min(echant.length - 1, Math.floor(echant.length * (seuil ? 0.6 : 0.85)))];
+      const haut = Math.max(base(q + (seuil ? 0.4 : 1.2)), base(q) + 0.0015);
+      const garde = seuil ? 0 : Math.max(0.0012, mH(1.1) * Math.max(1, exa));
+      // parois : verticales du côté de l'eau en amont ; du côté aval (le terrain chute de plus de 3 m), un parement
+      // incliné descend jusqu'au pied, à 1,15 maille de la crête : il couvre la marche du relief (plus de « dents »)
+      const maille = d.N ? d.w / d.N : 0.01, nV = xy.length;
+      const nE = xy.map((a, i) => { const b = xy[(i + 1) % nV], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1e-9; return [dy / l, -dx / l]; });
+      const pied = xy.map((p, i) => {
+        const n0 = nE[(i + nV - 1) % nV], n1 = nE[i];
+        let nx = n0[0] + n1[0], ny = n0[1] + n1[1]; const l = Math.hypot(nx, ny) || 1e-9; nx /= l; ny /= l;
+        const k = (maille * 1.15) / Math.max(0.5, nx * n1[0] + ny * n1[1]);
+        const F = [p[0] + nx * k, p[1] + ny * k], aF = alt(F);
+        const bord = Math.min(basBord[(i + nV - 1) % nV], basBord[i]);
+        if (isFinite(aF) && aF < q - 3 && Math.abs(F[0]) <= d.w / 2 && Math.abs(F[1]) <= d.hh) return { p: F, y: Math.min(base(aF), haut) - 0.003 };
+        return { p, y: Math.min(isFinite(bord) ? base(bord) : haut, haut) - 0.004 };
+      });
+      const lerp = (u0, u1, t) => u0.map((v, j) => v + (u1[j] - v) * t);
+      const normale = (A, B, Cc, out) => {
+        const ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], vx = Cc[0] - A[0], vy = Cc[1] - A[1], vz = Cc[2] - A[2];
+        let n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx]; const l = Math.hypot(...n) || 1e-9; n = n.map((v) => v / l);
+        if (n[0] * out[0] + n[2] * out[1] < 0) n = n.map((v) => -v);
+        return n;
+      };
+      for (let i = 0; i < nV; i++) {
+        const j = (i + 1) % nV, a = xy[i], b = xy[j], fa = pied[i], fb = pied[j];
+        const Ah = [X(a), haut, Z(a)], Bh = [X(b), haut, Z(b)], Ab = [X(fa.p), fa.y, Z(fa.p)], Bb = [X(fb.p), fb.y, Z(fb.p)];
+        if (haut - Math.max(fa.y, fb.y) < 1e-5) continue;
+        const out = [nE[i][0], -nE[i][1]];
+        const Am = lerp(Ab, Ah, 0.3), Bm = lerp(Bb, Bh, 0.3);
+        const nn = normale(Ab, Bb, Bh, out);
+        quad(Ab, Bb, Bm, Am, nn, seuil ? C_SEUIL : C_BAS);
+        quad(Am, Bm, Bh, Ah, nn, seuil ? C_SEUIL : C_MUR);
+        // parement aval : piles des vannes tous les ~15 m (bandes plus foncées, légèrement en saillie)
+        if (!seuil && fa.p !== a && fb.p !== b) {
+          const L = Math.hypot(b[0] - a[0], b[1] - a[1]) * 1000, nb = Math.floor(L / 15);
+          const lg = Math.max(mH(1.6), 0.0007) / (L / 1000 * u || 1e-9), dec = nn.map((v) => v * 0.0004);
+          for (let k = 1; k <= nb - 1 && nb >= 2; k++) {
+            const t0 = k / nb - lg / 2, t1 = k / nb + lg / 2;
+            const P0b = lerp(Ab, Bb, t0), P1b = lerp(Ab, Bb, t1), P0h = lerp(Ah, Bh, t0), P1h = lerp(Ah, Bh, t1);
+            const add = (p) => p.map((v, j) => v + dec[j]);
+            quad(add(P0b), add(P1b), add(P1h), add(P0h), nn, C_BAS);
+          }
+        }
+      }
+      oreilles(xy).forEach(([i, j, k]) => tri([X(xy[i]), haut, Z(xy[i])], [X(xy[k]), haut, Z(xy[k])], [X(xy[j]), haut, Z(xy[j])], [0, 1, 0], seuil ? C_SEUIL : C_CRETE));
+      if (!garde) return;
+      // garde-corps : le long des grands côtés (axe principal du barrage)
+      let sxx = 0, syy = 0, sxy = 0; const cx = xs.reduce((s, v) => s + v, 0) / xs.length, cy = ys.reduce((s, v) => s + v, 0) / ys.length;
+      xy.forEach((p) => { sxx += (p[0] - cx) ** 2; syy += (p[1] - cy) ** 2; sxy += (p[0] - cx) * (p[1] - cy); });
+      const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy), ax = [Math.cos(ang), Math.sin(ang)];
+      const ep = Math.max(mH(0.7), 0.0007);
+      for (let i = 0; i < xy.length; i++) {
+        const a = xy[i], b = xy[(i + 1) % xy.length], dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy);
+        if (l * 1000 < (ligne ? 3 : 6) || Math.abs((dx * ax[0] + dy * ax[1]) / l) < 0.85) continue;
+        const nx = dy / l, ny = -dx / l;                     // normale sortante (anneau anti-horaire)
+        const ai = [a[0] - nx * ep / u, a[1] - ny * ep / u], bi = [b[0] - nx * ep / u, b[1] - ny * ep / u];
+        const h2 = haut + garde;
+        quad([X(a), haut, Z(a)], [X(b), haut, Z(b)], [X(b), h2, Z(b)], [X(a), h2, Z(a)], [nx, 0, -ny], C_GARDE);
+        quad([X(bi), haut, Z(bi)], [X(ai), haut, Z(ai)], [X(ai), h2, Z(ai)], [X(bi), h2, Z(bi)], [-nx, 0, ny], C_GARDE);
+        quad([X(a), h2, Z(a)], [X(b), h2, Z(b)], [X(bi), h2, Z(bi)], [X(ai), h2, Z(ai)], [0, 1, 0], C_GARDE);
+      }
+    }
+    e.aires.forEach((a) => corps(a.pts.map((p) => versZone(d, p[0], p[1])), a.seuil, false));
+    e.lignes.forEach((l) => corps(ruban(l.pts.map((p) => versZone(d, p[0], p[1])), (l.seuil ? 4 : 8) / 1000), l.seuil, true));
+  }
+  {
+    const _sm14 = window.georamaSiteMaillage;
+    window.georamaSiteMaillage = function (o) {
+      let r;
+      try { if (typeof _sm14 === "function") r = _sm14.apply(this, arguments); } catch (e) {}
+      try { if (o && o.P) maillage(o); } catch (e) {}
+      return r;
+    };
+  }
+
+  /* ---------- couleur au sol (texture) ---------- */
+  {
+    const _sp14 = window.georamaSitePeindre;
+    window.georamaSitePeindre = function (o) {
+      if (typeof _sp14 === "function") { try { _sp14.apply(this, arguments); } catch (e) {} }
+      try {
+        const { g, d, t, px } = o, z = d.zone || {}, e = barrages.get(T.cleV(z.lat0, z.lon0, z.w));
+        if (!e || (!e.aires.length && !e.lignes.length)) return;
+        const mpp = (t && t.mpp) || (d.w * 1000) / o.TW, w = (m, mi) => Math.max(mi, m / mpp);
+        const trace = (pts) => { g.beginPath(); pts.forEach((p, i) => { const [x, y] = px(p[0], p[1]); i ? g.lineTo(x, y) : g.moveTo(x, y); }); };
+        g.save(); g.lineJoin = g.lineCap = "round";
+        e.aires.forEach((a) => { trace(a.pts); g.closePath(); g.fillStyle = a.seuil ? "#A6A6A2" : "#BDBCB7"; g.fill(); g.strokeStyle = "#8C8B87"; g.lineWidth = w(1.5, 1); g.stroke(); });
+        e.lignes.forEach((l) => { trace(l.pts); g.strokeStyle = "#8C8B87"; g.lineWidth = w(l.seuil ? 5 : 9, 2.5); g.stroke(); g.strokeStyle = l.seuil ? "#A6A6A2" : "#BDBCB7"; g.lineWidth = w(l.seuil ? 3.5 : 7, 1.6); g.stroke(); });
+        g.restore();
+      } catch (e) {}
+    };
+  }
 })();
 </script>
 </body>
