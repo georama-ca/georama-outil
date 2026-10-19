@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v3.3 (2026-10-19) -->
+<!-- Outil Georama v3.4 (2026-10-19) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -387,7 +387,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v3.3 · 2026-10-19</p>
+<p class="g-version">Outil Georama v3.4 · 2026-10-19</p>
 </div>
 </aside>
 </div>
@@ -5679,7 +5679,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
       if (n < 4 && avant >= 4) montrerCarte();
       const s = sections[n - 1];
       requestAnimationFrame(() => requestAnimationFrame(() => { boite.scrollTop = Math.max(0, s.offsetTop - 4); }));
-      if (n === 2 && !aMarqueur() && !mobile()) el("q").focus();
+      if (n === 2 && !aMarqueur() && !mobile()) el("q").focus({ preventScroll: window.parent !== window });  // v3.4 : intégré dans le site, la page reste en haut
       try { etape("etape" + n + "-" + COURT[n]); } catch (e) {}
     }
     maj();
