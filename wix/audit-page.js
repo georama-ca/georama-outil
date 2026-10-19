@@ -60,10 +60,10 @@ window.__audit = async function () {
       if (t && deb.length < 8) deb.push({ tag: e.tagName, t, right: Math.round(r.right) });
     }
   });
-  const txt = document.body.innerText;
-  const surveiller = ["85 $", "145 $", "8,5 × 11", "8,5 x 11", "17 × 22", "Lorem", "lorem", "Premium", "hobbeyiste", "approuv", "TBD", "À venir", "Titre", "Paragraphe", "Ajoutez", "Add ", "Placeholder"]
-    .filter((s) => txt.includes(s))
-    .map((s) => { const i = txt.indexOf(s); return s + " → « " + txt.slice(Math.max(0, i - 40), i + 50).replace(/\s+/g, " ") + " »"; });
+  const txt = document.body.innerText, txtl = txt.toLowerCase();
+  const surveiller = ["85 $", "145 $", "8,5 × 11", "8,5 x 11", "17 × 22", "Lorem", "lorem", "Premium", "hobbeyiste", "approuv", "TBD", "À venir", "Titre", "Paragraphe", "Ajoutez", "Placeholder", "95 $", "Hobbyiste", "8.5"]
+    .filter((s) => txtl.includes(s.toLowerCase()))
+    .map((s) => { const i = txtl.indexOf(s.toLowerCase()); return s + " → « " + txt.slice(Math.max(0, i - 40), i + 50).replace(/\s+/g, " ") + " »"; });
   return JSON.stringify({
     url: location.pathname, largeur: innerWidth, dpr, hauteur: H(),
     title: document.title,
