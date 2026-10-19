@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v3.1 (2026-10-18) -->
+<!-- Outil Georama v3.2 (2026-10-19) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -387,7 +387,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v3.1 · 2026-10-18</p>
+<p class="g-version">Outil Georama v3.2 · 2026-10-19</p>
 </div>
 </aside>
 </div>
@@ -7268,6 +7268,133 @@ window.addEventListener("message", function (e) {
       return r;
     };
   }
+})();
+
+/* ---------- 13. v3.2 : pêche — le fond du lac en 3D (creusé et en 3 profondeurs, comme au mur) ---------- */
+(function () {
+  const actif = () => {
+    try {
+      return typeof pecheActif === "function" && pecheActif() && typeof coucheVue === "function" && coucheVue("bat") &&
+        !($("murGamme") && $("murGamme").value === "unie");
+    } catch (e) { return false; }
+  };
+  // rayons des bandes (m) : mêmes que la vue « Au mur »
+  const rayons = () => {
+    try { const r = bathyRayonsM(); if (r && r[0] > 0 && r[1] > r[0]) return r; } catch (e) {}
+    const w = parseFloat($("w").value) || 2;
+    return [w * 1000 * 0.012, w * 1000 * 0.024];
+  };
+  // Distance à la rive (m) sur une grille (chanfrein 2 passes, pas dx × dy)
+  function distanceRive(M, W, H, dx, dy) {
+    const D = new Float32Array(W * H), INF = 1e12, dd = Math.max(dx, dy);
+    for (let q = 0; q < W * H; q++) D[q] = M[q] ? INF : 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const q = y * W + x; if (!D[q]) continue;
+      let v = D[q];
+      if (x > 0) v = Math.min(v, D[q - 1] + dx); else v = Math.min(v, dx);
+      if (y > 0) { v = Math.min(v, D[q - W] + dy); if (x > 0) v = Math.min(v, D[q - W - 1] + dd); if (x < W - 1) v = Math.min(v, D[q - W + 1] + dd); } else v = Math.min(v, dy);
+      D[q] = v;
+    }
+    for (let y = H - 1; y >= 0; y--) for (let x = W - 1; x >= 0; x--) {
+      const q = y * W + x; if (!D[q]) continue;
+      let v = D[q];
+      if (x < W - 1) v = Math.min(v, D[q + 1] + dx); else v = Math.min(v, dx);
+      if (y < H - 1) { v = Math.min(v, D[q + W] + dy); if (x < W - 1) v = Math.min(v, D[q + W + 1] + dd); if (x > 0) v = Math.min(v, D[q + W - 1] + dd); } else v = Math.min(v, dy);
+      D[q] = v;
+    }
+    return D;
+  }
+  const lisse = (D, W, H) => {          // petit flou 3 × 3 pour adoucir le fond
+    const O = new Float32Array(D.length);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const q = y * W + x; if (!D[q]) continue;
+      let s = 0, n = 0;
+      for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) {
+        const xx = x + a, yy = y + b; if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+        s += D[yy * W + xx]; n++;
+      }
+      O[q] = s / n;
+    }
+    return O;
+  };
+
+  // 1. Couleurs : haut-fond, profond, fosse sur la texture du dessus
+  {
+    const _peindre = window.georamaSitePeindre;
+    window.georamaSitePeindre = function (o) {
+      if (typeof _peindre === "function") { try { _peindre(o); } catch (e) {} }
+      try {
+        if (!actif()) return;
+        const { g, d, t, TW, TH } = o;
+        const M = new Uint8Array(TW * TH);
+        let n = 0;
+        for (let j = 0; j < TH; j++) for (let i = 0; i < TW; i++) {
+          let e = t.eau && t.eau[j * TW + i];
+          if (!e && d.eau && d.N) {
+            const gi = Math.round(((i + 0.5) / TW) * d.N), gj = Math.round((1 - (j + 0.5) / TH) * d.M);
+            e = d.eau[gj * (d.N + 1) + gi];
+          }
+          if (e) { M[j * TW + i] = 1; n++; }
+        }
+        if (!n) return;
+        const mpp = t.mpp || (d.w * 1000) / TW;
+        const D = distanceRive(M, TW, TH, mpp, mpp);
+        const [r1, r2] = rayons();
+        const c = (h) => hexRVB(h).map((v) => v * 255);
+        const [cH, cP, cF] = [BATHY_COULEURS.hautFond, BATHY_COULEURS.profond, BATHY_COULEURS.fosse].map(c);
+        const im = g.getImageData(0, 0, TW, TH), px = im.data;
+        for (let q = 0; q < TW * TH; q++) {
+          if (!M[q]) continue;
+          const col = D[q] < r1 ? cH : D[q] < r2 ? cP : cF;
+          px[4 * q] = col[0]; px[4 * q + 1] = col[1]; px[4 * q + 2] = col[2];
+        }
+        g.putImageData(im, 0, 0);
+      } catch (e) {}
+    };
+  }
+
+  // 2. Volume : le fond du lac est creusé (au plus 25 mm sur la maquette, comme la production v3.1)
+  const _sm13 = window.georamaSiteMaillage;
+  window.georamaSiteMaillage = function (o) {
+    if (typeof _sm13 === "function") { try { _sm13(o); } catch (e) {} }
+    try {
+      if (!actif()) return;
+      const { d, P, N } = o;
+      if (!d.eau || !d.N || !d.M) return;
+      const W = d.N + 1, H = d.M + 1;
+      const dx = (d.w * 1000) / d.N, dy = (2 * d.hh * 1000) / d.M;
+      let D = distanceRive(d.eau, W, H, dx, dy);
+      D = lisse(D, W, H);
+      const [, r2] = rayons();
+      const plein = Math.max(1, r2 * 1.5);                  // distance où le lac atteint sa profondeur maximale
+      let largeurMm = 254;
+      try { const f = window.georamaFormat && window.georamaFormat(); if (f && f.k) largeurMm = 254 * f.k; } catch (e) {}
+      const prof = Math.min(0.06, 25 / largeurMm);          // en unités de la maquette (largeur = 1)
+      const nbDessus = 6 * d.N * d.M;
+      const touche = new Uint8Array(nbDessus / 3);
+      for (let k = 0; k < nbDessus; k++) {
+        const x = P[3 * k], z = P[3 * k + 2];
+        const gi = Math.round((x + 0.5) * d.N), gj = Math.round(((d.hh - z * d.w) / (2 * d.hh)) * d.M);
+        if (gi < 0 || gj < 0 || gi > d.N || gj > d.M) continue;
+        const q = gj * W + gi;
+        if (!d.eau[q] || !D[q]) continue;
+        const f = Math.pow(Math.min(1, D[q] / plein), 0.8);
+        P[3 * k + 1] -= prof * f;
+        touche[Math.floor(k / 3)] = 1;
+      }
+      // normales des triangles creusés
+      for (let tIdx = 0; tIdx < touche.length; tIdx++) {
+        if (!touche[tIdx]) continue;
+        const a = 9 * tIdx;
+        const ux = P[a + 3] - P[a], uy = P[a + 4] - P[a + 1], uz = P[a + 5] - P[a + 2];
+        const vx = P[a + 6] - P[a], vy = P[a + 7] - P[a + 1], vz = P[a + 8] - P[a + 2];
+        let nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+        const l = Math.hypot(nx, ny, nz) || 1;
+        if (ny < 0) { nx = -nx; ny = -ny; nz = -nz; }
+        for (let v = 0; v < 3; v++) { N[a + 3 * v] = nx / l; N[a + 3 * v + 1] = ny / l; N[a + 3 * v + 2] = nz / l; }
+      }
+    } catch (e) {}
+  };
 })();
 </script>
 </body>
