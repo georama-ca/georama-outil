@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Georama — Comparer les maquettes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap">
+<style>
+  :root { --encre: #1B1D1A; --doux: #4A4E43; --gris: #6B6F63; --tiret: #8A8E84; --ligne: #E4E6DD; --bord: #DADDD2; --vert: #4A5A24; --vert-fonce: #3F4D1E; --pastille: #EEF1E4; --entreprise: #F3F5EC; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #FFFFFF; color: var(--encre); font-family: Montserrat, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  .page { max-width: 1240px; margin: 0 auto; padding: 40px 32px 48px; display: flex; flex-direction: column; gap: 32px; }
+  .tete { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .surtitre { font-size: 12px; font-weight: 700; letter-spacing: .18em; color: var(--vert); }
+  h1 { margin: 0; font-size: 42px; line-height: 1.12; font-weight: 800; letter-spacing: -.02em; }
+  .intro { margin: 0; font-size: 17px; line-height: 1.55; color: var(--doux); max-width: 760px; }
+
+  /* Ordinateur : tableau */
+  .grille { display: flex; flex-direction: column; }
+  .rang { display: grid; grid-template-columns: 250px repeat(6, minmax(0, 1fr)); gap: 10px; align-items: center; }
+  .rang.tetes { align-items: stretch; }
+  .legende { display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; padding-bottom: 16px; font-size: 13px; line-height: 1.5; color: var(--doux); }
+  .legende div { display: flex; align-items: center; gap: 8px; }
+  .carte { border: 1px solid var(--bord); border-radius: 16px; padding: 18px 12px; display: flex; flex-direction: column; gap: 8px; }
+  .carte.ent { background: var(--entreprise); }
+  .carte svg.ico { width: 34px; height: 34px; }
+  .nom { font-size: 15px; font-weight: 800; line-height: 1.25; min-height: 38px; }
+  .sous { font-size: 12px; line-height: 1.4; color: var(--doux); min-height: 34px; }
+  .apartir { font-size: 12px; color: var(--gris); }
+  .prix { font-size: 26px; font-weight: 800; line-height: 1; }
+  .prix.soum { font-size: 19px; line-height: 1.2; }
+  .btn { margin-top: auto; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 44px; padding: 0 10px; border-radius: 10px; background: var(--encre); color: #FFFFFF; font-size: 13px; font-weight: 700; text-decoration: none; }
+  .btn:hover { background: #33372F; }
+  .btn.ligne { background: transparent; color: var(--encre); border: 2px solid var(--encre); }
+  .btn.ligne:hover { background: #FFFFFF; }
+  .groupe { margin-top: 28px; padding-bottom: 10px; border-bottom: 2px solid var(--encre); display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 800; }
+  .groupe svg { width: 22px; height: 22px; flex: none; }
+  .ligne-donnee { min-height: 52px; border-bottom: 1px solid var(--ligne); }
+  .etiquette { font-size: 14px; font-weight: 600; line-height: 1.35; padding: 10px 0; }
+  .val { display: flex; justify-content: center; align-items: center; text-align: center; font-size: 13px; line-height: 1.35; font-weight: 600; padding: 8px 4px; }
+  .oui { width: 22px; height: 22px; }
+  .option { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; background: var(--pastille); color: var(--vert-fonce); font-size: 12px; font-weight: 700; }
+  .non { color: var(--tiret); font-size: 18px; font-weight: 400; }
+  .pied { padding-top: 18px; border-top: 1px solid var(--bord); font-size: 14px; line-height: 1.55; color: var(--doux); text-align: center; }
+
+  /* Tablette et téléphone : un type à la fois */
+  .mobile { display: none; }
+  @media (max-width: 1000px) {
+    .page { padding: 28px 16px 36px; gap: 22px; }
+    h1 { font-size: 28px; }
+    .intro { font-size: 15px; }
+    .grille { display: none; }
+    .mobile { display: flex; flex-direction: column; gap: 18px; }
+    .choix { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .choix button { font: inherit; font-size: 13px; font-weight: 700; line-height: 1.2; min-height: 48px; padding: 6px 8px; border-radius: 10px; border: 1.5px solid var(--bord); background: #FFFFFF; color: var(--encre); cursor: pointer; }
+    .choix button[aria-pressed="true"] { background: var(--encre); border-color: var(--encre); color: #FFFFFF; }
+    .m-carte { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 16px; }
+    .m-carte .nom, .m-carte .sous { min-height: 0; }
+    .m-carte .txt { flex: 1 1 180px; display: flex; flex-direction: column; gap: 4px; }
+    .m-carte .px { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .m-carte .btn { flex: 1 1 100%; margin-top: 6px; }
+    .m-ligne { display: flex; justify-content: space-between; align-items: center; gap: 14px; min-height: 48px; border-bottom: 1px solid var(--ligne); }
+    .m-ligne .etiquette { font-size: 14px; padding: 8px 0; }
+    .m-ligne .val { flex: none; max-width: 45%; justify-content: flex-end; text-align: right; padding: 8px 0; }
+    .m-groupe { margin-top: 10px; }
+    .m-legende { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--doux); }
+    .m-legende span { display: inline-flex; align-items: center; gap: 6px; }
+  }
+  @media (max-width: 420px) {
+    .choix { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<main class="page">
+  <header class="tete">
+    <div class="surtitre">COMPARER LES MAQUETTES</div>
+    <h1>Quelle maquette pour votre territoire&nbsp;?</h1>
+    <p class="intro">Chaque type de maquette met en valeur ses propres données&nbsp;: le fond du lac pour la pêche, la forêt pour la chasse, les bâtiments pour la ville.</p>
+  </header>
+
+  <div class="grille" id="grille" role="table" aria-label="Comparaison des types de maquettes"></div>
+
+  <div class="mobile" id="mobile">
+    <div class="choix" id="choix" role="group" aria-label="Type de maquette"></div>
+    <div id="m-carte"></div>
+    <div class="m-legende" aria-hidden="true"></div>
+    <div id="m-lignes"></div>
+  </div>
+
+  <footer class="pied">Pour tous : relief tiré des données LiDAR du Québec · aperçu 3D gratuit avant de payer · livraison 25 $ par commande ou récupération gratuite à Saint-Félicien</footer>
+</main>
+
+<script>
+(function () {
+  const svg = (d, w, cls, extra) => '<svg class="' + (cls || '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + w + '" stroke-linecap="round" stroke-linejoin="round" ' + (extra || 'aria-hidden="true"') + '>' + d + '</svg>';
+  const OUI = '<span style="color:#4A5A24;display:inline-flex">' + svg('<path d="M4.5 12.5l5 5 10-11"></path>', 2.6, 'oui', 'role="img" aria-label="Inclus"') + '</span>';
+  const OPT = '<span class="option">Option</span>';
+  const NON = '<span class="non" aria-label="Non offert">—</span>';
+
+  const types = [
+    { cle: 'terre', court: 'Terre à bois', nom: 'Terre à bois, érablière et chalet', sous: 'Lot, coteaux, ruisseaux et cabane', prix: '175 $', lien: 'https://www.georama.ca/terre-%C3%A9rabli%C3%A8re-chalet',
+      ico: '<path d="M7 20.5 3 10.5h2.6L2.5 15h9L8.4 10.5H11L7 3.5 3 10.5"></path><path d="M7 15v5.5"></path><path d="M13.5 20.5v-6l4-3.5 4 3.5v6z"></path><path d="M16.5 20.5v-3h2v3"></path>' },
+    { cle: 'chasse', court: 'Chasse', nom: 'Territoire de chasse', sous: 'Habitat, forêt, postes et sentiers', prix: '175 $', lien: 'https://www.georama.ca/territoire-de-chasse',
+      ico: '<path d="M12 21v-6"></path><path d="M12 15c-3.5 0-6-2.5-6-6V4"></path><path d="M6 8H3"></path><path d="M6 5.5 4 3"></path><path d="M12 15c3.5 0 6-2.5 6-6V4"></path><path d="M18 8h3"></path><path d="M18 5.5 20 3"></path><path d="M9 21h6"></path>' },
+    { cle: 'ville', court: 'Ville', nom: 'Ville et quartier', sous: 'Rues, bâtiments en 3D et parcs', prix: '175 $', lien: 'https://www.georama.ca/villeetquartier',
+      ico: '<path d="M2.5 21h19"></path><path d="M4 21V10l5-3v14"></path><path d="M9 21V3h7v18"></path><path d="M16 21v-9h4v9"></path><path d="M11.5 7h2M11.5 10.5h2M11.5 14h2"></path>' },
+    { cle: 'sommet', court: 'Sommet', nom: 'Sommet et sentier', sous: 'Relief, sentiers et tracé GPS', prix: '175 $', lien: 'https://www.georama.ca/terre-%C3%A9rabli%C3%A8re-chalet-1',
+      ico: '<path d="M2 20.5 9 7l4 6.5 3-4.5 6 11.5z"></path><path d="M9 7V2.5l4 1.5-4 1.5"></path>' },
+    { cle: 'peche', court: 'Pêche', nom: 'Pêche et fond de lac', sous: 'Fosses, hauts-fonds et profondeurs', prix: '175 $', lien: 'https://www.georama.ca/terre-%C3%A9rabli%C3%A8re-chalet-2',
+      ico: '<path d="M2.5 11c3-4 8-5 12-2.5L19 5v12l-4.5-3.5C10.5 16 5.5 15 2.5 11z"></path><path d="M7 10.5v.01"></path><path d="M2 20c2 1.2 4 1.2 6 0s4-1.2 6 0 4 1.2 6 0"></path>' },
+    { cle: 'entreprise', court: 'Entreprises', nom: 'Entreprises et institutions', sous: 'Grand format sur mesure ou format multiple', prix: 'Sur soumission', soum: true, lien: 'https://www.georama.ca/terre-%C3%A9rabli%C3%A8re-chalet-3', bouton: 'Nous écrire',
+      ico: '<path d="M3 21h18"></path><path d="M5 21V5l8-2v18"></path><path d="M13 9h6v12"></path><path d="M8 8h2M8 11.5h2M8 15h2"></path>' }
+  ];
+
+  const Y = OUI, O = OPT, N = NON, T = (t) => '<span>' + t + '</span>';
+  const groupes = [
+    { titre: 'Prix', ico: '<path d="M20.5 13.5 13.5 20.5a2 2 0 0 1-2.8 0L3 12.8V3h9.8l7.7 7.7a2 2 0 0 1 0 2.8zM7.5 7.5h.01"></path>', lignes: [
+      ['Petit 10 × 12 po, 1 couleur', [T('175 $'), T('175 $'), T('175 $'), T('175 $'), T('175 $'), T('Sur mesure')]],
+      ['Petit 10 × 12 po, palette de couleurs', [T('250 $'), T('250 $'), T('250 $'), T('250 $'), T('250 $'), T('Sur mesure')]],
+      ['Cadre en petit format', [T('+ 30 $'), T('+ 30 $'), T('+ 30 $'), T('+ 30 $'), T('+ 30 $'), T('Sur mesure')]],
+      ['Moyen 20 × 24 po, cadre inclus', [T('995 $'), T('995 $'), T('995 $'), T('995 $'), T('995 $'), T('Sur mesure')]],
+      ['Grand 24 × 30 po, cadre inclus', [T('1 450 $'), T('1 450 $'), T('1 450 $'), T('1 450 $'), T('1 450 $'), T('Plusieurs plaques')]] ] },
+    { titre: 'Terrain et eau', ico: '<path d="M2 20 9 7l4 6.5 3-4.5 6 11z"></path>', lignes: [
+      ['Relief (LiDAR du Québec)', [Y, Y, Y, Y, Y, Y]],
+      ['Limites de lots (cadastre du Québec)', [Y, O, N, O, O, O]],
+      ['Lacs et rivières', [Y, Y, T('Plans d’eau'), Y, Y, Y]],
+      ['Routes, chemins et sentiers', [Y, Y, T('Rues'), Y, O, Y]],
+      ['Noms des lacs gravés', [N, Y, N, N, Y, Y]] ] },
+    { titre: 'Forêt et faune', ico: '<path d="M12 2 5 12h3l-4 6h16l-4-6h3zM12 18v4"></path>', lignes: [
+      ['Texture d’arbres (hauteur de la forêt en relief)', [Y, Y, O, O, O, Y]],
+      ['Érablières', [Y, N, N, N, N, O]],
+      ['Peuplements forestiers (essences)', [N, Y, N, N, N, O]],
+      ['Densité forestière (volume de bois)', [N, Y, N, N, N, O]],
+      ['Habitat de l’orignal', [N, Y, N, N, N, O]],
+      ['Milieux humides', [N, O, N, N, N, O]] ] },
+    { titre: 'Fond de lac (bathymétrie)', ico: '<path d="M2 6c2 1.2 4 1.2 6 0s4-1.2 6 0 4 1.2 6 0M4 10l4 8 4-5 3 3 5-6"></path>', lignes: [
+      ['Profondeurs en couleurs', [N, N, N, N, Y, O]],
+      ['Fosses gravées (point le plus profond)', [N, N, N, N, Y, O]],
+      ['Descentes de bateau et quais', [N, N, N, N, Y, O]] ] },
+    { titre: 'Bâtiments et infrastructures', ico: '<path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"></path>', lignes: [
+      ['Bâtiments en 3D', [N, N, Y, N, N, Y]],
+      ['Rues et parcs', [N, N, Y, N, N, Y]],
+      ['Pistes de ski, golf, zones industrielles, voies ferrées', [N, N, N, N, N, Y]] ] },
+    { titre: 'À votre image', ico: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 7v5M9.5 9.5h5"></path>', lignes: [
+      ['Repères imprimés en 3D', [T('Cabane, chalet'), T('Postes de chasse'), T('Votre bâtiment'), T('Refuge, belvédère'), T('Coins de pêche, quai'), T('Pavillon, usine')]],
+      ['Tracé GPS (fichier GPX)', [T('Sentiers'), T('Pistes, VTT, trappe'), N, T('En vedette'), T('Points du sondeur'), Y]],
+      ['Légende sur la maquette', [O, Y, N, N, Y, O]] ] }
+  ];
+
+  const legende = '<div>' + OUI + 'Inclus d’office</div><div>' + OPT + 'Au choix, sans frais</div><div><span class="non" style="width:22px;text-align:center">—</span>Non offert</div>';
+  const carte = (t, cls) => '<div class="carte ' + (t.soum ? 'ent ' : '') + (cls || '') + '" role="columnheader">' +
+    '<span style="color:#4A5A24;display:inline-flex">' + svg(t.ico, 1.6, 'ico') + '</span>' +
+    '<div class="txt"><div class="nom">' + t.nom + '</div><div class="sous">' + t.sous + '</div></div>' +
+    '<div class="px"><div class="apartir">' + (t.soum ? 'Prix' : 'À partir de') + '</div><div class="prix' + (t.soum ? ' soum' : '') + '">' + t.prix + '</div></div>' +
+    '<a class="btn' + (t.soum ? ' ligne' : '') + '" href="' + t.lien + '" target="_top">' + (t.bouton || 'Voir en 3D') + '</a></div>';
+
+  // Ordinateur
+  let h = '<div class="rang tetes" role="row"><div class="legende" role="columnheader">' + legende + '</div>' + types.map((t) => carte(t)).join('') + '</div>';
+  for (const g of groupes) {
+    h += '<div class="groupe" role="row">' + svg(g.ico, 1.8) + '<span>' + g.titre + '</span></div>';
+    for (const [lab, cells] of g.lignes) h += '<div class="rang ligne-donnee" role="row"><div class="etiquette" role="rowheader">' + lab + '</div>' + cells.map((c) => '<div class="val" role="cell">' + c + '</div>').join('') + '</div>';
+  }
+  document.getElementById('grille').innerHTML = h;
+
+  // Tablette et téléphone
+  document.querySelector('.m-legende').innerHTML = legende.replace(/<div>/g, '<span>').replace(/<\/div>/g, '</span>');
+  const choix = document.getElementById('choix');
+  choix.innerHTML = types.map((t, i) => '<button type="button" data-i="' + i + '" aria-pressed="false">' + t.court + '</button>').join('');
+  function montrer(i) {
+    [...choix.children].forEach((b) => b.setAttribute('aria-pressed', String(+b.dataset.i === i)));
+    document.getElementById('m-carte').innerHTML = carte(types[i], 'm-carte');
+    let l = '';
+    for (const g of groupes) {
+      l += '<div class="groupe m-groupe">' + svg(g.ico, 1.8) + '<span>' + g.titre + '</span></div>';
+      for (const [lab, cells] of g.lignes) l += '<div class="m-ligne"><div class="etiquette">' + lab + '</div><div class="val">' + cells[i] + '</div></div>';
+    }
+    document.getElementById('m-lignes').innerHTML = l;
+  }
+  choix.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) montrer(+b.dataset.i); });
+  const depart = { terre: 0, chasse: 1, ville: 2, sommet: 3, peche: 4, entreprise: 5 }[new URLSearchParams(location.search).get('p')];
+  montrer(depart ?? 0);
+})();
+</script>
+</body>
+</html>
