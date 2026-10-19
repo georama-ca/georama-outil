@@ -6951,7 +6951,9 @@ window.addEventListener("message", function (e) {
   }
   // pendant le calcul du relief : on ouvre déjà l'en-tête des fichiers (quelques Ko), sans lire les données
   async function prechauffer(z) {
-    await geotiff();
+    // on attend la bibliothèque chargée par le relief (la charger deux fois en même temps fait échouer le relief LiDAR)
+    for (let i = 0; i < 60 && !window.GeoTIFF; i++) await new Promise((ok) => setTimeout(ok, 250));
+    if (!window.GeoTIFF) return;
     const items = await itemsPour(z);
     await Promise.all(items.map(async (it) => { const t = await tiff(it.assets.dsm.href); const n = await t.getImageCount(); await Promise.all([...Array(n).keys()].map((i) => t.getImage(i))); }));
   }
