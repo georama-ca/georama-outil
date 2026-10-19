@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v2.7 (2026-10-18) -->
+<!-- Outil Georama v2.8 (2026-10-18) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -387,7 +387,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v2.7 · 2026-10-18</p>
+<p class="g-version">Outil Georama v2.8 · 2026-10-18</p>
 </div>
 </aside>
 </div>
@@ -7135,6 +7135,17 @@ window.addEventListener("message", function (e) {
     }
     rafraichirVues();
   });
+
+  /* ---------- 11. v2.8 : l'onglet « Voir en 3D » ressort, en vert et noir, dans tous les segments ---------- */
+  {
+    const st11 = document.createElement("style");
+    st11.textContent =
+      ".g-onglets #apercu3d{background:#95AA5F;color:#111311;font-weight:700;box-shadow:inset 0 0 0 2px #111311}" +
+      ".g-onglets #apercu3d:hover{background:#86A04F}" +
+      ".g-onglets #apercu3d[aria-selected=\"true\"]{background:#111311;color:#B9D07A;box-shadow:inset 0 0 0 2px #95AA5F}" +
+      ".g-onglets #apercu3d:focus-visible{outline:3px solid #111311;outline-offset:2px}";
+    document.head.appendChild(st11);
+  }
 
   /* ---------- 4. Barre de chargement : toute la préparation ---------- */
   const st = document.createElement("style");
