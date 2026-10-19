@@ -6935,6 +6935,26 @@ window.addEventListener("message", function (e) {
   }
   const tiffs = new Map();
   const tiff = (h) => { if (!tiffs.has(h)) tiffs.set(h, GeoTIFF.fromUrl(h).catch((e) => { tiffs.delete(h); throw e; })); return tiffs.get(h); };
+  // fichiers LiDAR (catalogue STAC de RNCan) de la zone, gardés en mémoire
+  const stacs = new Map();
+  function itemsPour(z) {
+    const ll = versLLZone(z), hw = z.w / 2, hh = demiHauteur(z.w, z.shape);
+    const coins = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].map(([x, y]) => ll(x * 1.02, y * 1.02));
+    const lats = coins.map((p) => p[0]), lons = coins.map((p) => p[1]);
+    const bb = [Math.min(...lons) - 0.01, Math.min(...lats) - 0.01, Math.max(...lons) + 0.01, Math.max(...lats) + 0.01].map((v) => v.toFixed(5)).join(",");
+    if (!stacs.has(bb)) stacs.set(bb, (async () => {
+      const rep = await delai(fetch("https://datacube.services.geo.ca/stac/api/search?collections=hrdem-mosaic-1m&limit=20&bbox=" + bb), 12000);
+      if (!rep.ok) throw new Error("stac");
+      return ((await rep.json()).features || []).filter((f) => f.assets && f.assets.dtm && f.assets.dsm);
+    })().catch((e) => { stacs.delete(bb); throw e; }));
+    return stacs.get(bb);
+  }
+  // pendant le calcul du relief : on ouvre déjà l'en-tête des fichiers (quelques Ko), sans lire les données
+  async function prechauffer(z) {
+    await geotiff();
+    const items = await itemsPour(z);
+    await Promise.all(items.map(async (it) => { const t = await tiff(it.assets.dsm.href); const n = await t.getImageCount(); await Promise.all([...Array(n).keys()].map((i) => t.getImage(i))); }));
+  }
   // hauteur de la forêt (m) sur une grille, à partir du MNS et du MNT LiDAR 1 m de RNCan
   async function canopeeLidar(z, sol) {
     await geotiff();
@@ -6947,11 +6967,7 @@ window.addEventListener("message", function (e) {
     const miny = Math.floor(Math.min(...pts.map((p) => p[1])) / res) * res - 2 * res, maxy = Math.ceil(Math.max(...pts.map((p) => p[1])) / res) * res + 2 * res;
     const W = Math.round((maxx - minx) / res), H = Math.round((maxy - miny) / res);
     if (W * H > 4e6) throw new Error("trop grand");
-    const lats = coins.map((p) => p[0]), lons = coins.map((p) => p[1]);
-    const bb = [Math.min(...lons) - 0.01, Math.min(...lats) - 0.01, Math.max(...lons) + 0.01, Math.max(...lats) + 0.01];
-    const rep = await delai(fetch("https://datacube.services.geo.ca/stac/api/search?collections=hrdem-mosaic-1m&limit=20&bbox=" + bb.map((v) => v.toFixed(5)).join(",")), 12000);
-    if (!rep.ok) throw new Error("stac");
-    const items = ((await rep.json()).features || []).filter((f) => f.assets && f.assets.dtm && f.assets.dsm);
+    const items = await itemsPour(z);
     if (!items.length) throw new Error("hors couverture");
     const S = new Float32Array(W * H).fill(NaN), T = new Float32Array(W * H).fill(NaN);
     const lire = async (href, dest) => {
@@ -7010,8 +7026,10 @@ window.addEventListener("message", function (e) {
     v3Preparer = async function (e) {
       // après le relief (pas en même temps) et sans le retarder : la maquette s'affiche aussi vite qu'avant,
       // les arbres apparaissent quelques secondes plus tard
+      const veut = e && arbresVoulus() && e.w <= CANOPEE_MAX_KM && !canopees.has(cleArbres(e));
+      if (veut) prechauffer(e).catch(() => {});
       const r = await _p10.apply(this, arguments);
-      if (e && arbresVoulus() && e.w <= CANOPEE_MAX_KM && !canopees.has(cleArbres(e))) {
+      if (veut) {
         chargerArbres(e, r && r.source === "lidar" ? r.altFn : null).then(() => {
           setTimeout(() => { if (v3.donnees === r) rafraichirVues(); }, 50);
         }).catch(() => {});
