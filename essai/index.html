@@ -7237,6 +7237,22 @@ window.addEventListener("message", function (e) {
     e.innerHTML = s;
     $("murScene").classList.toggle("sans-cadre", n === "sans");
   };
+  // La maquette est à gauche de la photo : on centre la vue sur elle plutôt que sur la photo
+  if (typeof murPlacer === "function") {
+    const _mp = murPlacer;
+    murPlacer = function () {
+      const r = _mp.apply(this, arguments);
+      try {
+        if (scene().coins === COINS) {
+          const n = $("murZone").clientWidth, h = $("murScene"), c = parseFloat(h.style.width);
+          const cx = COINS.reduce((a, p) => a + p[0], 0) / 4;
+          const g = c > n ? Math.min(0, Math.max(n - c, n / 2 - cx * c)) : (n - c) / 2;
+          h.style.left = g + "px";
+        }
+      } catch (err) {}
+      return r;
+    };
+  }
   // Changement de segment pendant que la vue « Au mur » est ouverte
   if (typeof appliquerProfil === "function") {
     const _ap = appliquerProfil;
