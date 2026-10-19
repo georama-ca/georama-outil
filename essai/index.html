@@ -7625,6 +7625,17 @@ window.addEventListener("message", function (e) {
         const nn = normale(Ab, Bb, Bh, out);
         quad(Ab, Bb, Bm, Am, nn, seuil ? C_SEUIL : C_BAS);
         quad(Am, Bm, Bh, Ah, nn, seuil ? C_SEUIL : C_MUR);
+        // parement aval : piles des vannes tous les ~15 m (bandes plus foncées, légèrement en saillie)
+        if (!seuil && fa.p !== a && fb.p !== b) {
+          const L = Math.hypot(b[0] - a[0], b[1] - a[1]) * 1000, nb = Math.floor(L / 15);
+          const lg = Math.max(mH(1.6), 0.0007) / (L / 1000 * u || 1e-9), dec = nn.map((v) => v * 0.0004);
+          for (let k = 1; k <= nb - 1 && nb >= 2; k++) {
+            const t0 = k / nb - lg / 2, t1 = k / nb + lg / 2;
+            const P0b = lerp(Ab, Bb, t0), P1b = lerp(Ab, Bb, t1), P0h = lerp(Ah, Bh, t0), P1h = lerp(Ah, Bh, t1);
+            const add = (p) => p.map((v, j) => v + dec[j]);
+            quad(add(P0b), add(P1b), add(P1h), add(P0h), nn, C_BAS);
+          }
+        }
       }
       oreilles(xy).forEach(([i, j, k]) => tri([X(xy[i]), haut, Z(xy[i])], [X(xy[k]), haut, Z(xy[k])], [X(xy[j]), haut, Z(xy[j])], [0, 1, 0], seuil ? C_SEUIL : C_CRETE));
       if (!garde) return;
