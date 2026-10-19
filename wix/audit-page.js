@@ -30,6 +30,27 @@ window.__audit = async function () {
       y: Math.round(r.top + scrollY),
     });
   });
+  // images Wix : dimensions de l'original (data-image-info), plus fiable que l'image paresseuse
+  const wix = [];
+  document.querySelectorAll("wow-image[data-image-info], [data-image-info]").forEach((el) => {
+    let info; try { info = JSON.parse(el.getAttribute("data-image-info")); } catch (e) { return; }
+    const d = info && (info.imageData || info);
+    if (!d || !d.uri) return;
+    const r = el.getBoundingClientRect();
+    if (r.width < 40 || r.height < 40) return;
+    const cs = getComputedStyle(el);
+    if (cs.display === "none" || cs.visibility === "hidden") return;
+    const im = el.querySelector("img");
+    const ow = d.width, oh = d.height;
+    // couverture : l'original doit couvrir 2× la taille affichée (écrans rétina)
+    const besoin = Math.max(r.width / ow, r.height / oh);
+    wix.push({
+      uri: d.uri, nom: d.name || "", alt: (im && im.alt) || d.alt || "",
+      original: ow + "x" + oh, affiche: Math.round(r.width) + "x" + Math.round(r.height),
+      couverture: +(1 / besoin).toFixed(2),   // < 1 : flou sur tout écran ; < 2 : flou sur rétina
+      y: Math.round(r.top + scrollY),
+    });
+  });
   // débordement horizontal
   const W = document.documentElement.clientWidth, deb = [];
   document.querySelectorAll("body *").forEach((e) => {
@@ -48,7 +69,9 @@ window.__audit = async function () {
     title: document.title,
     h1: [...document.querySelectorAll("h1")].map((e) => e.textContent.trim().slice(0, 60)),
     sansAlt: imgs.filter((i) => !i.alt).length,
-    flous: imgs.filter((i) => i.agrandi > 1.15),
+    wixImages: wix.length,
+    wixFaibles: wix.filter((i) => i.couverture < 1.5),
+    altFichier: wix.filter((i) => /\.(png|jpe?g|webp)$|ChatGPT|IMG_|^\d{8}_/i.test(i.alt) || !i.alt).map((i) => i.uri + ' alt=' + i.alt),
     imgs: imgs.length,
     debordements: deb,
     surveiller,
