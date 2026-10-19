@@ -6998,6 +6998,13 @@ window.addEventListener("message", function (e) {
     if (canopees.size > 4) canopees.delete(canopees.keys().next().value);
     return c;
   }
+  // reconstruit le modèle puis met à jour la vue ouverte (3D, au mur ou sur la table)
+  function rafraichirVues() {
+    try { v3Reconstruire(); } catch (x) {}
+    const T = window.georamaTable;
+    try { if (T && $("vueMur") && !$("vueMur").hidden) T.mur(); } catch (x) {}
+    try { if (T && $("vueTable") && !$("vueTable").hidden) T.maj(); } catch (x) {}
+  }
   if (typeof v3Preparer === "function") {
     const _p10 = v3Preparer;
     v3Preparer = async function (e) {
@@ -7006,7 +7013,7 @@ window.addEventListener("message", function (e) {
       const r = await _p10.apply(this, arguments);
       if (e && arbresVoulus() && e.w <= CANOPEE_MAX_KM && !canopees.has(cleArbres(e))) {
         chargerArbres(e, r && r.source === "lidar" ? r.altFn : null).then(() => {
-          setTimeout(() => { try { if (v3.donnees === r && !$("vue3d").hidden) v3Reconstruire(); } catch (x) {} }, 50);
+          setTimeout(() => { if (v3.donnees === r) rafraichirVues(); }, 50);
         }).catch(() => {});
       }
       return r;
@@ -7080,14 +7087,17 @@ window.addEventListener("message", function (e) {
   }
   // cocher ou décocher « Arbres » pendant que la vue 3D est ouverte : on met à jour le modèle
   if ($("arb")) $("arb").addEventListener("change", async () => {
-    if (!$("vue3d") || $("vue3d").hidden || !v3.donnees || !v3.donnees.zone) return;
+    if (!v3.donnees || !v3.donnees.zone) return;
+    const ouvert = ["vue3d", "vueMur", "vueTable"].some((id) => $(id) && !$(id).hidden);
+    if (!ouvert) return;
     const z = v3.donnees.zone;
     if (arbresVoulus() && z.w <= CANOPEE_MAX_KM && !canopees.has(cleArbres(z))) {
-      const m = $("v3msg"); if (m) { m.textContent = "Ajout des arbres…"; m.hidden = false; }
+      const m = $("vue3d") && !$("vue3d").hidden ? $("v3msg") : null;
+      if (m) { m.textContent = "Ajout des arbres…"; m.hidden = false; }
       await chargerArbres(z, v3.donnees.source === "lidar" ? v3.donnees.altFn : null).catch(() => null);
       if (m) m.hidden = true;
     }
-    try { v3Reconstruire(); } catch (e) {}
+    rafraichirVues();
   });
 
   /* ---------- 4. Barre de chargement : toute la préparation ---------- */
