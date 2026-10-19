@@ -7244,10 +7244,13 @@ window.addEventListener("message", function (e) {
       const r = _mp.apply(this, arguments);
       try {
         if (scene().coins === COINS) {
-          const n = $("murZone").clientWidth, h = $("murScene"), c = parseFloat(h.style.width);
-          const cx = COINS.reduce((a, p) => a + p[0], 0) / 4;
-          const g = c > n ? Math.min(0, Math.max(n - c, n / 2 - cx * c)) : (n - c) / 2;
-          h.style.left = g + "px";
+          // le flou de la photo remplit les bords au besoin (comme en haut et en bas)
+          const z = $("murZone"), n = z.clientWidth, a0 = z.clientHeight, h = $("murScene");
+          const c = parseFloat(h.style.width), s = parseFloat(h.style.height);
+          const cx = COINS.reduce((a, p) => a + p[0], 0) / 4, cy = COINS.reduce((a, p) => a + p[1], 0) / 4;
+          h.style.left = Math.max(n - c, n / 2 - cx * c) + "px";
+          const haut = 48, bas = 66;
+          h.style.top = Math.max(a0 - s, haut + (a0 - haut - bas) / 2 - cy * s) + "px";
         }
       } catch (err) {}
       return r;
