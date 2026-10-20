@@ -321,8 +321,8 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <label class="chk"><input type="checkbox" id="routes" checked> <span id="routesTxt">Réseau routier</span> <em id="h_routes"></em></label><label class="chk"><input type="checkbox" id="sen"> Sentiers et chemins (OpenStreetMap) <em id="h_sen"></em></label>
 <label class="chk"><input type="checkbox" id="arb"> Arbres en relief (hauteur réelle de la forêt) <em id="h_arb"></em></label>
 <label class="chk"><input type="checkbox" id="champs"> Champs agricoles en relief (parcelles déclarées, FADQ) <em id="h_champs"></em></label>
-<label class="chk"><input type="checkbox" id="drain"> Champs drainés (drains souterrains déclarés) <i style="display:inline-block;width:16px;height:0;border-top:2px dashed #1e69be;vertical-align:3px;margin-left:4px"></i> <em id="h_drain"></em></label>
 <div id="leg_champs" aria-label="Légende des champs agricoles"><span><i style="background:rgb(222,186,82)"></i>Céréales, maïs et soya</span><span><i style="background:rgb(146,186,84)"></i>Foin et pâturages</span><span><i style="background:rgb(196,128,82)"></i>Légumes et pommes de terre</span><span><i style="background:rgb(139,108,184)"></i>Fruits et bleuets</span><span><i style="background:rgb(214,200,150)"></i>Autres parcelles cultivables</span></div>
+<label class="chk"><input type="checkbox" id="drain"> Champs drainés (drains souterrains déclarés) <i style="display:inline-block;width:16px;height:0;border-top:2px dashed #1e69be;vertical-align:3px;margin-left:4px"></i> <em id="h_drain"></em></label>
 <div class="g-site" id="gSite"><b>Mon site en 3D</b> <small>(relevé automatique OpenStreetMap et Overture Maps)</small></div>
 <label class="chk"><input type="checkbox" id="sb"> <span id="sbTxt">Bâtiments et installations en 3D (usines, pavillons, réservoirs, cheminées)</span> <em id="h_sb"></em></label>
 <label class="chk"><input type="checkbox" id="sk"> Pistes de ski (couleur de difficulté), remontées et pylônes <em id="h_sk"></em></label>
@@ -8127,6 +8127,13 @@ window.addEventListener("message", function (e) {
   const nommer = () => { const s = $("sbTxt"); if (s) s.textContent = enFerme() ? "Bâtiments de ferme en 3D (maison, granges, étables, silos)" : "Bâtiments et installations en 3D (usines, pavillons, réservoirs, cheminées)"; };
   if (typeof appliquerProfil === "function") { const _ap17 = appliquerProfil; appliquerProfil = function () { const r = _ap17.apply(this, arguments); try { nommer(); } catch (e) {} return r; }; }
   try { nommer(); } catch (e) {}
+  // au mur : le plan à plat s'efface quand le rendu 3D (champs, bâtiments) est prêt, comme en Ville
+  const st = document.createElement("style");
+  st.textContent = "body.g-ferme41 #murCarte:has(#mur3d.pret) #murRot2{visibility:hidden}";
+  document.head.appendChild(st);
+  const marquer = () => { try { document.body.classList.toggle("g-ferme41", enFerme()); } catch (e) {} };
+  if (typeof appliquerProfil === "function") { const _ap17b = appliquerProfil; appliquerProfil = function () { const r = _ap17b.apply(this, arguments); marquer(); return r; }; }
+  marquer();
 })();
 </script>
 </body>
