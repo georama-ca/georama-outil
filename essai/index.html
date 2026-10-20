@@ -7770,6 +7770,16 @@ window.addEventListener("message", function (e) {
     };
   }
 
+  /* 15a2. Ville au rendu d'Entreprise : au mur, le plan à plat de la ville s'efface quand le rendu 3D est prêt */
+  {
+    const st = document.createElement("style");
+    st.textContent = "body.g-ville37 #murCarte:has(#mur3d.pret) #murRot2{visibility:hidden}";
+    document.head.appendChild(st);
+    const marquer = () => { try { document.body.classList.toggle("g-ville37", typeof profilActif !== "undefined" && profilActif === "ville"); } catch (e) {} };
+    if (typeof appliquerProfil === "function") { const _apv = appliquerProfil; appliquerProfil = function () { const r = _apv.apply(this, arguments); marquer(); return r; }; }
+    marquer();
+  }
+
   /* 15b. Sommet et sentier : sentiers et chemins d'OpenStreetMap peints sur la maquette (case « sen », code t) */
   const T = window.__georamaTuiles;
   const enSommet = () => typeof profilActif !== "undefined" && profilActif === "pleinair";
