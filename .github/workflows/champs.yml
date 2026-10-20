@@ -46,6 +46,6 @@ jobs:
         run: |
           git config user.name "georama-champs"; git config user.email "actions@users.noreply.github.com"
           git add champs
-          if git diff --cached --quiet -- champs/12; then echo "Aucun changement de parcelles"; git reset -q; exit 0; fi
+          if git diff --cached --quiet -- champs/12 champs/stats.json; then echo "Aucun changement de parcelles"; git reset -q; exit 0; fi
           git commit -q -m "Champs agricoles : BDPPAD $ANNEE ($(date +%F))"
           git pull -q --rebase && git push -q

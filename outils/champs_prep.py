@@ -1,6 +1,7 @@
 """BDPPAD (FADQ) -> GeoJSON lignes pour tippecanoe : contour des parcelles + groupe de production simple.
 Géométrie simplifiée à ~1 m, coordonnées arrondies à 6 décimales."""
-import sys, json, subprocess, re
+import sys, json, subprocess, re, os
+os.makedirs("champs", exist_ok=True)
 shp, sortie = sys.argv[1], sys.argv[2]
 info = subprocess.run(["ogrinfo", "-so", "-al", shp], capture_output=True, text=True).stdout
 champs = [l.split(":")[0].strip() for l in info.splitlines() if re.match(r"^\s*[A-Za-z_0-9]+: (String|Integer|Real|Integer64)", l)]
@@ -17,6 +18,8 @@ def groupe(p):
                     ("cereale", ["maïs", "mais", "soya", "soja", "blé", "ble", "orge", "avoine", "céréal", "cereal", "canola", "grain"])]:
         if any(m in txt for m in mots): return g
     return "autre"
+import collections
+stats = collections.defaultdict(collections.Counter)
 n = 0
 with open("/tmp/b/brut.geojsonl") as f, open(sortie, "w") as o:
     for l in f:
@@ -24,6 +27,14 @@ with open("/tmp/b/brut.geojsonl") as f, open(sortie, "w") as o:
         if not l: continue
         ft = json.loads(l)
         if not ft.get("geometry"): continue
+        for c2, v2 in (ft.get("properties") or {}).items():
+            if isinstance(v2, str) or c2 in cand: stats[c2][str(v2)] += 1
         o.write(json.dumps({"type": "Feature", "geometry": ft["geometry"], "properties": {"g": groupe(ft.get("properties") or {})}}, separators=(",", ":")) + "\n")
         n += 1
 print(n, "parcelles")
+gr = collections.Counter()
+with open(sortie) as f:
+    for l in f: gr[json.loads(l)["properties"]["g"]] += 1
+json.dump({"champs": champs, "candidats": cand, "groupes": gr,
+           "valeurs": {c2: cn.most_common(60) for c2, cn in stats.items() if len(cn) < 5000}},
+          open("champs/stats.json", "w"), ensure_ascii=False, indent=1)
