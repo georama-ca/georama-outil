@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v3.4 (2026-10-19) -->
+<!-- Outil Georama v3.5 (2026-10-19) -->
 <html lang="fr">
 <head>
 <meta charset="utf-8">
@@ -387,7 +387,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v3.4 · 2026-10-19</p>
+<p class="g-version">Outil Georama v3.5 · 2026-10-19</p>
 </div>
 </aside>
 </div>
@@ -6945,7 +6945,8 @@ window.addEventListener("message", function (e) {
   const TEL = () => Math.min(window.innerWidth, window.innerHeight) < 600;
   const arbresVoulus = () => {
     const c = $("arb");
-    return !!(c && c.checked && !c.closest("label").hidden && (typeof profilActif === "undefined" || profilActif !== "ville"));
+    if (typeof profilActif !== "undefined" && profilActif === "ville") return villeOpt("parcs");   // v3.5 : en ville, avec « Parcs et arbres »
+    return !!(c && c.checked && !c.closest("label").hidden);
   };
   const lccA = (function () {
     const a = 6378137, f = 1 / 298.257222101, e2 = 2 * f - f * f, e = Math.sqrt(e2);
@@ -7092,9 +7093,21 @@ window.addEventListener("message", function (e) {
   function arbresMaillage({ d, exa, u, base, versZone, P, N, C, pal }) {
     const z = d.zone;
     if (!z || !d.altFn || !arbresVoulus() || z.w > (typeof profilActif!=="undefined"&&profilActif==="peche"?10:CANOPEE_DEF_KM)) return;
-    const can = canopees.get(cleArbres(z));
+    let can = canopees.get(cleArbres(z));
     if (!can || can.src === "aucune") return;
     const ll = versLLZone(z), hw = z.w / 2, hh = d.hh;
+    // v3.5 : en ville, des arbres seulement dans les parcs et les boisés (pas sur les toits ni dans les rues)
+    if (estVille()) {
+      const vd = villePrete.get(cleV(z.lat0, z.lon0, z.w));
+      if (!vd || !vd.parcs || !vd.parcs.length) return;
+      const M = 1024, cv = document.createElement("canvas"); cv.width = cv.height = M;
+      const gx = cv.getContext("2d"), sx = M / (2 * hw), sy = M / (2 * hh);
+      gx.fillStyle = "#fff";
+      vd.parcs.forEach((r) => { gx.beginPath(); r.forEach((p, i) => { const [x, y] = versZone(d, p[0], p[1]); const X = (x + hw) * sx, Y = (hh - y) * sy; i ? gx.lineTo(X, Y) : gx.moveTo(X, Y); }); gx.closePath(); gx.fill(); });
+      const px = gx.getImageData(0, 0, M, M).data, c0 = can;
+      const dansParc = (la, lo) => { const [x, y] = versZone(d, la, lo); const X = Math.floor((x + hw) * sx), Y = Math.floor((hh - y) * sy); return X >= 0 && Y >= 0 && X < M && Y < M && px[4 * (Y * M + X) + 3] > 0; };
+      can = { src: c0.src, h: (la, lo) => (dansParc(la, lo) ? c0.h(la, lo) : 0) };
+    }
     const LARG_MM = 254, kmParMm = z.w / LARG_MM, uParMm = 1 / LARG_MM;
     const cap = TEL() ? 3000 : 6000;
     // 1. part de forêt (grille grossière) pour choisir l'espacement
@@ -7108,7 +7121,8 @@ window.addEventListener("message", function (e) {
     const aireMm2 = (2 * hw / kmParMm) * (2 * hh / kmParMm) * (nf / nt);
     const pasMm = Math.max(1.6, Math.sqrt(aireMm2 / cap)), pas = pasMm * kmParMm;
     const gam = ($("murGamme") || $("v3pal") || {}).value || "boreal";
-    const vert = hexRVB(COUL_ARBRE[gam] || COUL_ARBRE.boreal);
+    const vg = estVille() && typeof villeGamme === "function" ? villeGamme() : null;
+    const vert = hexRVB((vg && vg.arbre) || COUL_ARBRE[gam] || COUL_ARBRE.boreal);
     const grand = Math.min(2.2, Math.max(1, pasMm / 1.6));        // arbres plus gros quand ils sont plus espacés
     const hasard = (i, j, s) => { const v = Math.sin(i * 127.1 + j * 311.7 + s * 74.7) * 43758.5453; return v - Math.floor(v); };
     const tri = (a, b, c, nn, col) => { P.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); N.push(nn[0], nn[1], nn[2], nn[0], nn[1], nn[2], nn[0], nn[1], nn[2]); C.push(col[0], col[1], col[2], col[0], col[1], col[2], col[0], col[1], col[2]); };
