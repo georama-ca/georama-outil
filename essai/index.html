@@ -7930,10 +7930,12 @@ window.addEventListener("message", function (e) {
 
   /* tuiles z12, en cache */
   const cache = new Map();
+  // version des tuiles (date de la dernière mise à jour hebdomadaire) : évite les vieilles tuiles en cache
+  const VER = fetch(BASE.replace(/12\/$/, "info.json"), { cache: "no-cache" }).then((r) => r.json()).then((j) => j.maj || "").catch(() => "");
   function tuile(x, y) {
     const k = x + "/" + y;
     if (cache.has(k)) return cache.get(k);
-    const pr = fetch(BASE + k + ".pbf").then((r) => (r.ok ? r.arrayBuffer() : null)).then((b) => (b && b.byteLength ? lireChamps(b) : [])).catch(() => { cache.delete(k); return []; });
+    const pr = VER.then((v) => fetch(BASE + k + ".pbf" + (v ? "?v=" + v : ""))).then((r) => (r.ok ? r.arrayBuffer() : null)).then((b) => (b && b.byteLength ? lireChamps(b) : [])).catch(() => { cache.delete(k); return []; });
     cache.set(k, pr);
     if (cache.size > 160) cache.delete(cache.keys().next().value);
     return pr;
@@ -8078,7 +8080,7 @@ window.addEventListener("message", function (e) {
             if (!f.length) return;
             const ext = f[0].ext || 4096;
             const proj = (tx, ty) => px(y2lat(y + ty / ext), x2lon(x + tx / ext));
-            peindreTuile(g, f, proj, { remplir: 0.5, relief: true, sMin: Math.max(2.2, 6 / mpp), sMax: Math.max(4, 22 / mpp), trait: "rgba(60,42,18,.55)", lTrait: Math.max(0.7, 2.5 / mpp) });
+            peindreTuile(g, f, proj, { remplir: 0.68, relief: true, sMin: Math.max(2.2, 6 / mpp), sMax: Math.max(4, 22 / mpp), trait: "rgba(60,42,18,.55)", lTrait: Math.max(0.7, 2.5 / mpp) });
           });
           window.georamaChamps3D = { tuiles: ent.data.length, parcelles: ent.data.reduce((s, q) => s + q.f.length, 0) };
         }
