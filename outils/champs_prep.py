@@ -10,13 +10,19 @@ cand = [c for c in champs if re.search(r"GROUP|GRP|CULT|PROD", c, re.I)]
 print("Candidats production :", cand)
 subprocess.run(["ogr2ogr", "-f", "GeoJSONSeq", "-t_srs", "EPSG:4326", "-lco", "COORDINATE_PRECISION=6",
                 "-simplify", "0.00001", "/tmp/b/brut.geojsonl", shp], check=True)
+GRO = {"cereale": "SOY MGR BPA AVO ORG SEI CNL PRT", "fourrage": "FOI MAF",
+       "maraicher": "CMA LDT PDT DIV RAC FEU VIV", "fruits": "PTF POM FRU"}
+GRO = {c: g for g, l in GRO.items() for c in l.split()}
 def groupe(p):
-    txt = " ".join(str(p.get(c, "")) for c in cand).lower()
-    for g, mots in [("verger", ["pomm", "verger", "bleuet", "fruit", "vign", "petits fruits", "canneb"]),
-                    ("maraicher", ["maraîch", "maraich", "légume", "legume", "pomme de terre", "patate"]),
-                    ("fourrage", ["fourrag", "foin", "prairie", "pâtur", "patur", "luzerne"]),
-                    ("cereale", ["maïs", "mais", "soya", "soja", "blé", "ble", "orge", "avoine", "céréal", "cereal", "canola", "grain"])]:
-        if any(m in txt for m in mots): return g
+    g = GRO.get(str(p.get("GROPRO") or "").strip())
+    if g: return g
+    # groupe « Multiples », « Autres » ou « Inconnu » : la première production le précise
+    d = str(p.get("DESCODPR1") or "").lower()
+    for g, mots in [("fruits", ["bleuet", "canneberge", "fraise", "framboise", "pomme", "vign", "camerise", "petits fruits"]),
+                    ("maraicher", ["maraîch", "maraich", "légume", "pommes de terre", "chou", "carotte", "oignon", "laitue", "tomate", "citrouille", "courge", "ail "]),
+                    ("fourrage", ["foin", "pâturage", "fourrag", "luzerne", "prairie"]),
+                    ("cereale", ["maïs", "soya", "blé", "orge", "avoine", "seigle", "canola", "sarrasin", "pois", "haricot sec", "triticale", "épeautre"])]:
+        if any(m in d for m in mots): return g
     return "autre"
 import collections
 stats = collections.defaultdict(collections.Counter)
@@ -28,7 +34,7 @@ with open("/tmp/b/brut.geojsonl") as f, open(sortie, "w") as o:
         ft = json.loads(l)
         if not ft.get("geometry"): continue
         for c2, v2 in (ft.get("properties") or {}).items():
-            if isinstance(v2, str) or c2 in cand: stats[c2][str(v2)] += 1
+            if c2 in ("GROPRO", "DESGROPRO", "DESCODPR1"): stats[c2][str(v2)] += 1
         o.write(json.dumps({"type": "Feature", "geometry": ft["geometry"], "properties": {"g": groupe(ft.get("properties") or {})}}, separators=(",", ":")) + "\n")
         n += 1
 print(n, "parcelles")
