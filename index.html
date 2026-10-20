@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v3.7 (2026-10-20) -->
+<!-- Outil Georama v3.8 (2026-10-20) -->
 <!-- v3.7 : menus lisibles, bâtiments coupés au bord, cadre au mur élargi, Ville au rendu Entreprise, sentiers OSM en Sommet -->
 <!-- v3.6 : « Commander » laisse 1,5 s à la page Wix pour mettre la maquette directement au panier -->
 <html lang="fr">
@@ -390,7 +390,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v3.7 · 2026-10-20</p>
+<p class="g-version">Outil Georama v3.8 · 2026-10-20</p>
 </div>
 </aside>
 </div>
@@ -7845,6 +7845,30 @@ window.addEventListener("message", function (e) {
   if ($("sen")) $("sen").addEventListener("change", () => {
     try { if (v3.donnees && v3.donnees.zone && voulu()) lancer(v3.donnees.zone).then(() => { try { v3Reconstruire(); } catch (er) {} }); else if (v3.donnees) v3Reconstruire(); } catch (er) {}
   });
+})();
+</script>
+<script>/* v3.8 : sur téléphone, l'outil se limite à la partie visible de l'écran (barre « Suivant » toujours visible) */
+(function(){
+  if (window.top === window) return;
+  var mq = matchMedia('(max-width:860px)');
+  var s = document.createElement('div');
+  s.setAttribute('aria-hidden','true');
+  s.style.cssText = 'position:fixed;left:0;top:0;bottom:0;width:1px;pointer-events:none;opacity:0;z-index:-1';
+  document.body.appendChild(s);
+  var dern = 0, t = 0;
+  function rafraichir(){ clearTimeout(t); t = setTimeout(function(){ try { map.invalidateSize(); } catch(e){} try { window.dispatchEvent(new Event('resize')); } catch(e){} }, 150); }
+  function appliquer(h){
+    var a = document.querySelector('.g-app'); if (!a) return;
+    if (!mq.matches || !h) { if (a.style.height) { a.style.height = ''; dern = 0; rafraichir(); } return; }
+    var H = innerHeight, v = Math.max(460, Math.min(H, Math.round(h)));
+    if (Math.abs(v - dern) < 6) return;
+    dern = v; a.style.height = (v >= H - 2) ? '' : v + 'px'; rafraichir();
+  }
+  var seuils = []; for (var i = 0; i <= 100; i++) seuils.push(i / 100);
+  new IntersectionObserver(function(es){
+    es.forEach(function(e){ var r = e.intersectionRect; if (e.isIntersecting && r.top <= 1) appliquer(r.bottom); });
+  }, { threshold: seuils }).observe(s);
+  if (mq.addEventListener) mq.addEventListener('change', function(){ appliquer(0); });
 })();
 </script>
 </body>
