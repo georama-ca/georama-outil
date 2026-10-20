@@ -1,0 +1,51 @@
+name: Champs agricoles (BDPPAD FADQ)
+on:
+  workflow_dispatch:
+    inputs:
+      annee:
+        description: "Année BDPPAD (vide = année courante)"
+        required: false
+  schedule:
+    - cron: "17 9 * * 2"   # mardi 5 h 17 (Québec) : la FADQ met à jour le lundi
+permissions:
+  contents: write
+concurrency: champs
+jobs:
+  construire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Outils
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gdal-bin tippecanoe > /dev/null
+          tippecanoe --version; ogrinfo --version
+      - name: Télécharger la BDPPAD
+        run: |
+          A="${{ github.event.inputs.annee }}"; [ -z "$A" ] && A=$(date +%Y)
+          mkdir -p /tmp/b && cd /tmp/b
+          curl -fsSL -o b.zip "https://www.fadq.qc.ca/fileadmin/geo4tb/BDPPAD/BDPPAD_V03_${A}.zip" || { A=$((A-1)); curl -fsSL -o b.zip "https://www.fadq.qc.ca/fileadmin/geo4tb/BDPPAD/BDPPAD_V03_${A}.zip"; }
+          echo "ANNEE=$A" >> $GITHUB_ENV
+          unzip -o -q b.zip; ls -la; find . -name "*.shp" | head
+          SHP=$(find . -name "*.shp" | head -1); echo "SHP=/tmp/b/$SHP" >> $GITHUB_ENV
+          ogrinfo -so -al "$SHP" | head -60
+      - name: Tuiles vectorielles
+        run: |
+          python3 outils/champs_prep.py "$SHP" /tmp/b/champs.geojsonl
+          rm -rf /tmp/t && tippecanoe -e /tmp/t -l champs -Z12 -z12 -d12 --no-tile-compression --no-tile-size-limit --no-feature-limit --detect-shared-borders -P -q --force /tmp/b/champs.geojsonl
+          rm -rf champs/12 && mkdir -p champs && cp -r /tmp/t/12 champs/12
+          python3 - <<'PY'
+          import json, os, datetime
+          n = sum(len(f) for _, _, f in os.walk('champs/12'))
+          t = sum(os.path.getsize(os.path.join(d, x)) for d, _, f in os.walk('champs/12') for x in f)
+          json.dump({"source": "BDPPAD, La Financière agricole du Québec (CC-BY 4.0)", "annee": os.environ["ANNEE"], "maj": datetime.date.today().isoformat(), "zoom": 12, "tuiles": n, "octets": t}, open("champs/info.json", "w"), ensure_ascii=False, indent=1)
+          print(n, "tuiles,", round(t / 1e6, 1), "Mo")
+          PY
+      - name: Publier si changé
+        run: |
+          git config user.name "georama-champs"; git config user.email "actions@users.noreply.github.com"
+          git add champs
+          if git diff --cached --quiet -- champs/12; then echo "Aucun changement de parcelles"; git reset -q; exit 0; fi
+          git commit -q -m "Champs agricoles : BDPPAD $ANNEE ($(date +%F))"
+          git pull -q --rebase && git push -q
