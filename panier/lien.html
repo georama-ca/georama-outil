@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Georama — Votre lien de visualisation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700&display=swap">
+<style>
+  /* Encadré affiché en haut de la page panier de georama.ca (élément HTML intégré).
+     La page panier lui envoie les liens des maquettes du panier : { type: "georama-liens", liens: [{ nom, lien }] }. */
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: transparent; font-family: Montserrat, system-ui, sans-serif; color: #F2F1EA; -webkit-font-smoothing: antialiased; }
+  .boite { display: flex; align-items: center; gap: 18px 24px; flex-wrap: wrap; padding: 18px 22px; border: 1.5px solid #9AA85C; border-radius: 14px; background: rgba(154, 168, 92, .12); }
+  .ico { flex: none; width: 46px; height: 46px; border-radius: 12px; background: #9AA85C; display: grid; place-items: center; }
+  .ico svg { width: 26px; height: 26px; }
+  .txt { flex: 1 1 320px; min-width: 0; }
+  h2 { margin: 0 0 4px; font-size: 17px; font-weight: 700; line-height: 1.3; }
+  p { margin: 0; font-size: 13.5px; line-height: 1.5; color: #D9DCC8; }
+  .liens { display: flex; flex-wrap: wrap; gap: 10px; }
+  a.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 0 20px; border-radius: 10px; background: #9AA85C; color: #111311; font-weight: 700; font-size: 14.5px; text-decoration: none; white-space: nowrap; }
+  a.btn:hover { background: #AFBD70; }
+  a.copier { background: transparent; color: #F2F1EA; border: 1.5px solid rgba(242, 241, 234, .45); font-weight: 600; }
+  @media (max-width: 600px) {
+    .boite { padding: 16px; gap: 14px; }
+    .ico { display: none; }
+    h2 { font-size: 16px; }
+    .liens, a.btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="boite" id="boite" hidden>
+  <div class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="#111311" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20 9 7l4 6.5 3-4.5 6 11z"/></svg></div>
+  <div class="txt">
+    <h2>Votre lien de visualisation 3D</h2>
+    <p>C’est à partir de ce lien que votre maquette est fabriquée, exactement comme vous l’avez vue. Gardez-le : il est aussi dans votre courriel de confirmation.</p>
+  </div>
+  <div class="liens" id="liens"></div>
+</div>
+<script>
+(function () {
+  const boite = document.getElementById("boite"), liens = document.getElementById("liens");
+  const sur = (u) => { try { const x = new URL(u); return /(^|\.)georama\.ca$/.test(x.hostname) ? x.href : null; } catch (e) { return null; } };
+  function hauteur() { try { parent.postMessage({ type: "georama-lien-hauteur", h: document.documentElement.scrollHeight }, "*"); } catch (e) {} }
+  function afficher(l) {
+    liens.textContent = "";
+    const ok = (l || []).map((x) => ({ nom: String(x.nom || "Ma maquette"), lien: sur(x.lien) })).filter((x) => x.lien).slice(0, 4);
+    ok.forEach((x, i) => {
+      const a = document.createElement("a");
+      a.className = "btn"; a.href = x.lien; a.target = "_top";
+      a.textContent = ok.length > 1 ? "Revoir la maquette " + (i + 1) + " en 3D →" : "Revoir ma maquette en 3D →";
+      liens.appendChild(a);
+    });
+    if (ok.length === 1) {
+      const c = document.createElement("a");
+      c.className = "btn copier"; c.href = ok[0].lien; c.textContent = "Copier le lien";
+      c.addEventListener("click", (e) => { e.preventDefault(); navigator.clipboard && navigator.clipboard.writeText(ok[0].lien).then(() => { c.textContent = "Lien copié ✓"; }).catch(() => {}); });
+      liens.appendChild(c);
+    }
+    boite.hidden = ok.length === 0;
+    hauteur();
+  }
+  window.addEventListener("message", (e) => { const d = e.data || {}; if (d.type === "georama-liens") afficher(d.liens); });
+  window.addEventListener("resize", hauteur);
+  try { parent.postMessage({ type: "georama-lien-pret" }, "*"); } catch (e) {}
+  // aperçu direct : ?test=1
+  if (/[?&]test=1/.test(location.search)) afficher([{ nom: "Maquette Georama", lien: "https://www.georama.ca/zone?p=proprio&lat=48.38430&lon=-71.85385&l=1" }]);
+})();
+</script>
+</body>
+</html>

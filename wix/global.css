@@ -147,3 +147,40 @@
   .button__label:not(#georama) { font-size: 15px !important; }
   .button { min-block-size: 48px !important; }
 }
+
+/* ---------- 20 oct. 2026 : moyens de paiement acceptés, au bas du pied de page (toutes les pages) ----------
+   Icônes fournies par Wix (les mêmes que la page de paiement). Deux lignes ajoutées sous le pied de page :
+   la bande blanche des cartes, puis le texte. z-index : au-dessus du fond du pied de page. */
+.footer::before {
+  content: "";
+  grid-row: 2;
+  grid-column: 1 / -1;
+  justify-self: center;
+  z-index: 2;
+  inline-size: 212px;
+  block-size: 36px;
+  margin-block: 4px 6px;
+  border-radius: 8px;
+  background-color: #ffffff;
+  background-image:
+    url("https://wixmp-6613fa290e8c1ac70a0297b6.wixmp.com/payment-method-types/buyer/96061c72-767b-49b1-b4ad-5df65cb2b691_33_logo_small_square_light_.svg"),
+    url("https://wixmp-6613fa290e8c1ac70a0297b6.wixmp.com/payment-method-types/buyer/9880a85b-48ec-4ae0-8526-5c6e4877ed57_38_logo_small_square_light_.svg"),
+    url("https://wixmp-6613fa290e8c1ac70a0297b6.wixmp.com/payment-method-types/buyer/723423ab-3b29-4684-883f-e8cef2d68293_41_logo_small_square_light_.svg"),
+    url("https://wixmp-6613fa290e8c1ac70a0297b6.wixmp.com/payment-method-types/buyer/3a9aba9e-1d19-4bb1-9295-074b7bf2e0e1_36_logo_small_square_light_.svg"),
+    url("https://wixmp-6613fa290e8c1ac70a0297b6.wixmp.com/payment-method-types/buyer/b6489285-3606-4e03-b569-497d8591f6aa_48__.svg");
+  background-repeat: no-repeat;
+  background-size: auto 24px, auto 24px, auto 24px, auto 24px, auto 26px;
+  background-position: 14px center, 52px center, 90px center, 128px center, 162px center;
+}
+.footer::after {
+  content: "Paiement sécurisé · Visa, Mastercard, American Express, Maestro, Apple Pay et Google Pay";
+  grid-row: 3;
+  grid-column: 1 / -1;
+  justify-self: center;
+  z-index: 2;
+  text-align: center;
+  padding-block: 0 18px;
+  padding-inline: 16px;
+  color: #b9bdb4;
+  font: 500 12px/1.5 Montserrat, system-ui, sans-serif;
+}
