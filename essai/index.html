@@ -318,7 +318,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <label class="chk"><input type="checkbox" id="routes" checked> <span id="routesTxt">Réseau routier</span> <em id="h_routes"></em></label><label class="chk"><input type="checkbox" id="sen"> Sentiers et chemins (OpenStreetMap) <em id="h_sen"></em></label>
 <label class="chk"><input type="checkbox" id="arb"> Arbres en relief (hauteur réelle de la forêt) <em id="h_arb"></em></label>
 <label class="chk"><input type="checkbox" id="champs"> Champs agricoles en relief (parcelles déclarées, FADQ) <em id="h_champs"></em></label>
-<div id="leg_champs" aria-label="Légende des champs agricoles"><span><i style="background:rgb(222,186,82)"></i>Céréales, maïs et soya</span><span><i style="background:rgb(146,186,84)"></i>Foin et pâturages</span><span><i style="background:rgb(196,128,82)"></i>Légumes et pommes de terre</span><span><i style="background:rgb(139,108,184)"></i>Fruits et bleuets</span><span><i style="background:rgb(214,200,150)"></i>Autres cultures</span></div>
+<div id="leg_champs" aria-label="Légende des champs agricoles"><span><i style="background:rgb(222,186,82)"></i>Céréales, maïs et soya</span><span><i style="background:rgb(146,186,84)"></i>Foin et pâturages</span><span><i style="background:rgb(196,128,82)"></i>Légumes et pommes de terre</span><span><i style="background:rgb(139,108,184)"></i>Fruits et bleuets</span><span><i style="background:rgb(214,200,150)"></i>Autres parcelles cultivables</span></div>
 <div class="g-site" id="gSite"><b>Mon site en 3D</b> <small>(relevé automatique OpenStreetMap et Overture Maps)</small></div>
 <label class="chk"><input type="checkbox" id="sb"> Bâtiments et installations en 3D (usines, pavillons, réservoirs, cheminées) <em id="h_sb"></em></label>
 <label class="chk"><input type="checkbox" id="sk"> Pistes de ski (couleur de difficulté), remontées et pylônes <em id="h_sk"></em></label>
@@ -7883,7 +7883,7 @@ window.addEventListener("message", function (e) {
   const BASE = (location.hostname === "outil.georama.ca" ? "" : "https://outil.georama.ca") + "/champs/12/";
   const Z = 12, N = 1 << Z;
   const COUL = { cereale: [222, 186, 82], fourrage: [146, 186, 84], maraicher: [196, 128, 82], fruits: [139, 108, 184], autre: [214, 200, 150] };
-  const NOMS = { cereale: "Céréales, maïs et soya", fourrage: "Foin et pâturages", maraicher: "Légumes et pommes de terre", fruits: "Fruits et bleuets", autre: "Autres cultures" };
+  const NOMS = { cereale: "Céréales, maïs et soya", fourrage: "Foin et pâturages", maraicher: "Légumes et pommes de terre", fruits: "Fruits et bleuets", autre: "Autres parcelles cultivables" };
   const coul = (g) => COUL[g] || COUL.autre;
 
   /* lecteur MVT minimal (tuiles non compressées) : [{g, rings:[[[x,y]…]…], ext}] en coordonnées de tuile */
@@ -7980,10 +7980,10 @@ window.addEventListener("message", function (e) {
         const s = Math.max(o.sMin, Math.min(o.sMax, dim / 6)), cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, R = Math.hypot(x1 - x0, y1 - y0) / 2 + s;
         const m0 = g.getTransform(); g.translate(cx, cy); g.rotate(ang);
         g.lineWidth = Math.max(0.6, s * 0.34);
-        g.strokeStyle = "rgba(40,28,10,.26)"; g.beginPath();
+        const ks = o.sillon || 1; g.strokeStyle = "rgba(40,28,10," + (0.26 * ks).toFixed(3) + ")"; g.beginPath();
         for (let y = -R; y <= R; y += s) { g.moveTo(-R, y); g.lineTo(R, y); }
         g.stroke();
-        g.strokeStyle = "rgba(255,250,225,.30)"; g.lineWidth = Math.max(0.5, s * 0.26); g.beginPath();
+        g.strokeStyle = "rgba(255,250,225," + (0.30 * ks).toFixed(3) + ")"; g.lineWidth = Math.max(0.5, s * 0.26); g.beginPath();
         for (let y = -R + s * 0.48; y <= R; y += s) { g.moveTo(-R, y); g.lineTo(R, y); }
         g.stroke();
         g.setTransform(m0);
@@ -8015,7 +8015,7 @@ window.addEventListener("message", function (e) {
             if (!f.length) return;
             const ext = f[0].ext || 4096;
             const proj = (tx, ty) => [((x + tx / ext) * k - co.x) * T.x, ((y + ty / ext) * k - co.y) * T.y];
-            peindreTuile(g, f, proj, { remplir: co.z >= 15 ? 0.42 : 0.55, relief: co.z >= 14, sMin: 3, sMax: 9, trait: "rgba(70,50,20,.6)", lTrait: co.z >= 14 ? 1.2 : 0.6 });
+            peindreTuile(g, f, proj, { remplir: co.z >= 15 ? 0.42 : 0.55, relief: co.z >= 14, sillon: 0.65, sMin: 3, sMax: 9, trait: "rgba(70,50,20,.6)", lTrait: co.z >= 14 ? 1.2 : 0.6 });
           });
           fait(null, cv);
         }).catch(() => fait(null, cv));
