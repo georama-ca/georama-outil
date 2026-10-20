@@ -1,14 +1,14 @@
 // ============================================================================
 // Code de la PAGE PANIER (h3u7l), 20 oct. 2026
 // Encadré « Votre lien de visualisation 3D » au-dessus du panier :
-// l'élément HTML #html1 affiche https://outil.georama.ca/panier/lien.html ;
+// l'élément HTML #lienPanier affiche https://outil.georama.ca/panier/lien.html ;
 // cette page lui envoie les liens des maquettes du panier (champ « Lieu à géolocaliser »).
 // Panier vide ou sans lien : l'encadré est replié.
 // ============================================================================
 import wixEcomFrontend from 'wix-ecom-frontend';
 import { liensPanier } from 'backend/georama.web';
 
-const ID_LIEN = '#html1';
+const ID_LIEN = '#lienPanier';
 
 $w.onReady(() => {
   let el;
