@@ -7937,7 +7937,7 @@ window.addEventListener("message", function (e) {
   /* tuiles z12, en cache */
   const cache = new Map();
   // version des tuiles (date de la dernière mise à jour hebdomadaire) : évite les vieilles tuiles en cache
-  const VER = fetch(BASE.replace(/12\/$/, "info.json"), { cache: "no-cache" }).then((r) => r.json()).then((j) => j.maj || "").catch(() => "");
+  const VER = fetch(BASE.replace(/12\/$/, "info.json"), { cache: "no-cache" }).then((r) => r.json()).then((j) => (j.maj || "") + "-" + (j.octets || "")).catch(() => "");
   function tuile(x, y) {
     const k = x + "/" + y;
     if (cache.has(k)) return cache.get(k);
