@@ -1,6 +1,7 @@
 /* ==========================================================================
    Georama — global.css (Wix Studio, Code > CSS)
    18 oct. 2026 : corrections pour le mobile (50 % des visites).
+   19 oct. 2026 : textes mobiles d'une grosseur plus petits (demande d'Anne-Marie).
    Copie de travail : georama-outil/wix/global.css
 
    Règles de Wix Studio pour ce fichier (vérifiées dans l'éditeur) :
@@ -125,24 +126,24 @@
      - [class~=font_8] sans guillemets : Wix ne le réécrit pas (avec guillemets, oui) ;
      - « :not(#georama) » compte comme un id : plus fort que les tailles réduites
        que Wix met sur chaque texte en mobile (#comp-… : 8 à 10 px). */
-  .rich-text__text[class~=font_0]:not(#georama) { font-size: 40px !important; line-height: 1.1 !important; }
-  .rich-text__text[class~=font_1]:not(#georama) { font-size: 34px !important; line-height: 1.15 !important; }
-  .rich-text__text[class~=font_2]:not(#georama) { font-size: 26px !important; line-height: 1.2 !important; }
-  .rich-text__text[class~=font_3]:not(#georama) { font-size: 24px !important; line-height: 1.2 !important; }
-  .rich-text__text[class~=font_4]:not(#georama) { font-size: 22px !important; line-height: 1.25 !important; }
-  .rich-text__text[class~=font_5]:not(#georama) { font-size: 20px !important; line-height: 1.3 !important; }
-  .rich-text__text[class~=font_6]:not(#georama) { font-size: 18px !important; line-height: 1.3 !important; }
-  .rich-text__text[class~=font_7]:not(#georama) { font-size: 17px !important; line-height: 1.5 !important; }
-  .rich-text__text[class~=font_8]:not(#georama) { font-size: 16px !important; line-height: 1.5 !important; }
-  .rich-text__text[class~=font_9]:not(#georama) { font-size: 14px !important; line-height: 1.4 !important; }
-  .rich-text__text[class~=font_10]:not(#georama) { font-size: 13px !important; line-height: 1.4 !important; }
+  .rich-text__text[class~=font_0]:not(#georama) { font-size: 34px !important; line-height: 1.1 !important; }
+  .rich-text__text[class~=font_1]:not(#georama) { font-size: 30px !important; line-height: 1.15 !important; }
+  .rich-text__text[class~=font_2]:not(#georama) { font-size: 23px !important; line-height: 1.2 !important; }
+  .rich-text__text[class~=font_3]:not(#georama) { font-size: 21px !important; line-height: 1.2 !important; }
+  .rich-text__text[class~=font_4]:not(#georama) { font-size: 20px !important; line-height: 1.25 !important; }
+  .rich-text__text[class~=font_5]:not(#georama) { font-size: 18px !important; line-height: 1.3 !important; }
+  .rich-text__text[class~=font_6]:not(#georama) { font-size: 17px !important; line-height: 1.3 !important; }
+  .rich-text__text[class~=font_7]:not(#georama) { font-size: 15px !important; line-height: 1.5 !important; }
+  .rich-text__text[class~=font_8]:not(#georama) { font-size: 15px !important; line-height: 1.5 !important; }
+  .rich-text__text[class~=font_9]:not(#georama) { font-size: 13px !important; line-height: 1.4 !important; }
+  .rich-text__text[class~=font_10]:not(#georama) { font-size: 12px !important; line-height: 1.4 !important; }
   /* le grand titre de chaque page */
-  h1.rich-text__text[class]:not(#georama) { font-size: 32px !important; line-height: 1.15 !important; }
+  h1.rich-text__text[class]:not(#georama) { font-size: 27px !important; line-height: 1.15 !important; }
   /* petit surtitre juste au-dessus du grand titre (ex. « TERRE À BOIS · ÉRABLIÈRE ») */
-  .rich-text:has(+ .rich-text h1) .rich-text__text[class]:not(#georama) { font-size: 14px !important; line-height: 1.4 !important; }
+  .rich-text:has(+ .rich-text h1) .rich-text__text[class]:not(#georama) { font-size: 13px !important; line-height: 1.4 !important; }
   .rich-text__text.rich-text__text span:not(#georama) { font-size: inherit !important; }
 
   /* boutons : texte lisible, zone tactile de 48 px */
-  .button__label:not(#georama) { font-size: 16px !important; }
+  .button__label:not(#georama) { font-size: 15px !important; }
   .button { min-block-size: 48px !important; }
 }
