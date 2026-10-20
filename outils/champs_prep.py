@@ -35,7 +35,7 @@ with open("/tmp/b/brut.geojsonl") as f, open(sortie, "w") as o:
         if not ft.get("geometry"): continue
         for c2, v2 in (ft.get("properties") or {}).items():
             if c2 in ("GROPRO", "DESGROPRO", "DESCODPR1"): stats[c2][str(v2)] += 1
-        o.write(json.dumps({"type": "Feature", "geometry": ft["geometry"], "properties": {"g": groupe(ft.get("properties") or {})}}, separators=(",", ":")) + "\n")
+        o.write(json.dumps({"type": "Feature", "geometry": ft["geometry"], "properties": dict({"g": groupe(ft.get("properties") or {})}, **({"d": "1"} if str((ft.get("properties") or {}).get("INDPARDRA") or "").strip().upper() == "O" else {}))}, separators=(",", ":")) + "\n")
         n += 1
 print(n, "parcelles")
 gr = collections.Counter()
