@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- Outil Georama v4.6 (2026-10-25) -->
+<!-- Outil Georama v4.7 (2026-10-25) -->
+<!-- v4.7 : longs ponts recollés (tablier droit), version alignée sur Georama Production 4.7 -->
 <!-- v4.6 : cadre précisé « artisanal, fait à la main » -->
 <!-- v4.5 : compteur d'entonnoir — recherche, recherche sans résultat, service en panne -->
 <!-- v4.4 : tracés en noir, « Partager un lien de visualisation », note des repères 3D, étiquettes compactes sur téléphone -->
@@ -402,7 +403,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v4.6 · 2026-10-25</p>
+<p class="g-version">Outil Georama v4.7 · 2026-10-25</p>
 </div>
 </aside>
 </div>
@@ -6970,15 +6971,35 @@ window.addEventListener("message", function (e) {
     const dans = (x, y) => Math.abs(x) <= d.w / 2 && Math.abs(y) <= d.hh;
     const tri = (a, b, c, nn, col) => { P.push(...a, ...b, ...c); N.push(...nn, ...nn, ...nn); C.push(...col, ...col, ...col); };
     const quad = (a, b, c, e, nn, col) => { tri(a, b, c, nn, col); tri(a, c, e, nn, col); };
-    liste.forEach((p) => {
-      const xy = p.pts.map((q) => versZone(d, q[0], q[1]));
+    // v4.7 : un long pont coupé en morceaux par les tuiles (ex. Tracel de Cap-Rouge) est recollé :
+    // un seul tablier droit d'un bout à l'autre, au lieu de morceaux qui plongent vers le fond de la vallée
+    const morceaux = liste.map((p) => ({ p, xy: p.pts.map((q) => versZone(d, q[0], q[1])) }));
+    const parent = morceaux.map((_, i) => i), racine = (i) => (parent[i] === i ? i : (parent[i] = racine(parent[i])));
+    const touche = (m, n) => [m.xy[0], m.xy[m.xy.length - 1]].some((e) => n.xy.some((q) => Math.hypot(e[0] - q[0], e[1] - q[1]) < 0.012));
+    for (let i = 0; i < morceaux.length; i++) for (let j = i + 1; j < morceaux.length; j++) {
+      if (morceaux[i].p.rail !== morceaux[j].p.rail || racine(i) === racine(j)) continue;
+      if (touche(morceaux[i], morceaux[j]) || touche(morceaux[j], morceaux[i])) parent[racine(i)] = racine(j);
+    }
+    const profils = new Map();
+    morceaux.forEach((m, i) => {
+      const r = racine(i);
+      if (!profils.has(r)) profils.set(r, []);
+      profils.get(r).push({ xy: m.xy[0], ll: m.p.pts[0] }, { xy: m.xy[m.xy.length - 1], ll: m.p.pts[m.p.pts.length - 1] });
+    });
+    profils.forEach((bouts, r) => {
+      let A = bouts[0], B = bouts[0], dmax = -1;
+      for (const e of bouts) for (const f of bouts) { const dd = Math.hypot(e.xy[0] - f.xy[0], e.xy[1] - f.xy[1]); if (dd > dmax) { dmax = dd; A = e; B = f; } }
+      profils.set(r, { A: A.xy, B: B.xy, aA: d.altFn(A.ll[0], A.ll[1]), aB: d.altFn(B.ll[0], B.ll[1]) });
+    });
+    morceaux.forEach(({ p, xy }, im) => {
       if (!xy.some(([x, y]) => dans(x, y))) return;
       const L = [0];
       for (let i = 1; i < xy.length; i++) L.push(L[i - 1] + Math.hypot(xy[i][0] - xy[i - 1][0], xy[i][1] - xy[i - 1][1]));
       const tot = L[L.length - 1] || 1e-6;
-      const a0 = d.altFn(p.pts[0][0], p.pts[0][1]), a1 = d.altFn(p.pts[p.pts.length - 1][0], p.pts[p.pts.length - 1][1]);
-      // dessus du tablier : droite d'une rive à l'autre, jamais sous le terrain
-      const haut = xy.map((q, i) => Math.max(base(a0 + ((a1 - a0) * L[i]) / tot), base(d.altFn(p.pts[i][0], p.pts[i][1]))) + leve);
+      const pr = profils.get(racine(im)), vx = pr.B[0] - pr.A[0], vy = pr.B[1] - pr.A[1], v2 = vx * vx + vy * vy || 1e-12;
+      const niveau = (q) => { const t = Math.max(0, Math.min(1, ((q[0] - pr.A[0]) * vx + (q[1] - pr.A[1]) * vy) / v2)); return pr.aA + (pr.aB - pr.aA) * t; };
+      // dessus du tablier : droite d'un bout à l'autre du pont entier, jamais sous le terrain
+      const haut = xy.map((q, i) => Math.max(base(niveau(q)), base(d.altFn(p.pts[i][0], p.pts[i][1]))) + leve);
       const col = p.rail ? rail : route, cote = beton, hw = mH(p.l / 2);
       for (let i = 0; i + 1 < xy.length; i++) {
         const [x0, y0] = xy[i], [x1, y1] = xy[i + 1];
