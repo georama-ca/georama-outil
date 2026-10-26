@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- Outil Georama v4.8 (2026-10-25) -->
+<!-- Outil Georama v4.9 (2026-10-26) -->
+<!-- v4.9 : bouton « Plein écran » dans la vue 3D -->
 <!-- v4.8 : zone prévisualisée transmise au compteur anonyme ; capture 3D pour le rapport du soir (127.0.0.1 seulement) -->
 <!-- v4.7 : longs ponts recollés (tablier droit), version alignée sur Georama Production 4.7 -->
 <!-- v4.6 : cadre précisé « artisanal, fait à la main » -->
@@ -404,7 +405,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v4.8 · 2026-10-25</p>
+<p class="g-version">Outil Georama v4.9 · 2026-10-26</p>
 </div>
 </aside>
 </div>
@@ -8395,6 +8396,90 @@ window.addEventListener("message", function (e) {
       repondre({ type: "georama-capture-erreur", message: String(e && e.message || e) });
     }
   });
+})();
+</script>
+<script>
+/* ===== v4.9 (26 oct. 2026) : « Voir en 3D » en plein écran =====
+   Bouton en haut à droite de la vue 3D. Utilise le plein écran du navigateur ; s'il n'est pas
+   offert (iPhone, cadre Wix sans permission), la vue 3D occupe toute la fenêtre de l'outil.
+   Échap ou le bouton ✕ ramène la vue normale. Fermer la 3D quitte aussi le plein écran. */
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const vue = $("vue3d");
+  if (!vue) return;
+  const st = document.createElement("style");
+  st.textContent =
+    "#v3plein{position:absolute;right:10px;top:10px;z-index:60;display:flex;align-items:center;gap:6px;" +
+    "padding:6px 11px;border:1px solid #d2d7cd;border-radius:999px;background:#fff;color:#2A2F2B;" +
+    "font:600 12.5px/1.2 Montserrat,system-ui,sans-serif;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.18)}" +
+    "#v3plein:hover{background:#f2f3ef;filter:none}#v3plein .ic{font-size:16px;line-height:1}" +
+    "@media (max-width:700px){#v3plein{right:6px;top:6px;padding:5px 8px}#v3plein .tx{display:none}}" +
+    "#vue3d:fullscreen{border-radius:0!important;box-shadow:none!important}" +
+    "#vue3d:-webkit-full-screen{border-radius:0!important;box-shadow:none!important;width:100%;height:100%}" +
+    "#vue3d.plein-repli{position:fixed!important;inset:0!important;z-index:100000!important;border-radius:0!important;box-shadow:none!important}" +
+    "body.v3-plein-repli{overflow:hidden!important}";
+  document.head.appendChild(st);
+
+  const estNatif = () => document.fullscreenElement === vue || document.webkitFullscreenElement === vue;
+  const estPlein = () => estNatif() || vue.classList.contains("plein-repli");
+  const redessiner = () => {
+    [0, 120, 400].forEach((t) => setTimeout(() => {
+      try { window.dispatchEvent(new Event("resize")); } catch (e) {}
+      try { if (!vue.hidden && typeof v3Dessiner === "function") v3Dessiner(); } catch (e) {}
+    }, t));
+  };
+  let btn = null;
+  const majBouton = () => {
+    if (!btn) return;
+    const p = estPlein();
+    btn.innerHTML = p ? '<span class="ic">✕</span><span class="tx">Quitter le plein écran</span>'
+                      : '<span class="ic">⛶</span><span class="tx">Plein écran</span>';
+    btn.title = p ? "Quitter le plein écran (Échap)" : "Afficher l'aperçu 3D en plein écran";
+    btn.setAttribute("aria-label", btn.title);
+    btn.setAttribute("aria-pressed", p ? "true" : "false");
+  };
+  const quitter = async () => {
+    if (vue.classList.contains("plein-repli")) { vue.classList.remove("plein-repli"); document.body.classList.remove("v3-plein-repli"); }
+    else if (estNatif()) {
+      try { document.exitFullscreen ? await document.exitFullscreen() : document.webkitExitFullscreen && document.webkitExitFullscreen(); } catch (e) {}
+    }
+    majBouton(); redessiner();
+  };
+  const entrer = async () => {
+    try {
+      if (vue.requestFullscreen) await vue.requestFullscreen();
+      else if (vue.webkitRequestFullscreen) vue.webkitRequestFullscreen();
+      else throw new Error("non pris en charge");
+    } catch (e) {
+      vue.classList.add("plein-repli"); document.body.classList.add("v3-plein-repli");
+    }
+    majBouton(); redessiner();
+  };
+  const poser = () => {
+    const hote = $("v3Scene") || vue;
+    if (btn && btn.parentNode === hote) return;
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.id = "v3plein"; btn.type = "button";
+      btn.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); estPlein() ? quitter() : entrer(); });
+      ["pointerdown", "mousedown", "touchstart", "wheel"].forEach((t) => btn.addEventListener(t, (e) => e.stopPropagation(), { passive: true }));
+    }
+    hote.appendChild(btn);
+    majBouton();
+  };
+  poser();
+  const t = setInterval(poser, 500); setTimeout(() => clearInterval(t), 20000);
+
+  document.addEventListener("fullscreenchange", () => { majBouton(); redessiner(); });
+  document.addEventListener("webkitfullscreenchange", () => { majBouton(); redessiner(); });
+  // Échap en mode repli : quitte le plein écran sans fermer la 3D
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && vue.classList.contains("plein-repli")) { e.stopImmediatePropagation(); e.preventDefault(); quitter(); }
+  }, true);
+  // La 3D se ferme (onglet Carte, Au mur…) : on sort du plein écran
+  new MutationObserver(() => { if (vue.hidden && estPlein()) quitter(); }).observe(vue, { attributes: true, attributeFilter: ["hidden"] });
+  window.georamaPlein3D = { entrer, quitter, estPlein };
 })();
 </script>
 </body>
