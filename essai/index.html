@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v4.6 (2026-10-22) -->
+<!-- Outil Georama v4.6 (2026-10-25) -->
 <!-- v4.6 : cadre précisé « artisanal, fait à la main » -->
 <!-- v4.5 : compteur d'entonnoir — recherche, recherche sans résultat, service en panne -->
 <!-- v4.4 : tracés en noir, « Partager un lien de visualisation », note des repères 3D, étiquettes compactes sur téléphone -->
@@ -402,7 +402,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v4.6 · 2026-10-22</p>
+<p class="g-version">Outil Georama v4.6 · 2026-10-25</p>
 </div>
 </aside>
 </div>
@@ -5295,6 +5295,67 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     }
     // pylônes des remontées : petites tours sombres
     (s.pylones || []).forEach((p) => bloc(p.lat, p.lon, 2.2, 2.2, -1, 11, [0.25, 0.25, 0.27]));
+    // v4.6 : lignes électriques en pylônes, comme Georama Production 4.6 (plus de trait plat sur le sol)
+    // une tour effilée tous les 350 m (au moins 6 mm entre deux), 2 paires de bras perpendiculaires à la ligne, jamais dans l'eau
+    (function () {
+      const lignes = s.electrique || [];
+      if (!lignes.length) return;
+      const mmU = (d.w * u) / 254, kmMm = d.w / 254;
+      const H = Math.min(12, Math.max(5, hm(40) / mmU)) * mmU;
+      const b0 = 0.9 * mmU, b1 = 0.4 * mmU, ep = 0.32 * mmU;
+      const pas = Math.max(0.35, 6 * kmMm), col = [0.72, 0.72, 0.74];
+      const dansEau = (x, y) => {
+        if (!d.eau || !d.N || !d.M) return false;
+        const gi = Math.round(((x + d.w / 2) / d.w) * d.N), gj = Math.round(((y + d.hh) / (2 * d.hh)) * d.M);
+        if (gi < 0 || gj < 0 || gi > d.N || gj > d.M) return false;
+        const q = gj * (d.N + 1) + gi;
+        return !!(d.eau[q] || (d.riv && d.riv[q]));
+      };
+      // boîte orientée : centre (X, Z), axe a (le long), demi-longueurs la et lt, de y0 à y1
+      function boiteO(X, Z, ax, az, la, lt, y0, y1) {
+        const bx = -az, bz = ax;
+        const c = [[-la, -lt], [la, -lt], [la, lt], [-la, lt]].map(([p, q]) => [X + ax * p + bx * q, Z + az * p + bz * q]);
+        for (let i = 0; i < 4; i++) {
+          const [px0, pz0] = c[i], [px1, pz1] = c[(i + 1) % 4], nx = pz1 - pz0, nz = -(px1 - px0), l = Math.hypot(nx, nz) || 1;
+          quad([px0, y0, pz0], [px1, y0, pz1], [px1, y1, pz1], [px0, y1, pz0], [-nx / l, 0, -nz / l], col);
+        }
+        quad([c[0][0], y1, c[0][1]], [c[3][0], y1, c[3][1]], [c[2][0], y1, c[2][1]], [c[1][0], y1, c[1][1]], [0, 1, 0], col);
+        quad([c[0][0], y0, c[0][1]], [c[1][0], y0, c[1][1]], [c[2][0], y0, c[2][1]], [c[3][0], y0, c[3][1]], [0, -1, 0], col);
+      }
+      function tour(X, Z, ax, az, sol) {
+        const y0 = sol - 0.003, y1 = sol + H;
+        const c0 = [[-b0, -b0], [b0, -b0], [b0, b0], [-b0, b0]], c1 = [[-b1, -b1], [b1, -b1], [b1, b1], [-b1, b1]];
+        const rot = ([p, q]) => [X + ax * p - az * q, Z + az * p + ax * q];
+        const B = c0.map(rot), T = c1.map(rot);
+        for (let i = 0; i < 4; i++) {
+          const j = (i + 1) % 4, mx = (B[i][0] + B[j][0]) / 2 - X, mz = (B[i][1] + B[j][1]) / 2 - Z, l = Math.hypot(mx, mz) || 1;
+          quad([B[i][0], y0, B[i][1]], [B[j][0], y0, B[j][1]], [T[j][0], y1, T[j][1]], [T[i][0], y1, T[i][1]], [mx / l, 0.2, mz / l], col);
+        }
+        quad([T[0][0], y1, T[0][1]], [T[3][0], y1, T[3][1]], [T[2][0], y1, T[2][1]], [T[1][0], y1, T[1][1]], [0, 1, 0], col);
+        // bras : perpendiculaires à la ligne (axe b), le bas plus large que le haut
+        boiteO(X, Z, -az, ax, 2.6 * mmU, ep, sol + H * 0.70, sol + H * 0.70 + 2 * ep);
+        boiteO(X, Z, -az, ax, 1.8 * mmU, ep, sol + H * 0.88, sol + H * 0.88 + 2 * ep);
+      }
+      const poses = [];
+      lignes.forEach((ligne) => {
+        const pts = ligne.map((p) => ({ ll: p, xy: versZone(d, p[0], p[1]) }));
+        let reste = 0;
+        for (let k = 0; k + 1 < pts.length; k++) {
+          const A = pts[k], Bp = pts[k + 1], dx = Bp.xy[0] - A.xy[0], dy = Bp.xy[1] - A.xy[1], L = Math.hypot(dx, dy);
+          if (!(L > 0)) continue;
+          for (let t = reste; t <= L; t += pas) {
+            const f = t / L, x = A.xy[0] + dx * f, y = A.xy[1] + dy * f;
+            reste = t + pas - L;
+            if (!dansZone(x, y) || Math.abs(x) > d.w / 2 - 2 * kmMm || Math.abs(y) > d.hh - 2 * kmMm || dansEau(x, y)) continue;
+            if (poses.some(([px2, py2]) => Math.hypot(px2 - x, py2 - y) < 6 * kmMm)) continue;
+            poses.push([x, y]);
+            const la = A.ll[0] + (Bp.ll[0] - A.ll[0]) * f, lo = A.ll[1] + (Bp.ll[1] - A.ll[1]) * f;
+            tour(x * u, -y * u, dx / L, -dy / L, base(d.altFn(la, lo)));
+          }
+        }
+      });
+      window.georamaPylones3D = { nb: poses.length };
+    })();
     // golf : un drapeau rouge au centre de chaque vert
     if (s.golf && s.golf.green) s.golf.green.forEach((g) => {
       const [la, lo] = centreLL(g);
@@ -5394,7 +5455,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     tracer(s.nordique, "rgba(255,255,255,0.55)", w(4, 1), [6 * k, 4 * k]);
     tracer(s.remontees, "rgba(40,40,44,0.95)", w(3, 1.4));
     tracer(s.rail, "rgba(60,60,60,0.95)", w(4, 1.5), [5 * k, 3 * k]);
-    tracer(s.electrique, "rgba(60,60,64,0.75)", w(2.2, 1));
+    // v4.6 : lignes électriques en pylônes dans la vue 3D (voir georamaSiteMaillage), plus de trait plat au sol
     // Chutes : écume blanche
     (s.chutes || []).forEach((c) => { const [x, y] = px(c.lat, c.lon), r = w(16, 3); const gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, "rgba(255,255,255,0.95)"); gr.addColorStop(1, "rgba(255,255,255,0)"); g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); });
   };
@@ -7146,6 +7207,24 @@ window.addEventListener("message", function (e) {
     }
     const LARG_MM = 254, kmParMm = z.w / LARG_MM, uParMm = 1 / LARG_MM;
     const cap = TEL() ? 3000 : 6000;
+    // v4.6 : corridor de 40 m sans arbres sous les lignes électriques (comme Georama Production 4.6)
+    const segsElec = [];
+    try {
+      const sd = window.georamaSite && window.georamaSite.donnees(d);
+      const caseSr = $("sr"), voit = !caseSr || caseSr.checked || (profilActif !== "entreprise" && profilActif !== "ferme");
+      if (sd && voit) (sd.electrique || []).forEach((l) => {
+        for (let k = 0; k + 1 < l.length; k++) {
+          const a = versZone(d, l[k][0], l[k][1]), b = versZone(d, l[k + 1][0], l[k + 1][1]);
+          segsElec.push([a[0], a[1], b[0], b[1]]);
+        }
+      });
+    } catch (e) {}
+    const DEMI_COULOIR = 0.02;
+    const dansCouloir = (x, y) => segsElec.some(([ax, ay, bx, by]) => {
+      if (x < Math.min(ax, bx) - DEMI_COULOIR || x > Math.max(ax, bx) + DEMI_COULOIR || y < Math.min(ay, by) - DEMI_COULOIR || y > Math.max(ay, by) + DEMI_COULOIR) return false;
+      const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy || 1e-12, t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / L2));
+      return Math.hypot(x - ax - vx * t, y - ay - vy * t) < DEMI_COULOIR;
+    });
     // 1. part de forêt (grille grossière) pour choisir l'espacement
     const g0 = 1.6 * kmParMm * 3;
     let nf = 0, nt = 0;
@@ -7171,6 +7250,7 @@ window.addEventListener("message", function (e) {
         if (Math.abs(px) > hw - pas * 0.3 || Math.abs(py) > hh - pas * 0.3 || !v3Dedans(z.shape, hw, px, py)) continue;
         const [la, lo] = ll(px, py), hc = can.h(la, lo);
         if (!(hc >= 3)) continue;
+        if (segsElec.length && dansCouloir(px, py)) continue;
         compte++;
         const hmm = Math.min(2.4, 0.6 + ((hc - 3) / 27) * 1.8) * grand;
         const R = Math.max(0.45, pasMm * 0.5 * (0.85 + 0.25 * hasard(i, j, 3))) * uParMm;
