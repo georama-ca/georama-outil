@@ -6975,7 +6975,9 @@ window.addEventListener("message", function (e) {
     // un seul tablier droit d'un bout à l'autre, au lieu de morceaux qui plongent vers le fond de la vallée
     const morceaux = liste.map((p) => ({ p, xy: p.pts.map((q) => versZone(d, q[0], q[1])) }));
     const parent = morceaux.map((_, i) => i), racine = (i) => (parent[i] === i ? i : (parent[i] = racine(parent[i])));
-    const touche = (m, n) => [m.xy[0], m.xy[m.xy.length - 1]].some((e) => n.xy.some((q) => Math.hypot(e[0] - q[0], e[1] - q[1]) < 0.012));
+    // un bout de m tombe sur n (à moins de 20 m d'un de ses segments : les tuiles coupent les ponts n'importe où)
+    const distSeg = (e, a, b) => { const vx = b[0] - a[0], vy = b[1] - a[1], l2 = vx * vx + vy * vy || 1e-12, t = Math.max(0, Math.min(1, ((e[0] - a[0]) * vx + (e[1] - a[1]) * vy) / l2)); return Math.hypot(e[0] - a[0] - vx * t, e[1] - a[1] - vy * t); };
+    const touche = (m, n) => [m.xy[0], m.xy[m.xy.length - 1]].some((e) => n.xy.some((q, k) => k + 1 < n.xy.length ? distSeg(e, q, n.xy[k + 1]) < 0.02 : Math.hypot(e[0] - q[0], e[1] - q[1]) < 0.02));
     for (let i = 0; i < morceaux.length; i++) for (let j = i + 1; j < morceaux.length; j++) {
       if (morceaux[i].p.rail !== morceaux[j].p.rail || racine(i) === racine(j)) continue;
       if (touche(morceaux[i], morceaux[j]) || touche(morceaux[j], morceaux[i])) parent[racine(i)] = racine(j);
