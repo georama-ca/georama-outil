@@ -6987,6 +6987,7 @@ window.addEventListener("message", function (e) {
       if (!profils.has(r)) profils.set(r, []);
       profils.get(r).push({ xy: m.xy[0], ll: m.p.pts[0] }, { xy: m.xy[m.xy.length - 1], ll: m.p.pts[m.p.pts.length - 1] });
     });
+    const diag = []; window.georamaPonts3D = diag;
     profils.forEach((bouts, r) => {
       let A = bouts[0], B = bouts[0], dmax = -1;
       for (const e of bouts) for (const f of bouts) { const dd = Math.hypot(e.xy[0] - f.xy[0], e.xy[1] - f.xy[1]); if (dd > dmax) { dmax = dd; A = e; B = f; } }
@@ -6994,8 +6995,10 @@ window.addEventListener("message", function (e) {
       // Si un bout du pont tombe dans le bas d'une pente (données coupées un peu court), le tablier ne plonge pas.
       let aA = d.altFn(A.ll[0], A.ll[1]), aB = d.altFn(B.ll[0], B.ll[1]);
       const lgM = dmax * 1000, pmax = (rails.get(r) ? 0.008 : 0.06) * lgM;
+      const brut = [Math.round(aA), Math.round(aB)];
       if (aA - aB > pmax) aB = aA - pmax; else if (aB - aA > pmax) aA = aB - pmax;
       profils.set(r, { A: A.xy, B: B.xy, aA, aB });
+      diag.push({ morceaux: morceaux.filter((_, i) => racine(i) === r).length, longueur_m: Math.round(lgM), rail: !!rails.get(r), bouts_m: brut, tablier_m: [Math.round(aA), Math.round(aB)] });
     });
     morceaux.forEach(({ p, xy }, im) => {
       if (!xy.some(([x, y]) => dans(x, y))) return;
