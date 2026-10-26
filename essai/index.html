@@ -6980,16 +6980,22 @@ window.addEventListener("message", function (e) {
       if (morceaux[i].p.rail !== morceaux[j].p.rail || racine(i) === racine(j)) continue;
       if (touche(morceaux[i], morceaux[j]) || touche(morceaux[j], morceaux[i])) parent[racine(i)] = racine(j);
     }
-    const profils = new Map();
+    const profils = new Map(), rails = new Map();
     morceaux.forEach((m, i) => {
       const r = racine(i);
+      rails.set(r, m.p.rail);
       if (!profils.has(r)) profils.set(r, []);
       profils.get(r).push({ xy: m.xy[0], ll: m.p.pts[0] }, { xy: m.xy[m.xy.length - 1], ll: m.p.pts[m.p.pts.length - 1] });
     });
     profils.forEach((bouts, r) => {
       let A = bouts[0], B = bouts[0], dmax = -1;
       for (const e of bouts) for (const f of bouts) { const dd = Math.hypot(e.xy[0] - f.xy[0], e.xy[1] - f.xy[1]); if (dd > dmax) { dmax = dd; A = e; B = f; } }
-      profils.set(r, { A: A.xy, B: B.xy, aA: d.altFn(A.ll[0], A.ll[1]), aB: d.altFn(B.ll[0], B.ll[1]) });
+      // pente maximale du tablier : un pont ferroviaire est presque plat (0,8 %), une route au plus 6 %.
+      // Si un bout du pont tombe dans le bas d'une pente (données coupées un peu court), le tablier ne plonge pas.
+      let aA = d.altFn(A.ll[0], A.ll[1]), aB = d.altFn(B.ll[0], B.ll[1]);
+      const lgM = dmax * 1000, pmax = (rails.get(r) ? 0.008 : 0.06) * lgM;
+      if (aA - aB > pmax) aB = aA - pmax; else if (aB - aA > pmax) aA = aB - pmax;
+      profils.set(r, { A: A.xy, B: B.xy, aA, aB });
     });
     morceaux.forEach(({ p, xy }, im) => {
       if (!xy.some(([x, y]) => dans(x, y))) return;
