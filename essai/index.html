@@ -8381,8 +8381,13 @@ window.addEventListener("message", function (e) {
       await attendre(d.attente || 15000);                 // arbres, bâtiments et ponts arrivent après le relief
       v3.auto = false;
       Object.assign(v3.cam, d.cam || { dist: 1.75, pitch: 0.62, yaw: 0.55 });
+      // taille fixe de 1200 × 780 pour l'image, même si la fenêtre est cachée ou petite
+      const cv = v3.gl.canvas, style = cv.getAttribute("style");
+      cv.style.cssText += ";position:fixed;left:0;top:0;width:1200px;height:780px;";
       v3Dessiner();
-      const image = v3.gl.canvas.toDataURL("image/jpeg", 0.88);
+      const image = cv.toDataURL("image/jpeg", 0.88);
+      if (style === null) cv.removeAttribute("style"); else cv.setAttribute("style", style);
+      v3Dessiner();
       if (image.length < 1000) throw new Error("image vide");
       repondre({ type: "georama-capture-ok", image, segment: typeof profilActif !== "undefined" ? profilActif : "",
                  arbres: (window.georamaArbres3D || {}).nb || 0, relief: v3.donnees.source || "" });
