@@ -68,57 +68,57 @@
  ],
  "candidats": [],
  "groupes": {
-  "autre": 133051,
-  "cereale": 136038,
-  "fourrage": 91878,
-  "fruits": 5235,
-  "maraicher": 4930
+  "autre": 132616,
+  "cereale": 135989,
+  "fourrage": 91925,
+  "fruits": 5234,
+  "maraicher": 4917
  },
  "valeurs": {
   "GROPRO": [
    [
     "None",
-    123366
+    122924
    ],
    [
     "FOI",
-    78049
+    78094
    ],
    [
     "SOY",
-    57827
+    57823
    ],
    [
     "MGR",
-    42723
+    42693
    ],
    [
     "BPA",
-    15312
+    15313
    ],
    [
     "MAF",
-    11185
+    11182
    ],
    [
     "AVO",
-    9138
+    9132
    ],
    [
     "MUL",
-    7431
+    7432
    ],
    [
     "INC",
-    6363
+    6349
    ],
    [
     "AUT",
-    3882
+    3899
    ],
    [
     "ORG",
-    3778
+    3779
    ],
    [
     "PTF",
@@ -130,11 +130,11 @@
    ],
    [
     "CMA",
-    1550
+    1542
    ],
    [
     "CNL",
-    1447
+    1446
    ],
    [
     "LDT",
@@ -142,11 +142,11 @@
    ],
    [
     "PRT",
-    722
+    719
    ],
    [
     "PDT",
-    666
+    658
    ],
    [
     "DIV",
@@ -154,11 +154,11 @@
    ],
    [
     "RAC",
-    312
+    313
    ],
    [
     "POM",
-    250
+    251
    ],
    [
     "FEU",
@@ -166,7 +166,7 @@
    ],
    [
     "FRU",
-    213
+    214
    ],
    [
     "VIV",
@@ -176,47 +176,47 @@
   "DESGROPRO": [
    [
     "None",
-    123366
+    122924
    ],
    [
     "Foin",
-    78049
+    78094
    ],
    [
     "Soya",
-    57827
+    57823
    ],
    [
     "Maïs-grain",
-    42723
+    42693
    ],
    [
     "Blé, triticale, épeautre",
-    15312
+    15313
    ],
    [
     "Maïs fourrager",
-    11185
+    11182
    ],
    [
     "Avoine",
-    9138
+    9132
    ],
    [
     "Multiples",
-    7431
+    7432
    ],
    [
     "Inconnu",
-    6363
+    6349
    ],
    [
     "Autres",
-    3882
+    3899
    ],
    [
     "Orge",
-    3778
+    3779
    ],
    [
     "Petits fruits",
@@ -228,11 +228,11 @@
    ],
    [
     "CMA-Multiples",
-    1550
+    1542
    ],
    [
     "Canola",
-    1447
+    1446
    ],
    [
     "Légumes de transformation",
@@ -240,11 +240,11 @@
    ],
    [
     "Protéagineuses",
-    722
+    719
    ],
    [
     "Pommes de terre",
-    666
+    658
    ],
    [
     "CMA-Légumes divers",
@@ -252,11 +252,11 @@
    ],
    [
     "CMA-Racines",
-    312
+    313
    ],
    [
     "Pommes",
-    250
+    251
    ],
    [
     "CMA-Feuillus",
@@ -264,7 +264,7 @@
    ],
    [
     "CMA-Fruits",
-    213
+    214
    ],
    [
     "CMA-Vivaces",
@@ -274,47 +274,47 @@
   "DESCODPR1": [
    [
     "None",
-    123366
+    122924
    ],
    [
     "Soya",
-    53211
+    53212
    ],
    [
     "Maïs-grain",
-    43494
+    43464
    ],
    [
     "Foin option besoin alimentaire",
-    41307
+    41341
    ],
    [
     "Foin",
-    15204
+    15196
    ],
    [
     "Foin option superficie",
-    12851
+    12850
    ],
    [
     "Pâturage",
-    9544
+    9560
    ],
    [
     "Avoine",
-    9019
+    9006
    ],
    [
     "Maïs fourrager",
-    8251
+    8256
    ],
    [
     "Blé de printemps animal",
-    5726
+    5733
    ],
    [
     "Blé automne d'alimentation animale",
-    4566
+    4571
    ],
    [
     "Soya IP (identité préservée)",
@@ -322,7 +322,7 @@
    ],
    [
     "Partie non cultivée",
-    4136
+    4124
    ],
    [
     "Orge",
@@ -330,19 +330,19 @@
    ],
    [
     "Maïs fourrager option superficie",
-    3364
+    3357
    ],
    [
     "Blé de printemps humain",
-    2934
+    2929
    ],
    [
     "Seigle d'automne de consommation animale",
-    1992
+    1991
    ],
    [
     "Blé automne d'alimentation humaine",
-    1870
+    1866
    ],
    [
     "Bleuets",
@@ -350,31 +350,31 @@
    ],
    [
     "Engrais vert",
-    1707
+    1719
    ],
    [
     "Jachère",
-    1564
+    1568
    ],
    [
     "Canola de printemps",
-    1482
+    1481
    ],
    [
     "Soya de semence",
-    1456
+    1457
    ],
    [
     "Pommes de terre de table",
-    1450
+    1439
    ],
    [
     "Lég. maraîchers",
-    1419
+    1412
    ],
    [
     "Foin de céréales",
-    1314
+    1322
    ],
    [
     "Canneberges",
@@ -382,11 +382,11 @@
    ],
    [
     "Prod. non assurable",
-    877
+    879
    ],
    [
     "Maïs sucré frais",
-    426
+    424
    ],
    [
     "Avoine printemps semence",
@@ -394,7 +394,7 @@
    ],
    [
     "Blé de semence d'alimentation humaine",
-    350
+    348
    ],
    [
     "Tourbe",
@@ -414,19 +414,19 @@
    ],
    [
     "Pommes de terre pour la transformation",
-    287
+    286
    ],
    [
     "Haricot sec",
-    265
+    262
    ],
    [
     "Pois sec",
-    253
+    254
    ],
    [
     "Pommes",
-    253
+    254
    ],
    [
     "Orge de semence",
@@ -438,7 +438,7 @@
    ],
    [
     "Panic érigé",
-    206
+    205
    ],
    [
     "Carottes de terre minérale",
@@ -446,11 +446,11 @@
    ],
    [
     "Orge brassicole",
-    170
+    171
    ],
    [
     "Choux d'hiver",
-    161
+    162
    ],
    [
     "Chanvre",
@@ -462,47 +462,47 @@
    ],
    [
     "Blé de semence d'alimentation animale",
-    131
+    127
    ],
    [
     "Courges d'hiver",
-    126
+    127
    ],
    [
     "Fraisières en plasticulture 1re année production",
     125
    ],
    [
-    "Agriculture maraîchère de proximité conventionnel",
-    112
+    "Oignons jaunes t.noire",
+    114
    ],
    [
-    "Oignons jaunes t.noire",
-    112
+    "Agriculture maraîchère de proximité conventionnel",
+    111
+   ],
+   [
+    "Betteraves",
+    111
    ],
    [
     "Quinoa",
     109
    ],
    [
-    "Betteraves",
-    109
-   ],
-   [
     "Citrouilles",
-    104
+    102
    ],
    [
     "Carottes de terre noire",
     99
    ],
    [
-    "Haricots",
+    "Agriculture maraîchère de proximité biologique",
     98
    ],
    [
-    "Agriculture maraîchère de proximité biologique",
-    98
+    "Haricots",
+    95
    ],
    [
     "Choux d'été",
