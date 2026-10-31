@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- Outil Georama v4.10 (2026-10-30) -->
-<!-- v4.10 : ruisseaux (GRHQ) et chemins plus larges dans l'aperçu 3D, peints par-dessus les champs ; arbres dégagés le long des chemins et ruisseaux ; chemins plus épais sur la carte -->
+<!-- v4.10 : ruisseaux et lacs LiDAR (mêmes données que Georama Production) et chemins plus larges dans l'aperçu 3D, peints par-dessus les champs ; arbres dégagés le long des chemins et ruisseaux ; chemins plus épais sur la carte -->
 <!-- v4.9 : bouton « Plein écran » dans la vue 3D -->
 <!-- v4.8 : zone prévisualisée transmise au compteur anonyme ; capture 3D pour le rapport du soir (127.0.0.1 seulement) -->
 <!-- v4.7 : longs ponts recollés (tablier droit), version alignée sur Georama Production 4.7 -->
@@ -4083,7 +4083,8 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
   }
   // Chemins (AQréseau+, même couche que la carte) et ruisseaux (GRHQ, permanents et intermittents)
   // v4.10 : une seule fonction pour les deux couches WMS lues en masque
-  async function masqueWMS(ll, TW, TH, couches, S) {
+  async function masqueWMS(ll, TW, TH, couches, S, base, test) {
+    base = base || ROUTES_WMS; test = test || ((p, o) => (p[o + 3] > 60 ? 1 : 0));
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     const R = 6378137, m3857 = (lat, lon) => [R * lon * Math.PI / 180, R * Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360))];
     for (let k = 0; k < ll.length; k += 2) {
@@ -4091,7 +4092,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
       if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
     }
     const Hs = Math.max(64, Math.round((S * (y1 - y0)) / (x1 - x0)));
-    const url = ROUTES_WMS + "SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=" + couches + "&STYLES=&FORMAT=image/png&TRANSPARENT=true&CRS=EPSG:3857&BBOX=" +
+    const url = base + "SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap&LAYERS=" + couches + "&STYLES=&FORMAT=image/png&TRANSPARENT=true&CRS=EPSG:3857&BBOX=" +
       [x0, y0, x1, y1].map((v) => v.toFixed(2)).join(",") + "&WIDTH=" + S + "&HEIGHT=" + Math.min(2048, Hs);
     const im = await chargerImage(url);
     if (!im) return null;
@@ -4103,7 +4104,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     for (let i = 0; i < TW * TH; i++) {
       const [x, y] = m3857(ll[2 * i], ll[2 * i + 1]);
       const X = Math.floor(((x - x0) / (x1 - x0)) * cv.width), Y = Math.floor(((y1 - y) / (y1 - y0)) * cv.height);
-      if (X >= 0 && Y >= 0 && X < cv.width && Y < cv.height && px[4 * (Y * cv.width + X) + 3] > 60) { M[i] = 1; n++; }
+      if (X >= 0 && Y >= 0 && X < cv.width && Y < cv.height) { const v = test(px, 4 * (Y * cv.width + X)); if (v) { M[i] = v; n++; } }
     }
     return n ? M : null;
   }
@@ -4111,9 +4112,44 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     if (!(typeof coucheVue === "function" && coucheVue("routes"))) return Promise.resolve(null);
     return masqueWMS(ll, TW, TH, COUCHE_ROUTES, 1536);
   }
+  // v4.10 : mêmes données que Georama Production — lits d'écoulement LiDAR (MRNF), lus par l'adresse
+  // /apis/ws/ qui accepte les appels du navigateur. 1 = rivière permanente (bleu foncé), 2 = ruisseau intermittent (bleu pâle).
+  const HYDRO_WMS = "https://geoegl.msp.gouv.qc.ca/apis/ws/mffpecofor.fcgi?";
   function masqueRuisseaux(ll, TW, TH) {
     if (!(typeof coucheVue === "function" && coucheVue("rivieres"))) return Promise.resolve(null);
-    return masqueWMS(ll, TW, TH, "GRHQ_RES_LIN_PERM,GRHQ_RES_LIN_INTER", TW);
+    const lidar = masqueWMS(ll, TW, TH, "hydrolidar_lits", TW, HYDRO_WMS, (p, o) => {
+      if (p[o + 3] < 77) return 0;
+      const r = p[o] / 255, b = p[o + 2] / 255;
+      return r < 0.38 ? 1 : b > 0.55 + 0.4 * r ? 2 : 0;
+    }).then((M) => (M ? sansPetits(M, TW, TH, 2, Math.round((6 * TW) / 254)) : null));
+    // filet : si le LiDAR ne répond pas, réseau hydrographique GRHQ (moins de ruisseaux)
+    return lidar.catch(() => null).then((M) => M || masqueWMS(ll, TW, TH, "GRHQ_RES_LIN_PERM,GRHQ_RES_LIN_INTER", TW));
+  }
+  function masqueLacsLidar(ll, TW, TH) {
+    if (!(typeof coucheVue === "function" && coucheVue("lacs"))) return Promise.resolve(null);
+    return masqueWMS(ll, TW, TH, "hydrolidar_surfac", TW, HYDRO_WMS, (p, o) => (p[o + 3] > 30 ? 1 : 0));
+  }
+  // Retire les bouts de ruisseau intermittent trop courts (fossés, bruit du LiDAR), comme Georama Production (6 mm)
+  function sansPetits(M, W, H, val, minPx) {
+    const vu = new Uint8Array(W * H), pile = [], comp = [];
+    for (let s0 = 0; s0 < W * H; s0++) {
+      if (M[s0] !== val || vu[s0]) continue;
+      pile.length = 0; comp.length = 0; pile.push(s0); vu[s0] = 1;
+      let x0 = W, x1 = 0, y0 = H, y1 = 0;
+      while (pile.length) {
+        const q = pile.pop(); comp.push(q);
+        const x = q % W, y = (q - x) / W;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          const xx = x + dx, yy = y + dy;
+          if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+          const r = yy * W + xx;
+          if (!vu[r] && M[r] === val) { vu[r] = 1; pile.push(r); }
+        }
+      }
+      if (Math.max(x1 - x0, y1 - y0) + 1 < minPx) for (const q of comp) M[q] = 0;
+    }
+    return M;
   }
   // Dilatation rapide (fenêtre carrée de rayon r, en deux passes) : épaissit un masque
   function dilater(M, W, H, r) {
@@ -4172,14 +4208,26 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
         ll[2 * k] = la; ll[2 * k + 1] = lo; A[k] = d.altFn(la, lo);
       }
       const mpp = (d.w * 1000) / TW;
-      const [eau, routesFin, ruisFin] = await Promise.all([
+      const [eauOSM, routesFin, ruisFin, lacsLidar] = await Promise.all([
         masqueEauOSM(ll, TW, TH, mpp, z.lat0).catch(() => null),
         masqueRoutes(ll, TW, TH).catch(() => null),
         masqueRuisseaux(ll, TW, TH).catch(() => null),
+        masqueLacsLidar(ll, TW, TH).catch(() => null),
       ]);
-      // v4.10 : chemins plus larges (environ 1,2 mm sur la maquette), ruisseaux environ 0,7 mm
+      // lacs : OpenStreetMap + lacs LiDAR (comme Georama Production)
+      let eau = eauOSM;
+      if (lacsLidar) { eau = eau || new Uint8Array(TW * TH); for (let q = 0; q < TW * TH; q++) if (lacsLidar[q]) eau[q] = 1; }
+      // v4.10 : chemins plus larges (environ 1,2 mm sur la maquette) ; rivières permanentes environ 1 mm,
+      // ruisseaux intermittents fins (largeur du tracé LiDAR, environ 0,5 mm)
       const routes = dilater(routesFin, TW, TH, Math.max(1, Math.round(TW / 512)));
-      const ruisseaux = dilater(ruisFin, TW, TH, Math.max(1, Math.round(TW / 1024)));
+      let ruisseaux = null;
+      if (ruisFin) {
+        const perm = new Uint8Array(TW * TH);
+        for (let q = 0; q < TW * TH; q++) if (ruisFin[q] === 1) perm[q] = 1;
+        const permL = dilater(perm, TW, TH, Math.max(1, Math.round(TW / 1024)));
+        ruisseaux = new Uint8Array(TW * TH);
+        for (let q = 0; q < TW * TH; q++) if (permL[q] || ruisFin[q]) ruisseaux[q] = 1;
+      }
       // couloir sans arbres : chemins et ruisseaux, plus environ 1 mm de chaque côté
       let couloir = null;
       if (routes || ruisseaux) {
