@@ -4215,7 +4215,16 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
         masqueLacsLidar(ll, TW, TH).catch(() => null),
       ]);
       // lacs : OpenStreetMap + lacs LiDAR (comme Georama Production)
+      // v4.10 : avec les cours d'eau LiDAR, les ruisseaux d'OpenStreetMap (traits fins) sont retirés ; seuls les plans d'eau restent
       let eau = eauOSM;
+      if (eau && ruisFin) {
+        const rO = Math.max(2, Math.round(TW / 512)), inv = new Uint8Array(TW * TH);
+        for (let q = 0; q < TW * TH; q++) inv[q] = eau[q] ? 0 : 1;
+        const er = dilater(inv, TW, TH, rO);
+        for (let q = 0; q < TW * TH; q++) er[q] = er[q] ? 0 : 1;
+        eau = dilater(er, TW, TH, rO);
+        for (let q = 0; q < TW * TH; q++) if (eau[q] && !eauOSM[q]) eau[q] = 0;
+      }
       if (lacsLidar) { eau = eau || new Uint8Array(TW * TH); for (let q = 0; q < TW * TH; q++) if (lacsLidar[q]) eau[q] = 1; }
       // v4.10 : chemins plus larges (environ 1,2 mm sur la maquette) ; rivières permanentes environ 1 mm,
       // ruisseaux intermittents fins (largeur du tracé LiDAR, environ 0,5 mm)
@@ -4267,7 +4276,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
       if (d.eau && d.N) {
         const gi = Math.round(((i + 0.5) / TW) * d.N), gj = Math.round((1 - (j + 0.5) / TH) * d.M), q = gj * (d.N + 1) + gi;
         if (d.eau[q]) return 1;
-        if (d.riv && d.riv[q]) return 2;
+        if (d.riv && d.riv[q] && !t.ruisseaux) return 2;   // v4.10 : ruisseaux OpenStreetMap ignorés quand ceux du LiDAR sont là
       }
       return 0;
     };
