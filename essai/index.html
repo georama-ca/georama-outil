@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- Outil Georama v4.10 (2026-10-30) -->
-<!-- v4.10 : ruisseaux et lacs LiDAR (mêmes données que Georama Production) et chemins plus larges dans l'aperçu 3D, peints par-dessus les champs ; arbres dégagés le long des chemins et ruisseaux ; chemins plus épais sur la carte -->
+<!-- v4.10 : arbres comme Georama Production (une cime LiDAR = un arbre, 0,9 à 1,9 mm) ; ruisseaux et lacs LiDAR (mêmes données que Georama Production) et chemins plus larges dans l'aperçu 3D, peints par-dessus les champs ; arbres dégagés le long des chemins et ruisseaux ; chemins plus épais sur la carte -->
 <!-- v4.9 : bouton « Plein écran » dans la vue 3D -->
 <!-- v4.8 : zone prévisualisée transmise au compteur anonyme ; capture 3D pour le rapport du soir (127.0.0.1 seulement) -->
 <!-- v4.7 : longs ponts recollés (tablier droit), version alignée sur Georama Production 4.7 -->
@@ -7171,7 +7171,7 @@ window.addEventListener("message", function (e) {
   /* ---------- 10. v2.7 : arbres en relief dans la vue 3D, pour tous les segments ----------
      La case « Arbres » place de petits arbres trapus là où il y a de la forêt, comme sur la maquette imprimée.
      Hauteur réelle de la forêt : LiDAR de RNCan (surface - terrain). Sans LiDAR (grand nord) : forêts de la carte.
-     Tout est fusionné en un seul objet et plafonné (6 000 arbres, 3 000 sur téléphone) : léger, même sur mobile. */
+     Tout est fusionné en un seul objet et plafonné (v4.10 : 35 000 arbres, 14 000 sur téléphone). */
   const canopees = new Map();
   const TEL = () => Math.min(window.innerWidth, window.innerHeight) < 600;
   const arbresVoulus = () => {
@@ -7227,8 +7227,8 @@ window.addEventListener("message", function (e) {
     await geotiff();
     const ll = versLLZone(z), hw = z.w / 2, hh = demiHauteur(z.w, z.shape);
     const coins = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].map(([x, y]) => ll(x * 1.02, y * 1.02));
-    // résolution assez fine pour l'espacement des arbres (1,6 mm sur la maquette), pas plus : téléchargement léger
-    const res = Math.pow(2, Math.max(1, Math.floor(Math.log2((1.6 * z.w * 1000) / 254 / 2))));
+    // résolution assez fine pour séparer les cimes (environ 0,5 mm sur la maquette)
+    const res = Math.pow(2, Math.max(1, Math.floor(Math.log2((0.5 * z.w * 1000) / 254))));   // v4.10 : ~0,5 mm, pour trouver les cimes comme Georama Production
     const pts = coins.map(([a, b]) => lccA(a, b));
     const minx = Math.floor(Math.min(...pts.map((p) => p[0])) / res) * res - 2 * res, maxx = Math.ceil(Math.max(...pts.map((p) => p[0])) / res) * res + 2 * res;
     const miny = Math.floor(Math.min(...pts.map((p) => p[1])) / res) * res - 2 * res, maxy = Math.ceil(Math.max(...pts.map((p) => p[1])) / res) * res + 2 * res;
@@ -7345,7 +7345,6 @@ window.addEventListener("message", function (e) {
       can = { src: c0.src, h: (la, lo) => (dansParc(la, lo) ? c0.h(la, lo) : 0) };
     }
     const LARG_MM = 254, kmParMm = z.w / LARG_MM, uParMm = 1 / LARG_MM;
-    const cap = TEL() ? 3000 : 6000;
     // v4.6 : corridor de 40 m sans arbres sous les lignes électriques (comme Georama Production 4.6)
     const segsElec = [];
     try {
@@ -7364,14 +7363,11 @@ window.addEventListener("message", function (e) {
       const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy || 1e-12, t = Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / L2));
       return Math.hypot(x - ax - vx * t, y - ay - vy * t) < DEMI_COULOIR;
     });
-    // 1. part de forêt (grille grossière) pour choisir l'espacement
-    const g0 = 1.6 * kmParMm * 3;
-    let nf = 0, nt = 0;
-    for (let y = -hh; y <= hh; y += g0) for (let x = -hw; x <= hw; x += g0) {
-      if (!v3Dedans(z.shape, hw, x, y)) continue;
-      nt++; const [la, lo] = ll(x, y); if (can.h(la, lo) >= 3) nf++;
-    }
-    if (!nf) return;
+    // v4.10 : arbres comme Georama Production — une cime détectée dans la canopée LiDAR = un arbre.
+    // Cimes = maxima locaux (fenêtre d'environ 1 mm), rayon 0,45 à 0,95 mm selon la hauteur,
+    // cimes qui se chevauchent fusionnées (on garde la plus haute), hauteur 0,6 à 2,4 mm.
+    const ESP_MM = 1.0, RMIN = 0.45, RMAX = 0.95, HMIN = 0.6, HMAX = 2.4;
+    const cap = TEL() ? 14000 : 35000;
     // v4.10 : pas d'arbres sur les chemins ni dans les ruisseaux (couloir calculé avec la texture)
     let couloirs = null;
     try {
@@ -7383,44 +7379,84 @@ window.addEventListener("message", function (e) {
       const c = couloirs, i = Math.floor(((x + c.w / 2) / c.w) * c.TW), j = Math.floor(((c.hh - y) / (2 * c.hh)) * c.TH);
       return i >= 0 && j >= 0 && i < c.TW && j < c.TH && c.M[j * c.TW + i] === 1;
     };
-    const aireMm2 = (2 * hw / kmParMm) * (2 * hh / kmParMm) * (nf / nt);
-    const pasMm = Math.max(1.6, Math.sqrt(aireMm2 / cap)), pas = pasMm * kmParMm;
+    const pasG = TEL() ? 0.4 : 0.33, pasK = pasG * kmParMm;          // grille de détection (mm, puis km)
+    const nx = Math.max(8, Math.floor((2 * hw) / pasK)), ny = Math.max(8, Math.floor((2 * hh) / pasK));
+    const chm = new Float32Array(nx * ny), ok = new Uint8Array(nx * ny);
+    const gx = (i) => -hw + (i + 0.5) * pasK, gy = (j) => hh - (j + 0.5) * pasK;
+    let nf = 0;
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const x = gx(i), y = gy(j), q = j * nx + i;
+      if (!v3Dedans(z.shape, hw, x, y)) continue;
+      const [la, lo] = ll(x, y), h = can.h(la, lo);
+      chm[q] = h > 0 ? h : 0;
+      if (h >= 3) { ok[q] = 1; nf++; }
+    }
+    if (!nf) return;
+    // maxima locaux dans un disque d'environ un espacement minimal
+    const r = Math.max(1, Math.round(ESP_MM / 2 / pasG)), voisins = [];
+    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if ((dx || dy) && dx * dx + dy * dy <= r * r) voisins.push([dx, dy]);
+    const hasard = (i, j, s) => { const v = Math.sin(i * 127.1 + j * 311.7 + s * 74.7) * 43758.5453; return v - Math.floor(v); };
+    const cand = [];
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const q = j * nx + i; if (!ok[q]) continue;
+      const h = chm[q]; let maxi = true;
+      for (const [dx, dy] of voisins) {
+        const ii = i + dx, jj = j + dy;
+        if (ii < 0 || jj < 0 || ii >= nx || jj >= ny) continue;
+        if (chm[jj * nx + ii] > h + 1e-4) { maxi = false; break; }
+      }
+      if (!maxi) continue;
+      const px = gx(i) + (hasard(i, j, 1) - 0.5) * pasK, py = gy(j) + (hasard(i, j, 2) - 0.5) * pasK;
+      if (segsElec.length && dansCouloir(px, py)) continue;
+      if (couloirs && surCouloir(px, py)) continue;
+      const rmm = (RMIN + (RMAX - RMIN) * Math.max(0, Math.min(1, (h - 3) / 25))) * (0.92 + 0.16 * hasard(i, j, 3));
+      cand.push([px, py, h, rmm, i, j]);
+    }
+    cand.sort((A, B) => B[2] - A[2]);
+    // suppression des chevauchements : grille de recherche de 2 mm, les plus hauts d'abord
+    const cel = 2 * RMAX * 1.1 * kmParMm, gW = Math.ceil((2 * hw) / cel) + 1, grilleA = new Map(), gardes = [];
+    for (const t of cand) {
+      if (gardes.length >= cap) break;
+      const ci = Math.floor((t[0] + hw) / cel), cj = Math.floor((hh - t[1]) / cel);
+      let libre = true;
+      for (let dj = -1; dj <= 1 && libre; dj++) for (let di = -1; di <= 1 && libre; di++) {
+        const l = grilleA.get((cj + dj) * gW + ci + di); if (!l) continue;
+        for (const o of l) if (Math.hypot(o[0] - t[0], o[1] - t[1]) < 0.85 * (o[3] + t[3]) * kmParMm) { libre = false; break; }
+      }
+      if (!libre) continue;
+      gardes.push(t);
+      const cle = cj * gW + ci; if (!grilleA.has(cle)) grilleA.set(cle, []); grilleA.get(cle).push(t);
+    }
+    const pasMm = ESP_MM;
     const gam = ($("murGamme") || $("v3pal") || {}).value || "boreal";
     const vg = estVille() && typeof villeGamme === "function" ? villeGamme() : null;
     const vert = hexRVB((vg && vg.arbre) || COUL_ARBRE[gam] || COUL_ARBRE.boreal);
-    const grand = Math.min(2.2, Math.max(1, pasMm / 1.6));        // arbres plus gros quand ils sont plus espacés
-    const hasard = (i, j, s) => { const v = Math.sin(i * 127.1 + j * 311.7 + s * 74.7) * 43758.5453; return v - Math.floor(v); };
     const tri = (a, b, c, nn, col) => { P.push(a[0], a[1], a[2], b[0], b[1], b[2], c[0], c[1], c[2]); N.push(nn[0], nn[1], nn[2], nn[0], nn[1], nn[2], nn[0], nn[1], nn[2]); C.push(col[0], col[1], col[2], col[0], col[1], col[2], col[0], col[1], col[2]); };
     const n = 6, cs = [], sn = [];
     for (let i = 0; i <= n; i++) { cs.push(Math.cos((i / n) * 2 * Math.PI)); sn.push(Math.sin((i / n) * 2 * Math.PI)); }
     let compte = 0;
-    for (let j = 0, y = -hh + pas / 2; y < hh && compte < cap; j++, y += pas) {
-      for (let i = 0, x = -hw + pas / 2; x < hw && compte < cap; i++, x += pas) {
-        const px = x + (hasard(i, j, 1) - 0.5) * pas * 0.7, py = y + (hasard(i, j, 2) - 0.5) * pas * 0.7;
-        if (Math.abs(px) > hw - pas * 0.3 || Math.abs(py) > hh - pas * 0.3 || !v3Dedans(z.shape, hw, px, py)) continue;
-        const [la, lo] = ll(px, py), hc = can.h(la, lo);
-        if (!(hc >= 3)) continue;
-        if (segsElec.length && dansCouloir(px, py)) continue;
-        if (couloirs && surCouloir(px, py)) continue;
-        compte++;
-        const hmm = Math.min(2.4, 0.6 + ((hc - 3) / 27) * 1.8) * grand;
-        const R = Math.max(0.45, pasMm * 0.5 * (0.85 + 0.25 * hasard(i, j, 3))) * uParMm;
-        const H = hmm * uParMm, X = px * u, Zc = -py * u, sol = base(d.altFn(la, lo)) - 0.0012;
-        const ym = sol + H * 0.42, rm = R * 0.96, top = sol + H, k = 0.88 + 0.22 * hasard(i, j, 4);
-        const col = [vert[0] * k, vert[1] * k, vert[2] * k];
-        const pointe = hasard(i, j, 5) < 0.55;                   // résineux en pointe, feuillus plus ronds
-        const rt = pointe ? 0 : R * 0.45, yt = pointe ? top : sol + H * 0.85;
+    for (const [px, py, hc, rmm, i, j] of gardes) {
+      const [la, lo] = ll(px, py);
+      compte++;
+      const hmm = HMIN + Math.max(0, Math.min(1, (hc - 3) / 27)) * (HMAX - HMIN);
+      const R = rmm * uParMm, H = hmm * uParMm, X = px * u, Zc = -py * u, sol = base(d.altFn(la, lo)) - 0.0012;
+      const k = 0.88 + 0.22 * hasard(i, j, 4), col = [vert[0] * k, vert[1] * k, vert[2] * k];
+      const pointe = hasard(i, j, 5) < 0.55;                   // résineux en pointe, feuillus plus ronds
+      const top = sol + H;
+      if (pointe) {
         for (let s = 0; s < n; s++) {
           const a0 = [X + R * cs[s], sol, Zc + R * sn[s]], a1 = [X + R * cs[s + 1], sol, Zc + R * sn[s + 1]];
-          const m0 = [X + rm * cs[s], ym, Zc + rm * sn[s]], m1 = [X + rm * cs[s + 1], ym, Zc + rm * sn[s + 1]];
-          const nx = (cs[s] + cs[s + 1]) / 2, nz = (sn[s] + sn[s + 1]) / 2;
-          tri(a0, m0, m1, [nx, 0.15, nz], col); tri(a0, m1, a1, [nx, 0.15, nz], col);
-          if (pointe) tri(m0, [X, top, Zc], m1, [nx * 0.7, 0.7, nz * 0.7], col);
-          else {
-            const t0 = [X + rt * cs[s], yt, Zc + rt * sn[s]], t1 = [X + rt * cs[s + 1], yt, Zc + rt * sn[s + 1]];
-            tri(m0, t0, t1, [nx * 0.75, 0.62, nz * 0.75], col); tri(m0, t1, m1, [nx * 0.75, 0.62, nz * 0.75], col);
-            tri(t0, [X, top, Zc], t1, [nx * 0.25, 0.97, nz * 0.25], col);
-          }
+          const nx2 = (cs[s] + cs[s + 1]) / 2, nz2 = (sn[s] + sn[s + 1]) / 2;
+          tri(a0, [X, top, Zc], a1, [nx2 * 0.8, 0.55, nz2 * 0.8], col);
+        }
+      } else {
+        const rt = R * 0.5;
+        for (let s = 0; s < n; s++) {
+          const a0 = [X + R * cs[s], sol, Zc + R * sn[s]], a1 = [X + R * cs[s + 1], sol, Zc + R * sn[s + 1]];
+          const t0 = [X + rt * cs[s], top - H * 0.12, Zc + rt * sn[s]], t1 = [X + rt * cs[s + 1], top - H * 0.12, Zc + rt * sn[s + 1]];
+          const nx2 = (cs[s] + cs[s + 1]) / 2, nz2 = (sn[s] + sn[s + 1]) / 2;
+          tri(a0, t0, t1, [nx2 * 0.8, 0.5, nz2 * 0.8], col); tri(a0, t1, a1, [nx2 * 0.8, 0.5, nz2 * 0.8], col);
+          tri(t0, [X, top, Zc], t1, [nx2 * 0.25, 0.97, nz2 * 0.25], col);
         }
       }
     }
