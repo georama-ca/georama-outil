@@ -45,6 +45,27 @@
  ],
  "entreprise": [
   {
+   "fichier": "maquette-3d-barrage-isle-maligne-pont-riviere-georama.jpg",
+   "wix": "7477d2_8be35d423f0f40ce8ea660316c2e082a~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D du barrage d'Isle-Maligne, de ses ponts et de la rivière, à Alma"
+  },
+  {
+   "fichier": "maquette-3d-barrage-centrale-ville-alma-georama.jpg",
+   "wix": "7477d2_263e06d100854598905b174c824800bb~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'une centrale hydroélectrique, d'un site industriel et d'une ville"
+  },
+  {
+   "fichier": "maquette-3d-site-industriel-riviere-barrage-georama.jpg",
+   "wix": "7477d2_ed384df49a7f48e6812a0f22804d4bfe~mv2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "alt": "Maquette 3D d'un site industriel au bord d'une rivière et de ses barrages"
+  },
+  {
    "fichier": "maquette-3d-chantier-maritime-entreprise-georama.jpg",
    "wix": "7477d2_3c73d063db3d420d987185fced2e13d7~mv2.jpg",
    "w": 2000,
