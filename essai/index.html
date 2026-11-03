@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- Outil Georama v4.10 (2026-10-30) -->
+<!-- Outil Georama v4.11 (2026-11-03) -->
+<!-- v4.11 : promo de Noël −25 % affichée (prix barré, étape 5, tailles) jusqu'au 1er décembre ; le rabais lui-même est appliqué par Wix au panier -->
 <!-- v4.10 : routes publiques OpenStreetMap ajoutées aux chemins (tous les segments, comme Production) ; arbres comme Georama Production (une cime LiDAR = un arbre, 0,9 à 1,9 mm) ; ruisseaux et lacs LiDAR (mêmes données que Georama Production) et chemins plus larges dans l'aperçu 3D, peints par-dessus les champs ; arbres dégagés le long des chemins et ruisseaux ; chemins plus épais sur la carte -->
 <!-- v4.9 : bouton « Plein écran » dans la vue 3D -->
 <!-- v4.8 : zone prévisualisée transmise au compteur anonyme ; capture 3D pour le rapport du soir (127.0.0.1 seulement) -->
@@ -130,6 +131,7 @@ html .g-app #map{height:100%;min-height:0}
 .g-total{display:flex;flex-direction:column;line-height:1.2}
 .g-total span{font-size:12px;color:var(--doux)}
 .g-total strong{font-size:22px}
+.g-total .g-avant{font-size:13px;font-weight:500;color:var(--doux);margin-left:4px}
 .g-app .g-suivant{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:0 20px;border:0;border-radius:10px;background:var(--encre);color:var(--fond);font-size:15px;font-weight:600}
 .g-app .g-suivant.commander{background:var(--foret);color:#fff}
 
@@ -406,7 +408,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v4.10 · 2026-10-30</p>
+<p class="g-version">Outil Georama v4.11 · 2026-11-03</p>
 </div>
 </aside>
 </div>
@@ -5661,6 +5663,12 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     { v: "sm", nom: "Sur mesure", cm: "de 20 à 200 cm de côté", plaques: 1, mm: null, k: 1, prix: null, entreprise: true, l: 80, h: 100 },
   ];
   const NOEL_LIMITE = new Date(2026, 11, 2); // affiché jusqu'au 1er décembre inclus
+  // v4.11 : promo de Noël. À mettre en ligne EN MÊME TEMPS que le rabais automatique Wix
+  // « Promo Noël 25 % jusqu'au 1er déc. » (Wix applique le rabais au panier ; l'outil ne fait que l'afficher).
+  const PROMO = { pct: 25, fin: new Date(2026, 11, 2) };   // jusqu'au 1er décembre inclus, heure locale
+  const promoActive = () => PROMO.pct > 0 && new Date() < PROMO.fin && !surSoumission();
+  const prixPromo = (n) => Math.round(n * (100 - PROMO.pct)) / 100;
+  const fmtArgent = (n) => n.toLocaleString("fr-CA", { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 }) + " $";
 
   /* ---------- État ---------- */
   const params = new URLSearchParams(location.search);
@@ -5748,7 +5756,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
   blocTaille.className = "choix-groupe g-taille";
   blocTaille.innerHTML = '<span class="choix-titre">Taille</span><div class="g-formats" id="gFormats" role="radiogroup" aria-label="Taille de la maquette">' +
     FORMATS.map((f) => '<button type="button" class="g-format' + (f.entreprise ? " g-format-sm" : "") + '" role="radio" data-f="' + f.v + '"><strong>' + f.nom + '</strong><span>' + f.cm +
-      (f.plaques > 1 ? " · " + f.plaques + " plaques" : "") + '</span><em>' + (f.entreprise ? "sur soumission" : f.prix ? fmt(f.prix) + " $, cadre inclus" : "dès " + PRIX.base + " $") + '</em></button>').join("") +
+      (f.plaques > 1 ? " · " + f.plaques + " plaques" : "") + '</span><em>' + (f.entreprise ? "sur soumission" : f.prix ? (promoActive() ? fmtArgent(prixPromo(f.prix)) + " (−" + PROMO.pct + " %)" : fmt(f.prix) + " $") + ", cadre inclus" : "dès " + (promoActive() ? fmtArgent(prixPromo(PRIX.base)) + " (−" + PROMO.pct + " %)" : PRIX.base + " $")) + '</em></button>').join("") +
     '</div><div class="g-surmesure" id="gSurMesure" hidden><label>Largeur (cm) <input type="number" id="gSmL" min="20" max="200" step="1" value="80"></label>' +
     '<label>Hauteur (cm) <input type="number" id="gSmH" min="20" max="200" step="1" value="100"></label><span class="g-aide">Le rendu à l\'écran garde le format 10 × 12 ; votre soumission montrera le vrai format et ses plaques.</span></div>' +
     '<p class="g-aide" id="gFormatAide"></p>';
@@ -6000,7 +6008,9 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
   function maj() {
     const t = TYPES.find((x) => x.v === profilActif);
     const produit = profilActif === "entreprise" ? "Georama Entreprise" : format.entreprise ? "Sur mesure" : format.plaques > 1 ? "Grand format" : el("murGamme").value === "unie" ? "Essentiel" : "Signature";
-    const prix = surSoumission() ? "Sur soumission" : total().toLocaleString("fr-CA") + " $";
+    const promo = promoActive(), brut = surSoumission() ? 0 : total();
+    const prix = surSoumission() ? "Sur soumission" : promo ? fmtArgent(prixPromo(brut)) : brut.toLocaleString("fr-CA") + " $";
+    const prixDetail = promo ? prix + " (−" + PROMO.pct + " %, au lieu de " + fmtArgent(brut) + ")" : prix;
     const lieu = (typeChoisi && LIEU[profilActif]) || "Mon lieu";
     const res = [
       typeChoisi && t ? t.nom : "",
@@ -6020,9 +6030,10 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     el("gAide2").textContent = (PROFILS[profilActif] && PROFILS[profilActif].accueil) || "";
     el("gTypes").querySelectorAll(".g-type").forEach((b) => b.setAttribute("aria-pressed", String(typeChoisi && b.dataset.v === profilActif)));
     el("gEtapeNo").textContent = "Étape " + pas + " sur " + NB;
-    el("gProduit").textContent = produit + " · " + prix;
+    el("gProduit").textContent = produit + " · " + prix + (promo ? " (−" + PROMO.pct + " %)" : "");
     el("gBarre").style.width = Math.round((pas / NB) * 100) + "%";
-    el("gTotal").textContent = prix;
+    if (promo) el("gTotal").innerHTML = echHtml(prix) + ' <s class="g-avant">' + echHtml(fmtArgent(brut)) + "</s>";
+    else el("gTotal").textContent = prix;
     const b = el("gSuivant");
     b.textContent = pas === NB ? (surSoumission() ? "Demander ma soumission" : "Commander") : "Suivant : " + COURT[pas + 1];
     b.classList.toggle("commander", pas === NB);
@@ -6033,13 +6044,18 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
       ["Ajouts", ajoutsResume()],
       ["Maquette", produit + " · " + texteOption("murGamme")],
       ["Cadre", el("murCadre").value === "sans" ? "Sans cadre" : format.plaques > 1 || format.entreprise ? texteOption("murCadre").replace(/\s*\(\+30 \$\)/, "") + " (inclus)" : texteOption("murCadre")],
-      ["Total", profilActif === "entreprise" ? "Sur soumission" : format.entreprise ? "Sur soumission" + (format.plaques > 1 ? " (dès 549 $)" : "") : prix],
+      ["Total", profilActif === "entreprise" ? "Sur soumission" : format.entreprise ? "Sur soumission" + (format.plaques > 1 ? " (dès 549 $)" : "") : prixDetail],
     ].map(([a, v]) => "<div><dt>" + echHtml(a) + "</dt><dd>" + echHtml(v) + "</dd></div>").join("");
     el("gStatut").textContent = pas === NB && el("msg").textContent !== msgRef ? el("msg").textContent : "";
     const accueil = (PROFILS[profilActif] && PROFILS[profilActif].accueil) || "";
     el("msg").classList.toggle("g-cache", el("msg").textContent.trim() === accueil.trim());
     el("gCadreAide").hidden = !aMarqueur();
-    if (el("gNoel")) el("gNoel").hidden = surSoumission() || new Date() >= NOEL_LIMITE;
+    if (el("gNoel")) {
+      el("gNoel").hidden = surSoumission() || new Date() >= NOEL_LIMITE;
+      el("gNoel").textContent = promoActive()
+        ? "−" + PROMO.pct + " % sur toutes les maquettes jusqu'au 1er décembre. Places limitées pour Noël."
+        : "Places limitées pour Noël : commandez avant le 1er décembre.";
+    }
     if (el("gAide5")) el("gAide5").textContent = surSoumission()
       ? (profilActif === "entreprise"
         ? "Rien à payer maintenant : Georama vous envoie une soumission PDF détaillée en 24 h, avec une première vue 3D. Vous pourrez y ajouter vos plans, vos bâtiments et votre logo."
