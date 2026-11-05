@@ -1,0 +1,60 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Montserrat, Arial, sans-serif" />
+      <mj-text font-size="16px" line-height="1.55" color="#1b1f1b" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f2f2ee">
+    <mj-section background-color="#0b0d0b" padding="22px 24px">
+      <mj-column>
+        <mj-text align="center" color="#9AA85C" font-size="20px" font-weight="800" letter-spacing="6px">GEORAMA</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#FF671F" padding="10px 24px">
+      <mj-column>
+        <mj-text align="center" color="#0b0d0b" font-size="15px" font-weight="700">Promo Noël : −25 % sur toutes les maquettes, jusqu'au 1er décembre</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" padding="0">
+      <mj-column>
+        <mj-image src="https://outil.georama.ca/photos/peche/maquette-3d-lac-bathymetrie-cadre-georama.jpg" alt="Maquette 3D d'un lac, dans un cadre de bois, au mur" href="https://www.georama.ca/?utm_source=infolettre&amp;utm_medium=email&amp;utm_campaign=promo-noel&amp;utm_content=photo" padding="0" />
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" padding="28px 28px 8px">
+      <mj-column>
+        <mj-text font-size="26px" font-weight="800" line-height="1.2">Votre coin de pays, en relief, pour Noël</mj-text>
+        <mj-text>Bonjour,</mj-text>
+        <mj-text>Vous avez déjà découvert Georama, et nous vous en remercions. Pour Noël, toutes les maquettes sont à <b>25 % de rabais jusqu'au 1er décembre</b> : la maquette 10 × 12 po passe de 175 $ à <b>131,25 $</b>.</mj-text>
+        <mj-text>Une terre, un lac, un territoire de chasse, un chalet ou une montagne : vous tapez l'adresse, le nom du lac ou le numéro de lot, et l'aperçu 3D s'affiche gratuitement, sans inscription. Le rabais s'applique tout seul au panier.</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" padding="0 28px 8px">
+      <mj-column>
+        <mj-button background-color="#9AA85C" color="#0b0d0b" font-size="16px" font-weight="700" border-radius="6px" inner-padding="14px 26px" href="https://www.georama.ca/zone?utm_source=infolettre&amp;utm_medium=email&amp;utm_campaign=promo-noel&amp;utm_content=bouton">Voir ma maquette en 3D →</mj-button>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" padding="12px 28px 4px">
+      <mj-column width="50%">
+        <mj-image src="https://outil.georama.ca/photos/chasse/maquette-3d-territoire-de-chasse-orignal-georama.jpg" alt="Maquette 3D d'un territoire de chasse" padding="6px" border-radius="6px" href="https://www.georama.ca/territoire-de-chasse?utm_source=infolettre&amp;utm_medium=email&amp;utm_campaign=promo-noel&amp;utm_content=chasse" />
+        <mj-text align="center" font-size="14px" font-weight="700" padding-top="2px">Territoire de chasse</mj-text>
+      </mj-column>
+      <mj-column width="50%">
+        <mj-image src="https://outil.georama.ca/photos/terre-a-bois/maquette-3d-erabliere-chalet-terrain-georama.jpg" alt="Maquette 3D d'une terre à bois avec chalet" padding="6px" border-radius="6px" href="https://www.georama.ca/terre-%C3%A9rabli%C3%A8re-chalet?utm_source=infolettre&amp;utm_medium=email&amp;utm_campaign=promo-noel&amp;utm_content=terre" />
+        <mj-text align="center" font-size="14px" font-weight="700" padding-top="2px">Terre à bois et chalet</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section background-color="#ffffff" padding="8px 28px 24px">
+      <mj-column>
+        <mj-text font-size="15px"><b>Pour recevoir votre maquette avant Noël</b>, commandez avant le 1er décembre. Chaque maquette est imprimée en 3D à Saint-Félicien, en environ 3 semaines.</mj-text>
+        <mj-text font-size="15px">Une question, un projet plus grand (grand format, entreprise, municipalité) ? Répondez simplement à ce courriel.</mj-text>
+        <mj-text>Charles Desbiens et Maryse Perron Chartier<br />Copropriétaires de Georama</mj-text>
+      </mj-column>
+    </mj-section>
+    <mj-section padding="18px 24px">
+      <mj-column>
+        <mj-text align="center" font-size="12px" color="#585E55" line-height="1.5">Georama · 658, boul. Sacré-Cœur, Saint-Félicien (Québec) · info@georama.ca · georama.ca<br />Vous recevez ce courriel parce que vous avez demandé un aperçu ou acheté une maquette Georama. Vous pouvez vous désabonner en tout temps avec le lien ci-dessous.</mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
