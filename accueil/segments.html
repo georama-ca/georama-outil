@@ -166,8 +166,15 @@
     $('promesse').textContent = s.promesse;
     $('couches').innerHTML = s.couches.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('');
     $('champ').textContent = s.champ;
-    $('prix').textContent = s.prix;
-    $('prixNote').textContent = s.prixNote;
+    // Promo de Noël −25 % (jusqu'au 1er déc. inclus, heure locale ; rabais appliqué par Wix au panier)
+    const promo = s.prix === 'Dès 175 $' && new Date() < new Date(2026, 11, 2);
+    if (promo) {
+      $('prix').innerHTML = 'Dès 131,25 $ <s style="font-weight:500;font-size:14px;color:var(--doux)">175 $</s>';
+      $('prixNote').textContent = '−25 % jusqu\u2019au 1er décembre · ' + s.prixNote;
+    } else {
+      $('prix').textContent = s.prix;
+      $('prixNote').textContent = s.prixNote;
+    }
     $('page').href = s.url;
     $('page').textContent = 'Découvrir : ' + s.lien + ' →';
   }
