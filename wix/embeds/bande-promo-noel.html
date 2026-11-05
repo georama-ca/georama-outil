@@ -1,0 +1,37 @@
+<script>
+(function(){
+  var FIN = Date.parse('2026-12-02T05:00:00Z'); // 1er déc. 23 h 59, heure de Toronto
+  if (Date.now() >= FIN) return;
+  try { if (sessionStorage.getItem('georamaBandeFermee') === '1') return; } catch(e) {}
+  var css = '#georamaBande{position:fixed;left:0;right:0;z-index:51;background:#FF671F;color:#0b0d0b;'
+    + 'font-family:Montserrat,Arial,sans-serif;font-weight:700;font-size:14px;line-height:18px;'
+    + 'padding:7px 40px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.18);box-sizing:border-box}'
+    + '#georamaBande a{color:#0b0d0b;text-decoration:none}'
+    + '#georamaBande .gb-lien{text-decoration:underline;white-space:nowrap}'
+    + '#georamaBande button{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:0;'
+    + 'color:#0b0d0b;font-size:20px;line-height:20px;cursor:pointer;padding:4px 8px}'
+    + '@media (max-width:640px){#georamaBande{font-size:12.5px;line-height:16px;padding:6px 34px}#georamaBande .gb-plus{display:none}}';
+  function header(){ return document.querySelector('header'); }
+  function placer(b){ var h = header(); var y = 0;
+    if (h) { var r = h.getBoundingClientRect(); y = Math.max(0, r.bottom); }
+    b.style.top = y + 'px';
+    var pg = document.getElementById('SITE_PAGES');
+    if (pg) pg.style.marginTop = (document.getElementById('georamaBande') ? b.offsetHeight + 12 : 0) + 'px'; }
+  function monter(){
+    if (document.getElementById('georamaBande')) return;
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+    var b = document.createElement('div'); b.id = 'georamaBande'; b.setAttribute('role', 'region'); b.setAttribute('aria-label', 'Promotion');
+    b.innerHTML = '<a href="https://www.georama.ca/zone">Promo Noël : −25 % sur toutes les maquettes jusqu’au 1<sup>er</sup> décembre'
+      + '<span class="gb-plus"><span style="padding:0 6px">·</span><span class="gb-lien">Voir mon terrain en 3D →</span></span></a>'
+      + '<button type="button" aria-label="Fermer">×</button>';
+    b.querySelector('button').addEventListener('click', function(){
+      b.remove(); var pg = document.getElementById('SITE_PAGES'); if (pg) pg.style.marginTop = '0px'; try { sessionStorage.setItem('georamaBandeFermee', '1'); } catch(e) {} });
+    document.body.appendChild(b); placer(b);
+    var t = 0; function maj(){ if (t) return; t = requestAnimationFrame(function(){ t = 0; placer(b); }); }
+    addEventListener('scroll', maj, {passive: true}); addEventListener('resize', maj);
+    setInterval(function(){ if (document.getElementById('georamaBande')) placer(b); }, 250);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', monter); else monter();
+  addEventListener('load', monter);
+})();
+</script>
