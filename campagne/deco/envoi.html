@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>Envoi</title>
+<p id="s">Envoi…</p>
+<script>
+(async () => {
+  const f = new URLSearchParams(location.search).get('f');
+  try {
+    const r = await fetch(f, { cache: 'no-store' });
+    const b = await r.blob();
+    (window.opener || window.parent).postMessage({ georamaFichier: f.split('/').pop(), blob: b }, '*');
+    document.getElementById('s').textContent = 'Envoyé : ' + f + ' (' + b.size + ' octets)';
+  } catch (e) { document.getElementById('s').textContent = 'Erreur : ' + e.message; }
+})();
+</script>
