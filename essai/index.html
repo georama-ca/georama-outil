@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- Outil Georama v4.11 (2026-11-03) -->
+<!-- Outil Georama v4.12 (2026-11-05) -->
+<!-- v4.12 : lac Saint-Jean (fond SHC NONNA) ; Ville : noms gravés et bâtiment choisi en 3D ; « Choisir mon bâtiment » plus clair ; pas d'arbres sur les barrages et ouvrages -->
 <!-- v4.11 : promo de Noël −25 % affichée (prix barré, étape 5, tailles) jusqu'au 1er décembre ; le rabais lui-même est appliqué par Wix au panier -->
 <!-- v4.10 : routes publiques OpenStreetMap ajoutées aux chemins (tous les segments, comme Production) ; arbres comme Georama Production (une cime LiDAR = un arbre, 0,9 à 1,9 mm) ; ruisseaux et lacs LiDAR (mêmes données que Georama Production) et chemins plus larges dans l'aperçu 3D, peints par-dessus les champs ; arbres dégagés le long des chemins et ruisseaux ; chemins plus épais sur la carte -->
 <!-- v4.9 : bouton « Plein écran » dans la vue 3D -->
@@ -408,7 +409,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v4.11 · 2026-11-03</p>
+<p class="g-version">Outil Georama v4.12 · 2026-11-05</p>
 </div>
 </aside>
 </div>
@@ -809,7 +810,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 00596|Croix|Croix (no 1), Lacs à la|33|48.3983,-71.7847,48.4073,-71.7759,48.4001,-71.7783
 00598|Garnier|~|1|48.7176,-71.7231,48.7293,-71.7129,48.7217,-71.7160
 00601|Kenogamichiche|Kénogamichiche, Lac|1|48.3635,-71.6571,48.3778,-71.5786,48.3663,-71.6290
-00602|SaintJean|Saint-Jean, Lac|33|48.4170,-72.3548,48.7626,-71.7509,48.5898,-72.0411
+00602|SaintJean|Saint-Jean, Lac|37|48.4170,-72.3548,48.7626,-71.7509,48.5898,-72.0411
 00604|Black|~|1|45.4911,-75.8651,45.4924,-75.8627,45.4913,-75.8638
 00606|Carman|~|1|45.5993,-75.9328,45.6055,-75.9218,45.6033,-75.9284
 00607|CastorBlanc|Castor Blanc, Lac du|93|46.5276,-75.8129,46.5550,-75.7777,46.5372,-75.7844
@@ -3791,7 +3792,7 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
 `,s=e+"_"+prodNumero()+".gpx";telecharger(s,l,"application/gpx+xml"),prodLog(s+" téléchargé ("+i.length+" trace(s)"+(["lacs","rivieres","routes"].includes(e)?", source OpenStreetMap":"")+").","ok")}catch(r){prodLog(t[e]+" : GPX non disponible ("+(r.message||"service inaccessible")+"). Utilisez le PNG.","err")}finally{n.disabled=!1,n.textContent=o}}function prodPixels(e){const n=(e.b3857[2]-e.b3857[0])/e.W,a=(e.b3857[3]-e.b3857[1])/e.H;return e.ring.slice(0,-1).map(t=>{const[o,r]=merc(t);return[(o-e.b3857[0])/n,(e.b3857[3]-r)/a]})}function prodImageLocale(e){const n=prodZone();if(!n){prodLog("Aucune zone affichée.","err");return}if((e==="lot"||e==="lot-plein")&&!coucheLots){prodLog("Aucun lot de client affiché : cherchez d’abord le numéro de lot.","err");return}if(e==="trace"&&!coucheTrace){prodLog("Aucun tracé GPX dans ce lien.","err");return}const a=document.createElement("canvas");a.width=n.W,a.height=n.H;const t=a.getContext("2d"),o=(n.b3857[2]-n.b3857[0])/n.W,r=(n.b3857[3]-n.b3857[1])/n.H,i=(s,c)=>{const[u,d]=merc([s,c]);return[(u-n.b3857[0])/o,(n.b3857[3]-d)/r]};e==="masque"?(t.fillStyle="#fff",t.beginPath(),prodPixels(n).forEach(([s,c],u)=>u?t.lineTo(s,c):t.moveTo(s,c)),t.closePath(),t.fill()):e==="lot-plein"?(t.fillStyle="#000",lotAnneaux().forEach(s=>{t.beginPath(),s.forEach(([c,u],d)=>{const[h,m]=i(u,c);d?t.lineTo(h,m):t.moveTo(h,m)}),t.closePath(),t.fill()})):e==="trace"?(t.strokeStyle="#000",t.lineWidth=Math.max(3,Math.round(n.W/500)),t.lineJoin="round",t.lineCap="round",coucheTrace.eachLayer(s=>{t.beginPath(),s.getLatLngs().forEach((c,u)=>{const[d,h]=i(c.lng,c.lat);u?t.lineTo(d,h):t.moveTo(d,h)}),t.stroke()})):(t.strokeStyle="#000",t.lineWidth=Math.max(3,Math.round(n.W/500)),t.lineJoin="round",coucheLots.eachLayer(s=>{const c=s.getLatLngs();(Array.isArray(c[0])?c:[c]).forEach(u=>{t.beginPath(),u.forEach((d,h)=>{const[m,p]=i(d.lng,d.lat);h?t.lineTo(m,p):t.moveTo(m,p)}),t.closePath(),t.stroke()})}));const l=e+"_"+prodNumero()+".png";a.toBlob(s=>{const c=document.createElement("a");c.href=URL.createObjectURL(s),c.download=l,document.body.appendChild(c),c.click(),setTimeout(()=>{URL.revokeObjectURL(c.href),c.remove()},1500)}),prodLog(l+" téléchargé ("+n.W+" × "+n.H+" px).","ok")}function prodExporterFiche(){const e=prodZone();if(!e){prodLog("Aucune zone affichée.","err");return}const n={rect:"Rectangle 10 × 12 (portrait)",round:"Rond",hex:"Hexagone"},a=prodPixels(e),t=i=>(Math.abs(i)<.05?0:i).toFixed(1);let o;if(e.shape==="rect"){const i=["bas-gauche","bas-droit","haut-droit","haut-gauche"];o=points(e.lat,e.lon,e.w,e.shape,e.deg).map(([s,c])=>{const[u,d]=merc([c,s]);return[(u-e.b3857[0])/((e.b3857[2]-e.b3857[0])/e.W),(e.b3857[3]-d)/((e.b3857[3]-e.b3857[1])/e.H)]}).map((s,c)=>"  "+i[c].padEnd(12)+" x = "+t(s[0]).padStart(7)+"   y = "+t(s[1]).padStart(7)).join(`
 `)}else if(e.shape==="round"){const i=a.reduce((s,c)=>s+c[0],0)/a.length,l=a.reduce((s,c)=>s+c[1],0)/a.length;o="  centre       x = "+t(i)+"   y = "+t(l)+`
   rayon        `+t(Math.hypot(a[0][0]-i,a[0][1]-l))+" px"}else o=a.map((i,l)=>"  sommet "+(l+1)+"     x = "+t(i[0]).padStart(7)+"   y = "+t(i[1]).padStart(7)).join(`
-`);const r=["FICHE D’ASSEMBLAGE GEORAMA — commande "+($("prodNo").value.trim()||"(sans numéro)"),"","Forme ................ "+(n[e.shape]||e.shape),"Largeur couverte ..... "+e.w+" km","Hauteur couverte ..... "+e.hauteur.toFixed(3)+" km","Rotation ............. "+e.deg+"° (sens horaire depuis le nord ; le haut de la maquette pointe vers "+e.deg+"°)","Centre ............... "+e.lat.toFixed(6)+", "+e.lon.toFixed(6),"Lots ................. "+(lotsActifs.join(", ")||"—"),...pecheActif()?["Lac choisi ........... "+(monLac?(monLac.nom||"lac sans nom")+" (OpenStreetMap "+monLac.id+")":"—")].concat(lacsSondesDansZone(e).map(i=>"Fond (GBLQ) .......... "+i.nom+" – code "+i.code+(i.fosse?" – fosse "+fmtProf(i.fosse.p):"")+(bathyNumerique(i)&&i.f&64?" – "+BATHY_URL+"Donnees_gpkg/"+i.fichier+".zip":i.f&1?" – carte PDF : "+BATHY_URL+"PDF/"+i.fichier+".pdf":""))):[],"Lien ................. "+$("res").value,"","IMAGES PNG (relief, lacs, rivières, routes, cadastre, lot, masque)","  Toutes : "+e.W+" × "+e.H+" px, nord en haut, projection EPSG:3857, même cadrage.","  Résolution au sol : "+e.mParPx.toFixed(2)+" m par pixel.","  Emprise EPSG:3857 : "+e.b3857.map(i=>i.toFixed(2)).join(", "),"","POSITION DE LA MAQUETTE DANS LES IMAGES (pixels, origine en haut à gauche)",o,"",...postes.length?["SYMBOLES PLACÉS PAR LE CLIENT ("+postes.length+")"].concat(postes.map(i=>{const[l,s]=(()=>{const[c,u]=merc([i.lon,i.lat]);return[(c-e.b3857[0])/((e.b3857[2]-e.b3857[0])/e.W),(e.b3857[3]-u)/((e.b3857[3]-e.b3857[1])/e.H)]})();return"  "+POSTES_TYPES[i.t].nom.padEnd(20)+" "+i.lat.toFixed(5)+", "+i.lon.toFixed(5)+"   pixel x = "+l.toFixed(0)+", y = "+s.toFixed(0)})).concat([""]):[],"POUR SUPERPOSER SUR LE .3MF","  1. Découper chaque image avec le masque_"+prodNumero()+".png (blanc = maquette).","  2. Tourner l’image de "+-e.deg+"° (sens antihoraire de "+e.deg+"°) pour remettre le haut de la maquette en haut.","  3. Étirer l’image sur la surface du .3mf : "+e.w+" km de large = largeur du modèle.",""].join(`
+`);const r=["FICHE D’ASSEMBLAGE GEORAMA — commande "+($("prodNo").value.trim()||"(sans numéro)"),"","Forme ................ "+(n[e.shape]||e.shape),"Largeur couverte ..... "+e.w+" km","Hauteur couverte ..... "+e.hauteur.toFixed(3)+" km","Rotation ............. "+e.deg+"° (sens horaire depuis le nord ; le haut de la maquette pointe vers "+e.deg+"°)","Centre ............... "+e.lat.toFixed(6)+", "+e.lon.toFixed(6),"Lots ................. "+(lotsActifs.join(", ")||"—"),...pecheActif()?["Lac choisi ........... "+(monLac?(monLac.nom||"lac sans nom")+" (OpenStreetMap "+monLac.id+")":"—")].concat(lacsSondesDansZone(e).map(i=>(i.shc?"Fond (SHC NONNA) ..... "+i.nom+" – fichiers NONNA10 et NONNA100_lac-Saint-Jean_EPSG3857.tif (dossier Georama Production) – avis SHC obligatoire sur la maquette":"Fond (GBLQ) .......... "+i.nom+" – code "+i.code)+(i.fosse?" – fosse "+fmtProf(i.fosse.p):"")+(bathyNumerique(i)&&i.f&64?" – "+BATHY_URL+"Donnees_gpkg/"+i.fichier+".zip":i.f&1?" – carte PDF : "+BATHY_URL+"PDF/"+i.fichier+".pdf":""))):[],"Lien ................. "+$("res").value,"","IMAGES PNG (relief, lacs, rivières, routes, cadastre, lot, masque)","  Toutes : "+e.W+" × "+e.H+" px, nord en haut, projection EPSG:3857, même cadrage.","  Résolution au sol : "+e.mParPx.toFixed(2)+" m par pixel.","  Emprise EPSG:3857 : "+e.b3857.map(i=>i.toFixed(2)).join(", "),"","POSITION DE LA MAQUETTE DANS LES IMAGES (pixels, origine en haut à gauche)",o,"",...postes.length?["SYMBOLES PLACÉS PAR LE CLIENT ("+postes.length+")"].concat(postes.map(i=>{const[l,s]=(()=>{const[c,u]=merc([i.lon,i.lat]);return[(c-e.b3857[0])/((e.b3857[2]-e.b3857[0])/e.W),(e.b3857[3]-u)/((e.b3857[3]-e.b3857[1])/e.H)]})();return"  "+POSTES_TYPES[i.t].nom.padEnd(20)+" "+i.lat.toFixed(5)+", "+i.lon.toFixed(5)+"   pixel x = "+l.toFixed(0)+", y = "+s.toFixed(0)})).concat([""]):[],"POUR SUPERPOSER SUR LE .3MF","  1. Découper chaque image avec le masque_"+prodNumero()+".png (blanc = maquette).","  2. Tourner l’image de "+-e.deg+"° (sens antihoraire de "+e.deg+"°) pour remettre le haut de la maquette en haut.","  3. Étirer l’image sur la surface du .3mf : "+e.w+" km de large = largeur du modèle.",""].join(`
 `);telecharger("fiche_"+prodNumero()+".txt",r,"text/plain;charset=utf-8"),prodLog("fiche_"+prodNumero()+".txt téléchargée.","ok")}function prodUrlImage(e,n){const a=n.b3857.map(r=>r.toFixed(2)).join(","),t=(r,i,l)=>r+"SERVICE=WMS&VERSION="+l+"&REQUEST=GetMap&LAYERS="+i+"&STYLES=&FORMAT=image/png&TRANSPARENT=true&"+(l==="1.3.0"?"CRS":"SRS")+"=EPSG:3857&BBOX="+a+"&WIDTH="+n.W+"&HEIGHT="+n.H;if(e==="relief")return t(WMS,COUCHE_RELIEF,"1.1.1");if(e==="canopee")return t(WMS,COUCHE_CANOPEE,"1.1.1");if(e==="lacs")return t(WMS,COUCHE_LACS,"1.1.1");if(e==="rivieres")return t(WMS,COUCHE_RIVIERES,"1.1.1");if(e==="routes")return t(ROUTES_WMS,COUCHE_ROUTES,"1.3.0");if(e==="hab-nourriture")return t(WMS,COUCHE_PEE,"1.1.1")+"&SLD_BODY="+encodeURIComponent(habSLD([[HAB_REGLES.nourriture,"#000000"]]));if(e==="hab-abri")return t(WMS,COUCHE_PEE,"1.1.1")+"&SLD_BODY="+encodeURIComponent(habSLD([[HAB_REGLES.abri,"#000000"]]));if(e==="erablieres")return t(WMS,COUCHE_PEE,"1.1.1")+"&SLD_BODY="+encodeURIComponent(eraSLD("#000000"));if(e==="peuplements")return t(WMS,COUCHE_PEE,"1.1.1");if(e==="densite")return t(WMS,COUCHE_VMB,"1.1.1")+"&SLD_BODY="+encodeURIComponent(vmbSLD(vmbRampe()));const o=MH_SOURCES.find(r=>r.nom===e);if(o)return t(o.url,encodeURIComponent(o.couche),"1.3.0");if(e==="cadastre")return CAD+"/export?bbox="+a+"&bboxSR=3857&imageSR=3857&size="+n.W+","+n.H+"&format=png32&transparent=true&layers=show:0&f=image"}async function prodImage(e){const n=prodZone();if(!n){prodLog("Aucune zone affichée.","err");return}const a=prodUrlImage(e,n),t=e+"_"+prodNumero()+".png";try{const o=await fetch(a);if(!o.ok||!/image/.test(o.headers.get("content-type")||""))throw 0;const r=document.createElement("a");r.href=URL.createObjectURL(await o.blob()),r.download=t,document.body.appendChild(r),r.click(),setTimeout(()=>{URL.revokeObjectURL(r.href),r.remove()},1500),prodLog(t+" téléchargé ("+n.W+" × "+n.H+" px).","ok")}catch{window.open(a,"_blank","noopener"),prodLog(t+" : ouvert dans un nouvel onglet. Faites clic droit → « Enregistrer l’image sous… » et nommez-le "+t+".")}}function prodExporterPgw(){const e=prodZone();if(!e){prodLog("Aucune zone affichée.","err");return}const n=(e.b3857[2]-e.b3857[0])/e.W,a=(e.b3857[3]-e.b3857[1])/e.H,t=[n,0,0,-a,e.b3857[0]+n/2,e.b3857[3]-a/2].map(o=>o.toFixed(6)).join(`
 `)+`
 `;telecharger("images_"+prodNumero()+".pgw",t,"text/plain"),prodLog("images_"+prodNumero()+".pgw téléchargé (géoréférence EPSG:3857 de toutes les images PNG).","ok")}async function prodImageVille(e,n){const a=prodZone();if(!a){prodLog("Aucune zone affichée.","err");return}if(e==="monbat"&&!batSel){prodLog("Aucun bâtiment choisi par le client.","err");return}const t=n.textContent;n.disabled=!0,n.textContent="…";try{const o=await villeDonnees(a.lat,a.lon,a.w),r=document.createElement("canvas");r.width=a.W,r.height=a.H;const i=r.getContext("2d"),l=(a.b3857[2]-a.b3857[0])/a.W,s=(a.b3857[3]-a.b3857[1])/a.H,c=([C,v])=>{const[y,M]=merc([v,C]);return[(y-a.b3857[0])/l,(a.b3857[3]-M)/s]},u=a.mParPx,d=a.w*1e3/254,h=Math.max(1,.8*d/u),m=(C,v)=>{i.beginPath(),C.forEach((y,M)=>{const[b,A]=c(y);M?i.lineTo(b,A):i.moveTo(b,A)}),v&&i.closePath()};i.fillStyle=i.strokeStyle="#000",i.lineCap=i.lineJoin="round";const p={motorway:9,trunk:8,primary:7,secondary:6,tertiary:5,unclassified:4,residential:4,living_street:3.5,pedestrian:3.5,service:2.5};if(e==="batiments")(villeOpt("reperes")?o.bats:o.bats.concat(o.reperes)).forEach(C=>{m(C.pts,!0),i.fill()});else if(e==="monbat")m(batSel.pts,!0),i.fill();else if(e==="reperes")o.reperes.forEach(C=>{m(C.pts,!0),i.fill()});else if(e==="parcs"){o.parcs.forEach(v=>{m(v,!0),i.fill()});const C=Math.max(h,3/u);o.arbres.forEach(v=>{const[y,M]=c(v);i.beginPath(),i.arc(y,M,C,0,7),i.fill()})}else if(e==="rues")o.routes.forEach(C=>{i.lineWidth=Math.max(h,(p[C.cls]||3)/u),m(C.pts),i.stroke()});else if(e==="velo")i.lineWidth=Math.max(h,2.5/u),o.velo.forEach(C=>{m(C),i.stroke()}),i.lineWidth=Math.max(h,4/u),i.setLineDash([6*i.lineWidth,3*i.lineWidth]),o.rail.forEach(C=>{m(C),i.stroke()});else if(e==="quartiers")i.lineWidth=h,i.setLineDash([5*h,3*h]),o.quartiers.forEach(C=>{m(C),i.stroke()});else if(e==="noms"){const C=Math.max(12,4.5*d/u);i.font="700 "+C.toFixed(0)+"px sans-serif",i.textAlign="center",i.textBaseline="middle",o.noms.forEach(v=>{const[y,M]=c([v.lat,v.lon]);i.save(),i.translate(y,M),i.rotate(angleTexte(v,a.deg)*Math.PI/180),i.fillText(v.txt.toUpperCase(),0,0),i.restore()})}const g="ville-"+e+"_"+prodNumero()+".png";await new Promise(C=>r.toBlob(v=>{const y=document.createElement("a");y.href=URL.createObjectURL(v),y.download=g,document.body.appendChild(y),y.click(),setTimeout(()=>{URL.revokeObjectURL(y.href),y.remove()},1500),C()})),prodLog(g+" téléchargé ("+a.W+" × "+a.H+" px).","ok")}catch(o){prodLog("Ville – "+e+" : données OpenStreetMap indisponibles ("+(o.message||"erreur")+").","err")}finally{n.disabled=!1,n.textContent=t}}async function prodChasse(e,n){const a=prodZone();if(!a){prodLog("Aucune zone affichée.","err");return}if(e.startsWith("postes")&&!postes.length){prodLog("Aucun poste de chasse dans ce lien.","err");return}const t=n.textContent;n.disabled=!0,n.textContent="…";try{if(e==="fosses-gpx"||e==="mise-gpx"){const d=e==="fosses-gpx"?fossesDansZone(a).map(p=>({lat:p.lat,lon:p.lon,nom:"Fosse "+p.lac+" – "+fmtProf(p.p)})):(await miseDonnees(a)).map((p,g)=>({lat:p.lat,lon:p.lon,nom:(p.t==="l"?"Descente de bateau ":"Quai ")+(g+1)}));if(!d.length){prodLog(e==="fosses-gpx"?"Aucune fosse connue dans la zone.":"Aucune descente ni quai dans la zone.","err");return}const h=`<?xml version="1.0" encoding="UTF-8"?>
@@ -4374,6 +4375,8 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     lots.forEach((ring) => trait(ring, pal.ligne, 3.2 * k, true));
     // Tracé GPX et sentiers dessinés
     lignesTrace().forEach((l) => { trait(l, "rgba(255,255,255,0.35)", 5 * k, false); trait(l, "#141614", 3 * k, false); });
+    // v4.12 : noms gravés (Ville) peints en dernier, par-dessus les rues
+    if (typeof window.georamaPeindreFin === "function") { try { window.georamaPeindreFin({ g, d, t, px, k, pal, TW, TH }); } catch (e) {} }
     return cv;
   }
 
@@ -5424,7 +5427,18 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
       }
       quad([X - t, y1, Z - t], [X - t, y1, Z + t], [X + t, y1, Z + t], [X + t, y1, Z - t], [0, 1, 0], col);
     }
-    s.bats.forEach((b) => prisme(b.pts, b.h, b.indus ? cInd : cBat, b.indus ? cInd : cToit));
+    // v4.12 : en Ville, le bâtiment choisi ressort en orange (comme la carte et la maquette imprimée)
+    const ORANGE = [1.0, 0.404, 0.122];
+    const bSel = (profilActif === "ville" && typeof batSel !== "undefined" && batSel && batSel.pts && batSel.pts.length > 2) ? batSel : null;
+    const cSel = bSel ? centreLL(bSel.pts) : null;
+    let selFait = false;
+    s.bats.forEach((b) => {
+      if (bSel && !selFait && (b.id === bSel.id || (b.pts && b.pts.length > 2 && typeof dansPolygone === "function" && dansPolygone(cSel, b.pts)))) {
+        selFait = true; prisme(b.pts, Math.max(b.h || 0, 8), ORANGE, ORANGE); return;
+      }
+      prisme(b.pts, b.h, b.indus ? cInd : cBat, b.indus ? cInd : cToit);
+    });
+    if (bSel && !selFait) prisme(bSel.pts, 9, ORANGE, ORANGE);
     s.tanks.forEach((t) => cylindre(t.lat, t.lon, t.r, t.h, cInd));
     s.cheminees.forEach((c) => boite(c.lat, c.lon, c.l, c.h, cInd));
     // boîte posée entre deux hauteurs (mètres au-dessus du sol)
@@ -6183,8 +6197,10 @@ window.addEventListener("message", function (e) {
       })).addTo(map);
     } catch (e) {}
   }
+  window.georamaMontrerContours = montrerContours;
   function cacherContours() { try { if (coucheChoix) { map.removeLayer(coucheChoix); coucheChoix = null; } } catch (e) {} }
   function finMode() { choixBat = false; map.getContainer().classList.remove("choix-bat"); cacherContours(); }
+  window.georamaFinChoixBat = finMode;
   function prendre(b) {
     finMode();
     definirBatiment({ id: b.id, pts: b.pts, nom: b.nom || "" });
@@ -7437,6 +7453,9 @@ window.addEventListener("message", function (e) {
       const c = couloirs, i = Math.floor(((x + c.w / 2) / c.w) * c.TW), j = Math.floor(((c.hh - y) / (2 * c.hh)) * c.TH);
       return i >= 0 && j >= 0 && i < c.TW && j < c.TH && c.M[j * c.TW + i] === 1;
     };
+    // v4.12 : pas d'arbres sur les barrages, digues, centrales, ponts, bâtiments et stationnements
+    let surOuvrage = null;
+    try { surOuvrage = typeof window.georamaOuvrages === "function" ? window.georamaOuvrages(d, versZone) : null; } catch (e) {}
     const pasG = TEL() ? 0.4 : 0.33, pasK = pasG * kmParMm;          // grille de détection (mm, puis km)
     const nx = Math.max(8, Math.floor((2 * hw) / pasK)), ny = Math.max(8, Math.floor((2 * hh) / pasK));
     const chm = new Float32Array(nx * ny), ok = new Uint8Array(nx * ny);
@@ -7467,6 +7486,7 @@ window.addEventListener("message", function (e) {
       const px = gx(i) + (hasard(i, j, 1) - 0.5) * pasK, py = gy(j) + (hasard(i, j, 2) - 0.5) * pasK;
       if (segsElec.length && dansCouloir(px, py)) continue;
       if (couloirs && surCouloir(px, py)) continue;
+      if (surOuvrage && surOuvrage(px, py)) continue;
       const rmm = (RMIN + (RMAX - RMIN) * Math.max(0, Math.min(1, (h - 3) / 25))) * (0.92 + 0.16 * hasard(i, j, 3));
       cand.push([px, py, h, rmm, i, j]);
     }
@@ -8691,6 +8711,212 @@ window.addEventListener("message", function (e) {
   // La 3D se ferme (onglet Carte, Au mur…) : on sort du plein écran
   new MutationObserver(() => { if (vue.hidden && estPlein()) quitter(); }).observe(vue, { attributes: true, attributeFilter: ["hidden"] });
   window.georamaPlein3D = { entrer, quitter, estPlein };
+})();
+</script>
+<script>
+/* ===== Georama v4.12 (5 nov. 2026) =====
+   1. Lac Saint-Jean : relevé du fond disponible (Service hydrographique du Canada, NONNA 10 m et 100 m).
+   2. Ville : les noms gravés et le bâtiment choisi (orange) apparaissent dans la vue 3D, sur la table et au mur.
+   3. « Choisir mon bâtiment » : la carte se rapproche, les contours des bâtiments s'affichent, le bouton
+      montre que le mode est actif (cliquer de nouveau ou Échap pour annuler).
+   4. Pas d'arbres sur les barrages, digues, centrales, ponts, bâtiments ni stationnements (ex. barrage de Shipshaw).
+   Ce script s'ajoute aux autres sans les modifier ; s'il échoue, l'outil reste comme avant. */
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const profil = () => (typeof profilActif !== "undefined" ? profilActif : "");
+
+  /* ---------- 1. Lac Saint-Jean : fond du Service hydrographique du Canada ---------- */
+  try {
+    const u = bathyLacs().code.get("00602");
+    if (u) { u.shc = true; u.nom = "Lac Saint-Jean"; }
+  } catch (e) {}
+
+  /* ---------- 2. Ville : noms gravés peints sur la maquette 3D ---------- */
+  function donneesVille(z) {
+    try {
+      if (typeof villeCache === "undefined" || typeof villeEmprise !== "function") return null;
+      return villeCache.get(villeEmprise(z.lat0, z.lon0, z.w).map((v) => v.toFixed(5)).join(",")) || null;
+    } catch (e) { return null; }
+  }
+  window.georamaPeindreFin = function ({ g, d, px, TW }) {
+    if (profil() !== "ville" || typeof villeOpt !== "function" || !villeOpt("noms")) return;
+    const z = d && d.zone; if (!z) return;
+    const v = donneesVille(z);
+    if (!v || !v.noms || !v.noms.length) return;
+    const taille = Math.max(11, (3.2 / 254) * TW);          // lettres d'environ 3 mm sur la maquette
+    g.save();
+    g.font = "800 " + taille.toFixed(0) + "px Montserrat, Arial, sans-serif";
+    g.textAlign = "center"; g.textBaseline = "middle";
+    g.lineJoin = "round"; g.lineWidth = taille * 0.32;
+    g.strokeStyle = "rgba(255,255,255,0.75)"; g.fillStyle = "#23272a";
+    v.noms.forEach((n) => {
+      const [x, y] = px(n.lat, n.lon);
+      let a = 0;
+      if (n.angle != null) {
+        // direction du nom sur la carte (nord en haut), ramenée dans le repère de la maquette (pivotée)
+        const s = (n.angle * Math.PI) / 180, e = 0.0005, k = Math.cos((n.lat * Math.PI) / 180);
+        const [x2, y2] = px(n.lat - Math.sin(s) * e, n.lon + (Math.cos(s) * e) / k);
+        a = Math.atan2(y2 - y, x2 - x);
+        if (a > Math.PI / 2) a -= Math.PI; else if (a < -Math.PI / 2) a += Math.PI;
+      }
+      const t = String(n.txt || "").toUpperCase();
+      g.save(); g.translate(x, y); g.rotate(a);
+      g.strokeText(t, 0, 0); g.fillText(t, 0, 0);
+      g.restore();
+    });
+    g.restore();
+  };
+
+  // Le bâtiment choisi ou les noms changent : la 3D se refait (mêmes données, rien à retélécharger)
+  let minuterie = null;
+  function refaire3D() {
+    clearTimeout(minuterie);
+    minuterie = setTimeout(() => {
+      try { if (typeof v3 !== "undefined" && v3.donnees && typeof v3Reconstruire === "function") v3Reconstruire(); } catch (e) {}
+    }, 250);
+  }
+  ["definirBatiment", "retirerBatiment"].forEach((nom) => {
+    try {
+      const f = window[nom];
+      if (typeof f !== "function") return;
+      const w = function () { const r = f.apply(this, arguments); refaire3D(); return r; };
+      if (nom === "definirBatiment") definirBatiment = w; else retirerBatiment = w;
+    } catch (e) {}
+  });
+  ["v_noms", "v_parcs"].forEach((id) => { const c = $(id); if (c) c.addEventListener("change", refaire3D); });
+
+  /* ---------- 3. Choisir mon bâtiment ---------- */
+  const bouton = $("choisirBat");
+  const TEXTE_BOUTON = bouton ? bouton.textContent : "";
+  let aide = null, suivi = null;
+  const st = document.createElement("style");
+  st.textContent =
+    "#choisirBat.actif{background:#FF671F!important;color:#111!important;border-color:#FF671F!important}" +
+    "#batAide{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:1100;max-width:calc(100% - 24px);" +
+    "background:#111311;color:#fff;border:2px solid #FF671F;border-radius:10px;padding:9px 14px;font:600 14px/1.35 Montserrat,system-ui,sans-serif;" +
+    "box-shadow:0 4px 16px #0006;text-align:center;pointer-events:none}";
+  document.head.appendChild(st);
+  function montrerAide(txt) {
+    try {
+      if (!aide) { aide = document.createElement("div"); aide.id = "batAide"; map.getContainer().appendChild(aide); }
+      aide.textContent = txt; aide.hidden = false;
+    } catch (e) {}
+  }
+  function cacherAide() { if (aide) aide.hidden = true; }
+  function chargerBatimentsVue() {
+    try {
+      if (!choixBat || typeof villeDonnees !== "function" || map.getZoom() < 15) return;
+      const c = map.getCenter(), b = map.getBounds();
+      const w = Math.min(2.5, Math.max(0.6, b.getNorthEast().distanceTo(b.getSouthWest()) / 1000 / 1.4));
+      villeDonnees(c.lat, c.lng, +w.toFixed(2)).then(() => { if (choixBat && window.georamaMontrerContours) window.georamaMontrerContours(); }).catch(() => {});
+    } catch (e) {}
+  }
+  function arreter() {
+    clearInterval(suivi); suivi = null;
+    if (bouton) { bouton.classList.remove("actif"); bouton.textContent = TEXTE_BOUTON; }
+    cacherAide();
+    try { map.off("moveend", chargerBatimentsVue); } catch (e) {}
+  }
+  if (bouton && typeof demarrerChoixBat === "function") {
+    const _dem = demarrerChoixBat;
+    demarrerChoixBat = function () {
+      if (choixBat) {                                     // 2e clic : on annule
+        try { window.georamaFinChoixBat ? window.georamaFinChoixBat() : (choixBat = false); } catch (e) { choixBat = false; }
+        try { map.getContainer().classList.remove("choix-bat"); } catch (e) {}
+        arreter();
+        if ($("msg")) $("msg").textContent = "Choix du bâtiment annulé.";
+        return;
+      }
+      const r = _dem.apply(this, arguments);
+      if (!choixBat) return r;
+      bouton.classList.add("actif");
+      bouton.textContent = "✕ Annuler le choix";
+      montrerAide("Cliquez sur votre bâtiment dans la carte (contour orange).");
+      try {
+        if (map.getZoom() < 16 && typeof marker !== "undefined" && marker) {
+          const p = marker.getLatLng();
+          map.setView(p, 17);
+        }
+      } catch (e) {}
+      try { map.on("moveend", chargerBatimentsVue); } catch (e) {}
+      setTimeout(chargerBatimentsVue, 400);
+      clearInterval(suivi);
+      suivi = setInterval(() => { if (!choixBat) arreter(); }, 300);
+      return r;
+    };
+    bouton.onclick = demarrerChoixBat;
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && choixBat) demarrerChoixBat(); });
+  }
+
+  /* ---------- 4. Pas d'arbres sur les ouvrages (barrages, digues, centrales, ponts, bâtiments) ---------- */
+  const ouvrages = new Map();   // clé de zone -> {pret, polys, lignes}
+  const cleZ = (z) => [z.lat0.toFixed(5), z.lon0.toFixed(5), z.w, z.deg || 0].join("|");
+  function chargerOuvrages(z, cle) {
+    const e = { pret: false, polys: [], lignes: [] };
+    ouvrages.set(cle, e);
+    if (ouvrages.size > 6) ouvrages.delete(ouvrages.keys().next().value);
+    const dLat = (z.w * 0.8) / 111, dLon = (z.w * 0.8) / (111 * Math.cos((z.lat0 * Math.PI) / 180));
+    const bb = [z.lat0 - dLat, z.lon0 - dLon, z.lat0 + dLat, z.lon0 + dLon].map((v) => v.toFixed(5)).join(",");
+    const q = "[out:json][timeout:25];(" +
+      'way["waterway"~"^(dam|weir)$"](' + bb + ");" +
+      'way["man_made"~"^(dam|dyke|bridge|pier|breakwater|groyne)$"](' + bb + ");" +
+      'way["power"~"^(plant|generator|substation)$"](' + bb + ");" +
+      'relation["waterway"="dam"](' + bb + ");" +
+      ");out geom;";
+    const url = typeof OVERPASS !== "undefined" ? OVERPASS : "https://overpass-api.de/api/interpreter";
+    fetch(url, { method: "POST", body: "data=" + encodeURIComponent(q), headers: { "Content-Type": "application/x-www-form-urlencoded" } })
+      .then((r) => (r.ok ? r.json() : { elements: [] }))
+      .then((j) => {
+        (j.elements || []).forEach((el) => {
+          const geos = el.type === "relation" ? (el.members || []).map((m) => m.geometry).filter(Boolean) : [el.geometry];
+          geos.forEach((g) => {
+            if (!g || g.length < 2) return;
+            const pts = g.map((p) => [p.lat, p.lon]);
+            const ferme = pts.length > 3 && Math.abs(pts[0][0] - pts[pts.length - 1][0]) < 1e-7 && Math.abs(pts[0][1] - pts[pts.length - 1][1]) < 1e-7;
+            if (ferme) e.polys.push(pts);
+            e.lignes.push(pts);                           // le contour aussi : marge autour de l'ouvrage
+          });
+        });
+      })
+      .catch(() => {})
+      .finally(() => {
+        e.pret = true;
+        try {
+          if ((e.polys.length || e.lignes.length) && typeof v3 !== "undefined" && v3.donnees && v3.donnees.zone && cleZ(v3.donnees.zone) === cle) refaire3D();
+        } catch (er) {}
+      });
+  }
+  window.georamaOuvrages = function (d, versZone) {
+    const z = d && d.zone;
+    if (!z || !(z.w <= 10)) return null;
+    const cle = cleZ(z);
+    let e = ouvrages.get(cle);
+    if (!e) { chargerOuvrages(z, cle); e = ouvrages.get(cle); }
+    const polys = e.polys.slice(), lignes = e.lignes.slice();
+    try {
+      const sd = window.georamaSite && window.georamaSite.donnees(d);
+      if (sd) {
+        (sd.bats || []).forEach((b) => b && b.pts && polys.push(b.pts));
+        (sd.parking || []).forEach((r) => r && r.length > 2 && polys.push(r));
+      }
+    } catch (er) {}
+    if (!polys.length && !lignes.length) return null;
+    const hw = z.w / 2, hh = d.hh, M = 1024, sx = M / (2 * hw), sy = M / (2 * hh);
+    const cv = document.createElement("canvas"); cv.width = cv.height = M;
+    const g = cv.getContext("2d");
+    const XY = (p) => { const [x, y] = versZone(d, p[0], p[1]); return [(x + hw) * sx, (hh - y) * sy]; };
+    const trace = (pts) => { g.beginPath(); pts.forEach((p, i) => { const [X, Y] = XY(p); i ? g.lineTo(X, Y) : g.moveTo(X, Y); }); };
+    g.fillStyle = g.strokeStyle = "#fff"; g.lineCap = g.lineJoin = "round";
+    polys.forEach((r) => { trace(r); g.closePath(); g.fill(); });
+    g.lineWidth = Math.max(2, (0.025 / (2 * hw)) * M * 2);   // 25 m de chaque côté de l'ouvrage
+    lignes.forEach((l) => { trace(l); g.stroke(); });
+    const px = g.getImageData(0, 0, M, M).data;
+    return (x, y) => {
+      const X = Math.floor((x + hw) * sx), Y = Math.floor((hh - y) * sy);
+      return X >= 0 && Y >= 0 && X < M && Y < M && px[4 * (Y * M + X) + 3] > 0;
+    };
+  };
 })();
 </script>
 </body>
