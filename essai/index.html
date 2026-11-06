@@ -8909,7 +8909,7 @@ window.addEventListener("message", function (e) {
     const trace = (pts) => { g.beginPath(); pts.forEach((p, i) => { const [X, Y] = XY(p); i ? g.lineTo(X, Y) : g.moveTo(X, Y); }); };
     g.fillStyle = g.strokeStyle = "#fff"; g.lineCap = g.lineJoin = "round";
     polys.forEach((r) => { trace(r); g.closePath(); g.fill(); });
-    g.lineWidth = Math.max(2, (0.025 / (2 * hw)) * M * 2);   // 25 m de chaque côté de l'ouvrage
+    g.lineWidth = Math.max(2, (0.045 / (2 * hw)) * M * 2);   // 45 m de chaque côté de l'ouvrage (le pied du barrage compris)
     lignes.forEach((l) => { trace(l); g.stroke(); });
     const px = g.getImageData(0, 0, M, M).data;
     return (x, y) => {
