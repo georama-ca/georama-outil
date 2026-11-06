@@ -8744,7 +8744,7 @@ window.addEventListener("message", function (e) {
     const z = d && d.zone; if (!z) return;
     const v = donneesVille(z);
     if (!v || !v.noms || !v.noms.length) return;
-    const taille = Math.max(11, (3.2 / 254) * TW);          // lettres d'environ 3 mm sur la maquette
+    const taille = Math.max(12, (3.6 / 254) * TW);          // lettres d'environ 3,5 mm sur la maquette
     g.save();
     g.font = "800 " + taille.toFixed(0) + "px Montserrat, Arial, sans-serif";
     g.textAlign = "center"; g.textBaseline = "middle";
@@ -8836,6 +8836,7 @@ window.addEventListener("message", function (e) {
       try {
         if (map.getZoom() < 16 && typeof marker !== "undefined" && marker) {
           const p = marker.getLatLng();
+          map.once("moveend", () => { try { if (choixBat && window.georamaMontrerContours) window.georamaMontrerContours(); } catch (e) {} });
           map.setView(p, 17);
         }
       } catch (e) {}
