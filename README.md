@@ -4,3 +4,9 @@ Page unique (`index.html`) de l'outil de configuration de maquettes topographiqu
 Publiée par GitHub Pages à l'adresse `outil.georama.ca` et intégrée au site Wix.
 
 Chaque nouvelle version est un simple remplacement de `index.html` (le numéro de version est affiché dans l'outil).
+
+## Hub Georama (dossier `hub/`)
+
+Logiciel de gestion interne (commandes, production, marketing, finances) publié à `outil.georama.ca/hub/`.
+Aucune donnée dans ce dépôt : les données sont dans le OneDrive Georama (connexion Microsoft 365) ou, en mode démo, dans le navigateur.
+Voir `hub/LISEZMOI.md`.
