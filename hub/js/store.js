@@ -6,7 +6,9 @@
 import { jeton } from './auth.js';
 import { CONFIG } from '../config.js';
 
-export const COLLECTIONS = ['commandes', 'plaques', 'taches', 'prospects', 'campagnes', 'depenses', 'filament', 'reglages'];
+export const COLLECTIONS = ['commandes', 'plaques', 'taches', 'prospects', 'campagnes', 'depenses', 'filament', 'reglages', 'travaux', 'activite', 'temps'];
+// Fichiers écrits par l'agent de l'ordi de la maison (lecture seule pour le hub)
+export const EXTERNES = { agent: 'agent', resultats: 'travaux-resultats', wix: 'boite-wix' };
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
 /* ---------- Mode démo ---------- */
@@ -21,7 +23,13 @@ export class AdaptateurLocal {
     try { localStorage.setItem(this.prefixe + coll, JSON.stringify({ items, maj: new Date().toISOString() })); } catch (e) { throw new Error('Le navigateur refuse d’enregistrer.'); }
     return { etag: null };
   }
-  vider() { COLLECTIONS.forEach(c => { try { localStorage.removeItem(this.prefixe + c); } catch (e) { /* rien */ } }); }
+  // Fichiers d'une commande : en démo, simulés par l'agent de démonstration
+  async lister(sousChemin) {
+    try { const t = JSON.parse(localStorage.getItem(this.prefixe + 'fichiers') || '{}'); return t[sousChemin] || []; }
+    catch (e) { return []; }
+  }
+  async urlDossier() { return null; }
+  vider() { COLLECTIONS.concat(Object.values(EXTERNES), ['fichiers']).forEach(c => { try { localStorage.removeItem(this.prefixe + c); } catch (e) { /* rien */ } }); }
 }
 
 /* ---------- Mode Microsoft 365 (OneDrive) ---------- */
@@ -81,11 +89,12 @@ export class AdaptateurOneDrive {
 
   base(coll) { return '/drives/' + encodeURIComponent(this.lieu.driveId) + '/items/' + encodeURIComponent(this.lieu.itemId) + ':/' + coll + '.json:'; }
 
-  async lire(coll) {
+  async lire(coll, etagConnu) {
     const r = await graph(this.base(coll));
     if (r.status === 404) { this.etags[coll] = null; return { items: null, etag: null }; }
     if (!r.ok) throw new Error('Lecture de ' + coll + ' refusée (' + r.status + ').');
     const meta = await r.json();
+    if (etagConnu && meta.eTag === etagConnu) return { inchange: true, etag: meta.eTag };
     const url = meta['@microsoft.graph.downloadUrl'];
     let contenu;
     if (url) {
@@ -97,6 +106,23 @@ export class AdaptateurOneDrive {
     }
     this.etags[coll] = meta.eTag;
     return { items: (contenu && contenu.items) || [], etag: meta.eTag };
+  }
+
+  // Contenu d'un sous-dossier (ex. commandes/G-2026-041) : images de rendu, .3mf…
+  async lister(sousChemin) {
+    const r = await graph('/drives/' + encodeURIComponent(this.lieu.driveId) + '/items/' + encodeURIComponent(this.lieu.itemId) + ':/' + cheminEncode(sousChemin) + ':/children?$top=200');
+    if (r.status === 404) return [];
+    if (!r.ok) throw new Error('Liste des fichiers refusée (' + r.status + ').');
+    const j = await r.json();
+    return (j.value || []).filter(x => x.file).map(x => ({
+      nom: x.name, taille: x.size, maj: x.lastModifiedDateTime, webUrl: x.webUrl,
+      url: x['@microsoft.graph.downloadUrl'] || '', image: /\.(png|jpe?g|webp)$/i.test(x.name),
+    }));
+  }
+  async urlDossier(sousChemin) {
+    const r = await graph('/drives/' + encodeURIComponent(this.lieu.driveId) + '/items/' + encodeURIComponent(this.lieu.itemId) + (sousChemin ? ':/' + cheminEncode(sousChemin) + ':' : '') + '?$select=webUrl');
+    if (!r.ok) return null;
+    return (await r.json()).webUrl || null;
   }
 
   async ecrire(coll, items, etag) {
@@ -138,7 +164,23 @@ export class Magasin {
     this.etat = 'pret';
     this.erreur = '';
     this.derniere = null;
+    this.externes = { agent: [], resultats: [], wix: [] };
     COLLECTIONS.forEach(c => { this.donnees[c] = []; this.sales[c] = new Set(); });
+  }
+
+  // Lit les fichiers de l'agent (aucune erreur bloquante : l'agent est optionnel).
+  async lireExternes() {
+    let change = false;
+    await Promise.all(Object.entries(EXTERNES).map(async ([cle, fichier]) => {
+      try {
+        const r = await this.a.lire(fichier, (this.etagsExt || {})[cle]);
+        if (r.inchange) return;
+        this.etagsExt = Object.assign(this.etagsExt || {}, { [cle]: r.etag });
+        const nv = r.items || [];
+        if (JSON.stringify(nv) !== JSON.stringify(this.externes[cle])) { this.externes[cle] = nv; change = true; }
+      } catch (e) { /* agent absent ou fichier en cours d'écriture */ }
+    }));
+    return change;
   }
   abonner(fn) { this.ecouteurs.add(fn); return () => this.ecouteurs.delete(fn); }
   avertir(source) { this.ecouteurs.forEach(fn => { try { fn(source); } catch (e) { console.error(e); } }); }
@@ -154,19 +196,21 @@ export class Magasin {
       this.donnees[c] = items || [];
       this.etags[c] = etag;
     }));
+    await this.lireExternes();
     this.changerEtat('pret');
     return { vides };
   }
 
   // Relit le stockage (changements de l'autre personne) sans écraser ce qui n'est pas encore envoyé.
   async rafraichir() {
-    if (this.a.type === 'demo' || this.etat === 'attente') return false;
-    if (COLLECTIONS.some(c => this.sales[c].size)) return false;
-    let change = false;
+    if (this.etat === 'attente') return false;
+    let change = await this.lireExternes();
+    if (this.a.type === 'demo') { if (change) this.avertir('distant'); return change; }
+    if (COLLECTIONS.some(c => this.sales[c].size)) { if (change) this.avertir('distant'); return change; }
     try {
       for (const c of COLLECTIONS) {
-        const { items, etag } = await this.a.lire(c);
-        if (etag && etag === this.etags[c]) continue;
+        const { items, etag, inchange } = await this.a.lire(c, this.etags[c]);
+        if (inchange) continue;
         const avant = JSON.stringify(this.donnees[c]);
         this.donnees[c] = fusionner(this.donnees[c], items || []);
         this.etags[c] = etag;
@@ -235,6 +279,11 @@ export class Magasin {
       // Les fiches supprimées depuis plus de 60 jours sont oubliées.
       const limite = new Date(Date.now() - 60 * 86400000).toISOString();
       liste = liste.filter(x => !(x.supprime && String(x.maj) < limite));
+      // Le fil d'activité garde les 400 entrées les plus récentes.
+      if (c === 'activite' && liste.length > 400) {
+        liste = liste.slice().sort((a, b) => String(b.quand || b.maj).localeCompare(String(a.quand || a.maj))).slice(0, 400);
+        this.donnees[c] = liste.slice();
+      }
       const r = await this.a.ecrire(c, liste, etag);
       this.etags[c] = r.etag;
       envoyes.forEach(id => this.sales[c].delete(id));

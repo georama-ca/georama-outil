@@ -1,0 +1,26 @@
+{
+  "_aide": "Réglages de l'agent Georama. Après un changement : Arreter agent.bat puis Demarrer agent.bat.",
+  "nom": "Ordi de la maison",
+  "dossier_hub": "~/OneDrive - Georama/01_Direction_et_Administration/Hub-Georama",
+  "intervalle_secondes": 20,
+
+  "_rendu": "Rendu 3D automatique de tout .3mf déposé dans Hub-Georama/commandes/<numéro>/",
+  "rendu_automatique": true,
+  "rendu_largeur": 1600,
+  "rendu_hauteur": 1200,
+
+  "_3mf": "Commande qui produit le .3mf avec Georama Production. Variables : {lien} {sortie} {numero} {gamme} {segment}. Laisser vide tant que Claude ne l'a pas branchée.",
+  "commande_3mf": "",
+  "delai_3mf_minutes": 360,
+
+  "_imprimantes": "Optionnel. Écran de l'imprimante > Réglages > Réseau : adresse IP et code d'accès ; numéro de série dans Bambu Studio.",
+  "imprimantes": [
+    { "id": "h2c", "ip": "", "serie": "", "code_acces": "" }
+  ],
+
+  "_wix": "Optionnel. Clé API Wix (gardée sur ce PC seulement) et ID du site. Les nouvelles commandes du site arrivent toutes seules dans le hub.",
+  "wix_cle_api": "",
+  "wix_site_id": "",
+  "wix_depuis": "2026-11-01",
+  "wix_minutes": 10
+}

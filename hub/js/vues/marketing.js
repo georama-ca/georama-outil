@@ -1,6 +1,6 @@
 // Module Marketing et prospection.
 import { esc, argent, nombre, dateCourte, options, ouvrirFenetre, aujourdhui, joursEntre, uid, toast, initiales } from '../ui.js';
-import { STATUTS_PROSPECT, statutProspect, TYPES_PROSPECT, CANAUX, SEGMENTS, nomSegment } from '../donnees.js';
+import { STATUTS_PROSPECT, statutProspect, TYPES_PROSPECT, CANAUX, SEGMENTS, nomSegment, journaliser } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
 
 function etatVue(ctx) {
@@ -33,13 +33,18 @@ function ouvrirProspect(ctx, id) {
       if (act === 'supprimer') { if (!confirm('Supprimer ' + p.organisation + ' ?')) return null; m.supprimer('prospects', id); return 'fermer'; }
       if (act === 'commande') {
         setTimeout(() => ouvrirCommande(ctx, null, { client: p.organisation, courriel: p.courriel, telephone: p.telephone, segment: 'entreprise', produit: 'mesure', prix: Number(p.valeur) || 0, statut: 'approbation', notes: 'Prospect : ' + (p.contact || '') }), 50);
-        m.modifier('prospects', id, { statut: 'gagne' });
+        m.modifier('prospects', id, { statut: 'gagne' }, true);
+        journaliser(m, 'Prospect gagné : ' + p.organisation + '. Bravo.', '#/marketing', 'prospect');
+        m.avertir('local');
         return 'fermer';
       }
       return null;
     },
     onSubmit(d) {
-      m.mettre('prospects', Object.assign({}, p, d, { id: id || uid('r'), valeur: Number(d.valeur) || 0 }));
+      const n = m.mettre('prospects', Object.assign({}, p, d, { id: id || uid('r'), valeur: Number(d.valeur) || 0 }), true);
+      if (!id) journaliser(m, 'Nouveau prospect : ' + n.organisation, '#/marketing', 'prospect');
+      else if (p.statut !== n.statut) journaliser(m, n.organisation + ' passe à « ' + statutProspect(n.statut).nom + ' »', '#/marketing', 'prospect');
+      m.avertir('local');
       toast(id ? 'Prospect enregistré.' : 'Prospect ajouté.');
     },
   });

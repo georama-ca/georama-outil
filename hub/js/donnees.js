@@ -119,6 +119,7 @@ export const REGLAGES_DEFAUT = {
   objectif: 90000,
   heuresParPlaque: 37,
   heuresParJour: 20,
+  heuresSemaine: 10,
   delaiJours: 21,
   livraison: 25,
   taxes: true,
@@ -291,3 +292,87 @@ export function resume(m, periode) {
 export function commandeTexte(c) { return (c.numero || '') + ' · ' + (c.lieu || c.client || ''); }
 
 export function moisCourant() { return isoJour(new Date()).slice(0, 7); }
+
+/* ---------- Fil d'activité ---------- */
+export function journaliser(m, texte, lien = '', type = '') {
+  m.mettre('activite', { id: uid('a'), quand: new Date().toISOString(), qui: m.qui, texte, lien, type }, true);
+}
+export function activiteRecente(m, n = 12) {
+  return m.liste('activite').slice().sort((a, b) => String(b.quand).localeCompare(String(a.quand))).slice(0, n);
+}
+
+/* ---------- Temps de travail ---------- */
+export const CATEGORIES_TEMPS = ['Production', 'Commandes et clients', 'Marketing', 'Prospection', 'Finances', 'Développement (outils)', 'Autre'];
+export function debutSemaine(d = new Date()) {
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const j = (x.getDay() + 6) % 7; // lundi = 0
+  x.setDate(x.getDate() - j);
+  return isoJour(x);
+}
+export function minutesSemaine(m, qui) {
+  const deb = debutSemaine();
+  return m.liste('temps').filter(t => t.qui === qui && (t.date || '') >= deb).reduce((s, t) => s + (Number(t.minutes) || 0), 0);
+}
+
+/* ---------- Ordi de la maison (agent) ---------- */
+export function agent(m) {
+  const a = (m.externes.agent || [])[0];
+  if (!a) return { installe: false, enLigne: false };
+  const age = (Date.now() - new Date(a.vu).getTime()) / 1000;
+  return Object.assign({}, a, { installe: true, enLigne: age < 150, age });
+}
+export function etatImprimanteDirect(m, idImp) {
+  const a = agent(m);
+  if (!a.enLigne) return null;
+  const e = (a.imprimantes || []).find(i => i.id === idImp);
+  if (!e || !e.vu || (Date.now() - new Date(e.vu).getTime()) > 10 * 60000) return null;
+  return e;
+}
+export function travauxDe(m, idCommande) {
+  const res = new Map((m.externes.resultats || []).map(r => [r.id, r]));
+  return m.liste('travaux').filter(t => t.commande === idCommande)
+    .sort((a, b) => String(b.demandeLe).localeCompare(String(a.demandeLe)))
+    .map(t => Object.assign({}, t, { resultat: res.get(t.id) || null }));
+}
+export function dossierCommande(c) { return 'commandes/' + String(c.numero || 'sans-numero').replace(/[^A-Za-z0-9_-]/g, ''); }
+
+/* ---------- Commandes du site Wix (déposées par l'agent) ---------- */
+export function importerWix(m) {
+  const R = reglages(m);
+  const ignores = new Set(R.wixIgnores || []);
+  const ajoutees = [];
+  (m.externes.wix || []).forEach(w => {
+    const id = 'wix-' + w.id;
+    if (ignores.has(w.id) || m.donnees.commandes.some(c => c.id === id)) return;
+    const recue = String(w.date || '').slice(0, 10) || aujourdhui();
+    const c = {
+      id, wixId: w.wixId, wixNumero: w.wixNumero, client: w.client || 'Client du site', courriel: w.courriel, telephone: w.telephone,
+      lien: w.lien, lieu: w.article || '', segment: w.segment || 'terre', produit: w.produit || 'signature', gamme: w.gamme || 'Boréal',
+      prix: Number(w.prix) || 0, livraison: w.livraison || 'postes', fraisLivraison: R.livraison, payee: !!w.payee,
+      recue, promise: ajouterJours(recue, R.delaiJours), responsable: (R.membres || [])[0] || m.qui, etapes: {}, tempsMin: 0,
+      notes: 'Commande du site Wix n° ' + (w.wixNumero || '?') + (w.article ? ' · ' + w.article : ''),
+    };
+    c.statut = demandeApprobation(c) ? 'approbation' : 'nouvelle';
+    c.numero = prochainNumero(m, c);
+    const sauvee = m.mettre('commandes', c, true);
+    synchroniserPlaques(m, sauvee);
+    journaliser(m, 'Commande du site ' + sauvee.numero + ' ajoutée automatiquement (' + sauvee.client + ')', '#/production/fiche/' + sauvee.id, 'wix');
+    ajoutees.push(sauvee);
+  });
+  if (ajoutees.length) m.avertir('local');
+  return ajoutees;
+}
+
+/* ---------- Icônes de segments (trait, style Georama) ---------- */
+const ICONES_SEG = {
+  terre: '<path d="M12 3 7 11h3l-4 6h12l-4-6h3z"/><path d="M12 17v4"/>',
+  chasse: '<path d="M8 21V9h8v12M7 9l5-5 5 5M10 13h4"/><path d="M8 21l-3 0M16 21h3"/>',
+  peche: '<path d="M3 12c3-4 8-5 12-2l4-3v10l-4-3c-4 3-9 2-12-2z"/><circle cx="8" cy="11" r="0.8" fill="currentColor"/>',
+  sommet: '<path d="M3 20 10 8l3 5 2-3 6 10z"/><path d="M8.5 11 10 8l1.5 2.5"/>',
+  ville: '<path d="M4 21V9l5-3v15M9 21V4h6v17M15 21v-9h5v9M3 21h18"/>',
+  entreprise: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 13h18"/>',
+  agricole: '<path d="M4 21V11l8-6 8 6v10z"/><path d="M9 21v-6h6v6M4 11h16"/>',
+};
+export function icoSegment(id, taille = 18) {
+  return `<svg width="${taille}" height="${taille}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;color:var(--accent-texte)">${ICONES_SEG[id] || ICONES_SEG.terre}</svg>`;
+}

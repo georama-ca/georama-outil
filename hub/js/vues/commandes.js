@@ -1,9 +1,17 @@
 // Module Commandes et clients.
-import { esc, argent, dateCourte, options, ouvrirFenetre, aujourdhui, ajouterJours, joursEntre, uid, toast, initiales } from '../ui.js';
+import { esc, argent, dateCourte, options, ouvrirFenetre, aujourdhui, ajouterJours, joursEntre, uid, toast, initiales, ilYa, prenom } from '../ui.js';
 import {
   SEGMENTS, PRODUITS, NOMS_GAMMES, STATUTS, ACTIVES, nomSegment, produit, statut, formatTexte, totalHT,
-  prochainNumero, synchroniserPlaques, demandeApprobation, estActive, taxesDe, reglages, plaquesDe, ETAPES,
+  prochainNumero, synchroniserPlaques, demandeApprobation, estActive, taxesDe, reglages, plaquesDe, ETAPES, journaliser, icoSegment,
 } from '../donnees.js';
+
+// Petite fête quand une maquette part chez son client
+export function celebrer(ctx, c) {
+  const annee = aujourdhui().slice(0, 4);
+  const n = ctx.m.liste('commandes').filter(x => ['expediee', 'livree'].includes(x.statut) && String(x.expedieeLe || x.promise || x.recue).slice(0, 4) === annee).length;
+  const phrases = ['Une maquette de plus dans le monde.', 'Un territoire de plus en relief.', 'Encore un client qui va changer de perspective.'];
+  toast(phrases[n % phrases.length] + ' ' + n + (n === 1 ? 're' : 'e') + ' livrée en ' + annee + '.');
+}
 
 function etatVue(ctx) {
   if (!ctx.etat.commandes) ctx.etat.commandes = { q: '', statut: 'actives', segment: '' };
@@ -32,8 +40,9 @@ export function ouvrirCommande(ctx, id, prerempli = {}) {
   }, prerempli);
   const plaques = existante ? plaquesDe(m, existante.id) : [];
   const impr = plaques.filter(p => p.statut === 'fini').length;
+  const histo = existante ? m.liste('activite').filter(a => (a.lien || '').includes(existante.id)).sort((a, b) => String(b.quand).localeCompare(String(a.quand))).slice(0, 6) : [];
   const corps = `
-    ${existante ? `<p class="petit doux" style="margin:0 0 14px">${esc(c.numero)} · ${impr}/${plaques.length || '—'} plaque${plaques.length > 1 ? 's' : ''} imprimée${impr > 1 ? 's' : ''} · modifiée par ${esc(c.par || '—')}</p>` : ''}
+    ${existante ? `<p class="petit doux" style="margin:0 0 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${icoSegment(c.segment)} ${esc(c.numero)} · ${impr}/${plaques.length || '—'} plaque${plaques.length > 1 ? 's' : ''} imprimée${impr > 1 ? 's' : ''}${c.wixNumero ? ' · <span class="etiquette bleu">Site Wix n° ' + esc(c.wixNumero) + '</span>' : ''}${c.tempsMin ? ' · ' + Math.round(c.tempsMin) + ' min de travail' : ''}</p>` : ''}
     <div class="champs">
       <div class="champ"><label for="f-client">Client</label><input id="f-client" name="client" type="text" required value="${esc(c.client)}" autocomplete="off"></div>
       <div class="champ"><label for="f-courriel">Courriel</label><input id="f-courriel" name="courriel" type="email" value="${esc(c.courriel)}"></div>
@@ -53,7 +62,8 @@ export function ouvrirCommande(ctx, id, prerempli = {}) {
       <div class="champ"><label for="f-suivi">Numéro de suivi</label><input id="f-suivi" name="suivi" type="text" value="${esc(c.suivi)}"></div>
       <div class="champ" style="justify-content:flex-end"><label class="case"><input type="checkbox" name="payee"${c.payee ? ' checked' : ''}> Payée</label></div>
       <div class="champ plein"><label for="f-notes">Notes</label><textarea id="f-notes" name="notes">${esc(c.notes)}</textarea></div>
-    </div>`;
+    </div>
+    ${histo.length ? `<div style="margin-top:18px"><p class="surtitre" style="margin-bottom:6px">Historique</p>${histo.map(a => `<div class="fil-item"><span class="initiales">${esc(initiales(a.qui))}</span><span class="grow">${esc(a.texte)}<br><span class="tres-petit doux">${esc(prenom(a.qui))} · ${esc(ilYa(a.quand))}</span></span></div>`).join('')}</div>` : ''}`;
   const pied = existante
     ? `<div class="actions"><button type="button" class="btn-2 btn-danger" data-modal-act="supprimer">Supprimer</button>
        <a class="btn-2" href="#/production/fiche/${esc(existante.id)}" data-modal-act="fiche">Fiche de production</a></div>`
@@ -82,12 +92,17 @@ export function ouvrirCommande(ctx, id, prerempli = {}) {
       });
       if (!existante) fiche.numero = prochainNumero(m, fiche);
       if (fiche.statut === 'expediee' || fiche.statut === 'livree') {
+        if (!fiche.expedieeLe) fiche.expedieeLe = aujourdhui();
         fiche.etapes = Object.assign({}, fiche.etapes);
         if (!fiche.etapes.envoi) fiche.etapes.envoi = { fait: true, par: ctx.moi, le: new Date().toISOString() };
       }
       const sauvee = m.mettre('commandes', fiche, true);
       synchroniserPlaques(m, sauvee);
+      const lien = '#/production/fiche/' + sauvee.id;
+      if (!existante) journaliser(m, 'Nouvelle commande ' + sauvee.numero + ' : ' + sauvee.client + ' (' + nomSegment(sauvee.segment) + ')', lien, 'commande');
+      else if (existante.statut !== sauvee.statut) journaliser(m, sauvee.numero + ' passe à « ' + statut(sauvee.statut).nom + ' »', lien, 'commande');
       m.avertir('local');
+      if (existante && existante.statut !== sauvee.statut && ['expediee', 'livree'].includes(sauvee.statut)) { setTimeout(() => celebrer(ctx, sauvee), 400); }
       toast(existante ? 'Commande ' + sauvee.numero + ' enregistrée.' : 'Commande ' + sauvee.numero + ' créée. Ses plaques sont dans la file.');
     },
   });
@@ -131,7 +146,7 @@ function vueCommandes(ctx) {
     const ht = totalHT(c);
     const t = taxesDe(ht, R.taxes);
     return `<tr class="cliquable" data-act="ouvrir" data-id="${esc(c.id)}" tabindex="0">
-      <td><strong>${esc(c.numero)}</strong></td>
+      <td><span style="display:inline-flex;align-items:center;gap:8px">${icoSegment(c.segment)}<strong>${esc(c.numero)}</strong></span>${c.wixNumero ? '<br><span class="tres-petit doux">Site n° ' + esc(c.wixNumero) + '</span>' : ''}</td>
       <td>${esc(c.client)}<br><span class="petit doux">${esc(c.lieu)}</span></td>
       <td>${esc(nomSegment(c.segment))}</td>
       <td class="petit">${esc(formatTexte(c))}<br><span class="doux">${esc(c.gamme)}</span></td>

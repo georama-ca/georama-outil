@@ -1,10 +1,11 @@
 // Module Production : file d'impression, fiche de production, planification, filament.
-import { esc, dateCourte, dateHeure, heures, nombre, aujourdhui, initiales, prenom, toast, ico, versDate, isoJour } from '../ui.js';
+import { esc, dateCourte, dateHeure, heures, nombre, aujourdhui, initiales, prenom, toast, ico, versDate, isoJour, ilYa, uid, ouvrirFenetre } from '../ui.js';
 import {
   reglages, fileImpression, plaquesDe, avancement, heuresRestantes, planifier, nomSegment, formatTexte,
   STATUTS_PLAQUE, ETAPES, noteEtape, GAMMES, COULEURS, NOMS_GAMMES, estActive, ACTIVES, demandeApprobation,
+  journaliser, agent, etatImprimanteDirect, travauxDe, dossierCommande, icoSegment,
 } from '../donnees.js';
-import { ouvrirCommande, badgeStatut, promiseTexte } from './commandes.js';
+import { ouvrirCommande, badgeStatut, promiseTexte, celebrer } from './commandes.js';
 
 const UNITES = { A: 'AMS 2 Pro · A', B: 'AMS 2 Pro · B', HT: 'AMS HT' };
 
@@ -31,11 +32,15 @@ function apresChangementPlaques(ctx, idCommande) {
   let c = m.get('commandes', idCommande);
   if (!c) return;
   const pl = plaquesDe(m, c.id);
-  if (pl.length && pl.every(p => p.statut !== 'a3mf') && !(c.etapes || {})['3mf']) c = marquerEtape(m, c, '3mf', true, ctx.moi);
+  if (pl.length && pl.every(p => p.statut !== 'a3mf') && !(c.etapes || {})['3mf']) {
+    c = marquerEtape(m, c, '3mf', true, ctx.moi);
+    journaliser(m, c.numero + ' : .3mf prêt, les plaques peuvent partir', '#/production/fiche/' + c.id, 'production');
+  }
   const toutes = pl.length && pl.every(p => p.statut === 'fini');
   if (toutes && !(c.etapes || {}).impression) {
     c = marquerEtape(m, c, 'impression', true, ctx.moi);
     if (c.statut === 'production' || c.statut === 'nouvelle') c = m.modifier('commandes', c.id, { statut: 'finition' }, true);
+    journaliser(m, c.numero + ' : toutes les plaques sont imprimées', '#/production/fiche/' + c.id, 'production');
     toast(c.numero + ' : toutes les plaques sont imprimées. Place à la finition.');
   } else if (!toutes && (c.etapes || {}).impression) {
     c = marquerEtape(m, c, 'impression', false, ctx.moi);
@@ -52,6 +57,8 @@ function lancer(ctx, idPlaque, idImp) {
   if (c && c.statut === 'approbation') { if (!confirm(c.numero + ' attend encore l’approbation du client. Lancer quand même ?')) return; }
   m.modifier('plaques', p.id, { statut: 'imp', imprimante: imp, debut: new Date().toISOString(), par: ctx.moi }, true);
   apresChangementPlaques(ctx, p.commande);
+  const nomImp = (R.imprimantes.find(i => i.id === imp) || { nom: imp }).nom.replace('Bambu Lab ', '');
+  if (c) journaliser(m, c.numero + ' : plaque ' + p.n + '/' + p.total + ' lancée sur la ' + nomImp, '#/production/fiche/' + c.id, 'production');
   m.avertir('local');
   toast('Plaque ' + p.n + '/' + p.total + ' lancée sur la ' + (R.imprimantes.find(i => i.id === imp) || {}).nom.replace('Bambu Lab ', '') + '.');
 }
@@ -60,6 +67,8 @@ function terminer(ctx, idPlaque) {
   const p = m.get('plaques', idPlaque);
   const h = p.debut ? Math.max(0.5, (Date.now() - new Date(p.debut).getTime()) / 3600000) : null;
   m.modifier('plaques', p.id, { statut: 'fini', finLe: new Date().toISOString(), heuresReelles: h ? Math.round(h * 10) / 10 : null }, true);
+  const c = m.get('commandes', p.commande);
+  if (c && p.total > 1) journaliser(m, c.numero + ' : plaque ' + p.n + '/' + p.total + ' imprimée' + (h ? ' en ' + heures(h) : ''), '#/production/fiche/' + c.id, 'production');
   apresChangementPlaques(ctx, p.commande);
   m.avertir('local');
 }
@@ -71,6 +80,24 @@ function changerStatutPlaque(ctx, idPlaque, statut) {
   m.modifier('plaques', p.id, patch, true);
   apresChangementPlaques(ctx, p.commande);
   m.avertir('local');
+}
+
+/* ---------- Ordi de la maison ---------- */
+export function carteAgent(ctx) {
+  const a = agent(ctx.m);
+  if (!a.installe) {
+    return `<section class="carte agent-carte"><span class="ico-maison">${ico('maison')}</span>
+      <div style="flex:1 1 300px"><strong>Ordi de la maison</strong> <span class="etiquette gris">Pas encore installé</span>
+      <p class="petit doux" style="margin:4px 0 0">Un PC toujours allumé peut faire les rendus 3D, lancer Georama Production, lire l'imprimante en direct et importer les commandes du site.</p></div>
+      <a class="btn-2" href="#/parametres">Comment l'installer</a></section>`;
+  }
+  const cap = a.capacites || {};
+  const puce = (ok, nom) => `<span class="etiquette ${ok ? 'vert' : 'gris'}">${ok ? '' : 'À brancher · '}${nom}</span>`;
+  return `<section class="carte agent-carte"><span class="ico-maison">${ico('maison')}</span>
+    <div style="flex:1 1 300px"><strong>${esc(a.nom || 'Ordi de la maison')}</strong> ${a.enLigne ? '<span class="etiquette vert">En ligne</span>' : '<span class="etiquette orange">Hors ligne</span>'}
+      <p class="petit doux" style="margin:4px 0 0">${esc(a.machine || '')} · vu ${esc(ilYa(a.vu))}${a.travail ? ' · <span class="vert-t">' + esc(a.travail) + '</span>' : ' · en attente de travail'}</p></div>
+    <div class="actions">${puce(cap.rendu, 'Rendus 3D')}${puce(cap['3mf'], 'Georama Production')}${puce(cap.imprimantes, 'Imprimante en direct')}${puce(cap.wix, 'Commandes du site')}</div>
+  </section>`;
 }
 
 /* ---------- File d'impression ---------- */
@@ -87,7 +114,15 @@ function vueFile(ctx) {
 
   const cartesImp = imprimantesActives(R).map(i => {
     const p = plaqueSur(m, i.id);
+    const live = etatImprimanteDirect(m, i.id);
     if (!p) {
+      if (live && live.etat === 'RUNNING') {
+        return `<section class="carte" style="flex:1 1 340px">
+          <div class="carte-tete"><h2 style="display:flex;align-items:center;gap:10px"><span class="pastille-etat"></span>${esc(i.nom)}</h2><span class="etiquette vert">Imprime · ${live.pct || 0} %</span></div>
+          <p class="petit" style="margin:0 0 6px">L'imprimante imprime <strong>${esc(live.fichier || 'un fichier')}</strong>, lancé hors du hub.</p>
+          <p class="tres-petit doux" style="margin:0">En direct de l'imprimante · reste ${heures((live.resteMin || 0) / 60)}</p>
+        </section>`;
+      }
       const prochaine = aFaire.find(x => x.statut === 'prete');
       const pc = prochaine && cmds.get(prochaine.commande);
       return `<section class="carte" style="flex:1 1 340px">
@@ -98,8 +133,13 @@ function vueFile(ctx) {
       </section>`;
     }
     const c = cmds.get(p.commande);
-    const a = Math.round(avancement(p) * 100);
-    const fin = new Date(new Date(p.debut).getTime() + (Number(p.heures) || R.heuresParPlaque) * 3600000);
+    const direct = live && ['RUNNING', 'PAUSE', 'FINISH', 'FAILED', 'PREPARE'].includes(live.etat);
+    const a = direct ? Math.round(Number(live.pct) || 0) : Math.round(avancement(p) * 100);
+    const fin = direct && live.resteMin != null ? new Date(Date.now() + live.resteMin * 60000) : new Date(new Date(p.debut).getTime() + (Number(p.heures) || R.heuresParPlaque) * 3600000);
+    const reste = direct && live.resteMin != null ? live.resteMin / 60 : heuresRestantes(p);
+    const alerte = direct && live.etat === 'FINISH' ? '<div class="bandeau vert" style="margin-top:12px"><strong class="o">Terminé.</strong><span>L\u2019imprimante a fini cette plaque. Retire-la et clique « Plaque terminée ».</span></div>'
+      : direct && live.etat === 'FAILED' ? '<div class="bandeau" style="margin-top:12px"><strong class="o">Échec signalé.</strong><span>L\u2019imprimante signale un problème. Va voir sur place.</span></div>'
+        : direct && live.etat === 'PAUSE' ? '<div class="bandeau" style="margin-top:12px"><strong class="o">En pause.</strong><span>L\u2019impression attend (changement de filament ou pause manuelle).</span></div>' : '';
     return `<section class="carte" style="flex:1 1 340px">
       <div class="carte-tete"><h2 style="display:flex;align-items:center;gap:10px"><span class="pastille-etat"></span>${esc(i.nom)}</h2><span class="etiquette vert">Imprime</span></div>
       <div class="imprimante">
@@ -107,7 +147,8 @@ function vueFile(ctx) {
         <div style="flex:1 1 180px;display:flex;flex-direction:column;gap:4px">
           <strong style="font-size:17px">${esc(c.numero)}</strong>
           <span class="petit doux">${esc(c.lieu || c.client)}</span>
-          <span class="petit">Reste environ ${heures(heuresRestantes(p))} · fin ${esc(dateHeure(fin.toISOString()))}</span>
+          <span class="petit">Reste ${direct ? '' : 'environ '}${heures(reste)} · fin ${esc(dateHeure(fin.toISOString()))}</span>
+          ${direct && live.couches ? `<span class="tres-petit doux">Couche ${nombre(live.couche)} sur ${nombre(live.couches)}${live.buse ? ' · buse ' + Math.round(live.buse) + ' °C' : ''}</span>` : ''}
           <span>${pastilles(c.gamme)} <span class="tres-petit doux">${esc(c.gamme)}</span></span>
         </div>
       </div>
@@ -115,7 +156,8 @@ function vueFile(ctx) {
         <button type="button" class="btn" data-act="terminer" data-id="${esc(p.id)}">Plaque terminée</button>
         <button type="button" class="btn-2" data-act="statut-plaque" data-statut="prete" data-id="${esc(p.id)}">Annuler l'impression</button>
       </div>
-      <p class="tres-petit doux" style="margin:10px 0 0">Avancement estimé à partir de l'heure de départ (${esc(dateHeure(p.debut))}).</p>
+      ${alerte}
+      <p class="tres-petit doux" style="margin:10px 0 0">${direct ? '<span class="vert-t">En direct de l\u2019imprimante</span> (par l\u2019ordi de la maison).' : 'Avancement estimé à partir de l\u2019heure de départ (' + esc(dateHeure(p.debut)) + ').'}</p>
     </section>`;
   }).join('');
 
@@ -152,6 +194,7 @@ function vueFile(ctx) {
       <div class="carte kpi"><p class="surtitre">Fin estimée</p><p class="valeur" style="font-size:22px">${aFaire.length ? esc(plan.fin.toLocaleDateString('fr-CA', { weekday: 'short', day: 'numeric', month: 'short' })) : '—'}</p><p class="detail">${plan.tard ? `<span class="retard">${plan.tard} après le ${esc(dateCourte(R.dernierEnvoi))}</span>` : 'Avant le dernier envoi de Noël'}</p></div>
       <div class="carte kpi"><p class="surtitre">.3mf à produire</p><p class="valeur">${nb3mf}</p><p class="detail">Dans Georama Production</p></div>
     </section>
+    ${carteAgent(ctx)}
     <div class="cote">${cartesImp}</div>
     <section class="carte">
       <div class="carte-tete"><h2>Ordre d'impression</h2><div class="filtres">${puce('afaire', 'À faire')}${puce('finies', 'Imprimées')}${puce('toutes', 'Toutes')}</div></div>
@@ -178,7 +221,7 @@ function vueFiche(ctx) {
   const cartes = (enCours.includes(c) ? enCours : [c].concat(enCours)).map(x => {
     const n = ETAPES.filter(s => (x.etapes || {})[s.id]).length;
     return `<a class="cmd-carte" href="#/production/fiche/${esc(x.id)}"${x.id === c.id ? ' aria-current="true"' : ''}>
-      <span style="display:flex;justify-content:space-between;gap:8px"><strong>${esc(x.numero)}</strong>${badgeStatut(x.statut)}</span>
+      <span style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px"><strong style="white-space:nowrap">${esc(x.numero)}</strong>${badgeStatut(x.statut)}</span>
       <span class="petit doux">${esc(x.lieu || x.client)}</span>
       <span class="barre"><span style="width:${Math.round(n / ETAPES.length * 100)}%"></span></span>
       <span class="tres-petit doux">${n}/${ETAPES.length} étapes · promise ${esc(dateCourte(x.promise))}</span>
@@ -210,11 +253,14 @@ function vueFiche(ctx) {
   return `
     <div class="cmd-cartes" aria-label="Commandes en cours">${cartes}</div>
     <div class="cote">
-      <section class="carte principal">
-        <div class="carte-tete"><h2>${esc(c.numero)} · ${esc(c.lieu || c.client)}</h2><span class="petit doux">${esc(formatTexte(c))} · gamme ${esc(c.gamme)}</span></div>
+      <div class="principal" style="display:flex;flex-direction:column;gap:16px">
+      ${carteFichiers(ctx, c)}
+      <section class="carte">
+        <div class="carte-tete"><h2 style="display:flex;align-items:center;gap:10px">${icoSegment(c.segment, 22)}${esc(c.numero)} · ${esc(c.lieu || c.client)}</h2><span class="petit doux">${esc(formatTexte(c))} · gamme ${esc(c.gamme)}</span></div>
         ${demandeApprobation(c) && c.statut === 'approbation' ? '<div class="bandeau" style="margin-bottom:8px"><span>Cette commande attend l’approbation écrite du client (info@georama.ca) avant l’impression.</span></div>' : ''}
         ${etapes}
       </section>
+      </div>
       <aside class="lateral" style="display:flex;flex-direction:column;gap:16px">
         <section class="carte">
           <p class="surtitre">Avancement</p>
@@ -243,6 +289,65 @@ function vueFiche(ctx) {
       </aside>
     </div>`;
 }
+function carteFichiers(ctx, c) {
+  const m = ctx.m;
+  const a = agent(m);
+  const cache = (ctx.etat.fichiers || {})[c.id];
+  const fichiers = cache ? cache.liste : null;
+  const images = (fichiers || []).filter(f => f.image).sort((x, y) => String(y.maj).localeCompare(String(x.maj)));
+  const modeles = (fichiers || []).filter(f => /\.3mf$/i.test(f.nom));
+  const autres = (fichiers || []).filter(f => !f.image && !/\.3mf$/i.test(f.nom));
+  const tr = travauxDe(m, c.id).slice(0, 4);
+  const enCours = tr.some(t => !t.resultat || t.resultat.statut === 'en_cours');
+  const etiquette = t => {
+    const r = t.resultat;
+    if (!r) return '<span class="etiquette bleu">En attente</span>';
+    if (r.statut === 'en_cours') return '<span class="etiquette vert">En cours…</span>';
+    if (r.statut === 'fait') return '<span class="etiquette plein">Fait</span>';
+    return '<span class="etiquette orange">À voir</span>';
+  };
+  const petiteIco = (n, extra = '') => ico(n).replace('<svg', '<svg width="16" height="16"' + extra);
+  const galerie = images.length
+    ? `<div class="galerie">${images.map(f => `<figure><img src="${esc(f.url)}" alt="Rendu 3D ${esc(f.nom)}" loading="lazy" data-act="voir-image" data-url="${esc(f.url)}" data-nom="${esc(f.nom)}"><figcaption><span>${esc(f.nom.replace(/-rendu\.png$/i, ''))}</span><span>${esc(ilYa(f.maj))}</span></figcaption></figure>`).join('')}</div>`
+    : fichiers === null ? '<p class="petit doux">Lecture des fichiers…</p>'
+      : `<div class="vide" style="border:1px dashed var(--bordure);border-radius:8px">${ico('image').replace('<svg', '<svg width="28" height="28"')}<br>Pas encore de rendu 3D.<br><span class="tres-petit">Dépose le .3mf dans OneDrive › Hub-Georama › ${esc(dossierCommande(c))}, ou demande-le à l'ordi de la maison.</span></div>`;
+  const listeFichiers = modeles.concat(autres).map(f => `<div class="ligne"><span style="display:flex;gap:8px;align-items:center" class="grow">${petiteIco('fichier')}${f.webUrl ? `<a href="${esc(f.webUrl)}" target="_blank" rel="noopener">${esc(f.nom)}</a>` : esc(f.nom)}</span><span class="tres-petit doux">${f.taille ? nombre(f.taille / 1048576, 1) + ' Mo · ' : ''}${esc(ilYa(f.maj))}</span></div>`).join('');
+  const etatAgent = a.installe
+    ? (a.enLigne ? '<span class="tres-petit vert-t">Ordi de la maison en ligne</span>' : '<span class="tres-petit doux">Ordi de la maison hors ligne : le travail attendra</span>')
+    : '<a class="tres-petit" href="#/parametres">Installer l’ordi de la maison</a>';
+  return `<section class="carte">
+    <div class="carte-tete"><h2>Rendus 3D et fichiers</h2>
+      <div class="actions">${cache && cache.url ? `<a class="btn-lien" href="${esc(cache.url)}" target="_blank" rel="noopener">${petiteIco('dossier', ' style="vertical-align:-3px"')} Dossier OneDrive</a>` : ''}
+      <button type="button" class="btn-lien" data-act="rafraichir-fichiers">Actualiser</button></div></div>
+    ${galerie}
+    ${listeFichiers ? `<div style="margin-top:10px">${listeFichiers}</div>` : ''}
+    <div class="actions" style="margin-top:14px">
+      <button type="button" class="btn" data-act="travail" data-type="3mf"${c.lien ? '' : ' disabled title="Ajoute le lien de la zone dans la commande"'}>${petiteIco('eclair')} Produire le .3mf sur l'ordi de la maison</button>
+      <button type="button" class="btn-2" data-act="travail" data-type="rendu"${modeles.length ? '' : ' disabled title="Il faut d’abord un .3mf"'}>Refaire le rendu 3D</button>
+      ${etatAgent}
+    </div>
+    ${c.lien ? '' : '<p class="tres-petit doux" style="margin:6px 0 0">Pour produire le .3mf ici, ajoute le lien de la zone dans la commande.</p>'}
+    ${tr.length ? `<div style="margin-top:12px">${tr.map(t => `<div class="ligne"><span class="grow petit"><strong>${t.type === '3mf' ? 'Production du .3mf' : 'Rendu 3D'}</strong> · demandé par ${esc(prenom(t.demandePar))} ${esc(ilYa(t.demandeLe))}${t.resultat && t.resultat.message ? '<br><span class="doux">' + esc(t.resultat.message) + '</span>' : ''}</span>${etiquette(t)}</div>`).join('')}</div>` : ''}
+    ${enCours ? '<p class="tres-petit doux" style="margin:8px 0 0">La page se met à jour toute seule.</p>' : ''}
+  </section>`;
+}
+async function chargerFichiers(ctx, c, force = false) {
+  ctx.etat.fichiers = ctx.etat.fichiers || {};
+  const sig = JSON.stringify((ctx.m.externes.resultats || []).filter(r => r.commande === c.id || String(r.id).includes(c.numero)).map(r => r.statut + r.maj));
+  const ex = ctx.etat.fichiers[c.id];
+  if (!force && ex && (ex.chargement || (ex.sig === sig && Date.now() - ex.t < 60000))) return;
+  ctx.etat.fichiers[c.id] = Object.assign({}, ex || { liste: null }, { chargement: true });
+  try {
+    const liste = await ctx.m.a.lister(dossierCommande(c));
+    let url = ex && ex.url;
+    if (!url && ctx.m.a.urlDossier) url = await ctx.m.a.urlDossier(dossierCommande(c)).catch(() => null);
+    ctx.etat.fichiers[c.id] = { liste, url, t: Date.now(), sig };
+  } catch (e) {
+    ctx.etat.fichiers[c.id] = { liste: [], url: null, t: Date.now(), sig, erreur: e.message };
+  }
+  if (ctx.route.vue === 'production' && ctx.route.sous === 'fiche') ctx.rendre();
+}
+
 function ficheCourante(ctx) {
   const m = ctx.m;
   let c = ctx.route.id ? m.get('commandes', ctx.route.id) : null;
@@ -443,7 +548,22 @@ export default {
         toast(min + ' min ajoutées à ' + c.numero + '.');
       } else { ch[c.id] = Date.now(); ecrireChrono(ch); ctx.rendre(); }
     },
-    'ajout-temps': ctx => { const c = ficheCourante(ctx); ctx.m.modifier('commandes', c.id, { tempsMin: (Number(c.tempsMin) || 0) + 15 }); },
+    'ajout-temps': ctx => {
+      const c = ficheCourante(ctx);
+      ctx.m.mettre('temps', { id: uid('h'), qui: ctx.moi, date: aujourdhui(), minutes: 15, categorie: 'Production', commande: c.id, note: c.numero }, true);
+      ctx.m.modifier('commandes', c.id, { tempsMin: (Number(c.tempsMin) || 0) + 15 });
+    },
+    travail: (ctx, el) => {
+      const c = ficheCourante(ctx);
+      const type = el.getAttribute('data-type');
+      ctx.m.mettre('travaux', { id: uid('w'), type, commande: c.id, numero: c.numero, lien: c.lien || '', demandePar: ctx.moi, demandeLe: new Date().toISOString() }, true);
+      journaliser(ctx.m, (type === '3mf' ? 'Production du .3mf demandée pour ' : 'Rendu 3D demandé pour ') + c.numero, '#/production/fiche/' + c.id, 'travail');
+      ctx.m.avertir('local');
+      const a = agent(ctx.m);
+      toast(a.enLigne ? 'Demande envoyée à l\u2019ordi de la maison.' : 'Demande enregistrée. L\u2019ordi de la maison s\u2019en occupera dès qu\u2019il sera en ligne.', !a.enLigne);
+    },
+    'rafraichir-fichiers': ctx => { const c = ficheCourante(ctx); if (c) chargerFichiers(ctx, c, true); },
+    'voir-image': (ctx, el) => ouvrirFenetre({ titre: el.getAttribute('data-nom'), pied: false, large: true, corps: `<div class="visionneuse"><img src="${esc(el.getAttribute('data-url'))}" alt="Rendu 3D"></div><p class="tres-petit doux" style="margin:10px 0 0">Rendu d'aperçu fait par l'ordi de la maison à partir du .3mf. Les couleurs suivent les filaments du fichier.</p>` }),
     'sim-h3c': ctx => { const e = etatVue(ctx); e.simH3C = !e.simH3C; ctx.rendre(); },
     fente: (ctx, el) => { etatVue(ctx).fente = el.getAttribute('data-id'); ctx.rendre(); },
     gamme: (ctx, el) => { etatVue(ctx).gamme = el.getAttribute('data-g'); ctx.rendre(); },
@@ -465,17 +585,21 @@ export default {
       let n = marquerEtape(ctx.m, c, id, el.checked, ctx.moi);
       if (id === '3mf' && el.checked) plaquesDe(ctx.m, c.id).filter(p => p.statut === 'a3mf').forEach(p => ctx.m.modifier('plaques', p.id, { statut: 'prete' }, true));
       if (id === 'envoi') {
-        if (el.checked) n = ctx.m.modifier('commandes', c.id, { statut: c.livraison === 'recuperation' ? 'livree' : 'expediee', expedieeLe: aujourdhui() }, true);
+        if (el.checked) {
+          n = ctx.m.modifier('commandes', c.id, { statut: c.livraison === 'recuperation' ? 'livree' : 'expediee', expedieeLe: aujourdhui() }, true);
+          journaliser(ctx.m, n.numero + (n.statut === 'livree' ? ' récupérée par ' : ' expédiée à ') + n.client, '#/production/fiche/' + n.id, 'envoi');
+          setTimeout(() => celebrer(ctx, n), 500);
+        }
         else if (['expediee', 'livree'].includes(c.statut)) n = ctx.m.modifier('commandes', c.id, { statut: 'finition' }, true);
       }
       if (id === 'commande' && el.checked && c.statut === 'approbation') ctx.m.modifier('commandes', c.id, { statut: 'production' }, true);
       ctx.m.avertir('local');
-      if (id === 'envoi' && el.checked) toast(n.numero + (n.statut === 'livree' ? ' marquée livrée.' : ' marquée expédiée.'));
     },
     'sim-hpj': (ctx, el) => { etatVue(ctx).hpj = Number(el.value); ctx.rendre(); },
     'sim-extra': (ctx, el) => { etatVue(ctx).extra = Number(el.value); ctx.rendre(); },
   },
   apres(ctx) {
+    if (ctx.route.sous === 'fiche') { const c = ficheCourante(ctx); if (c) chargerFichiers(ctx, c); }
     clearInterval(ctx.etat.minuterieProd);
     if (ctx.route.vue === 'production' && (ctx.route.sous === '' || ctx.route.sous === 'fiche')) {
       ctx.etat.minuterieProd = setInterval(() => {

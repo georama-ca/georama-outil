@@ -1,0 +1,48 @@
+AGENT GEORAMA  -  l'ordi de la maison qui travaille pour le hub
+=================================================================
+
+À QUOI ÇA SERT
+L'agent tourne en continu sur un PC Windows allumé (celui de la production).
+Il parle au hub (https://outil.georama.ca/hub/) seulement par le dossier
+OneDrive du hub. Rien n'est ouvert sur Internet.
+
+  - « En ligne » dans le hub : on voit d'un coup d'œil que l'ordi est prêt.
+  - Un dossier par commande en cours : OneDrive > Hub-Georama > commandes > G-2026-0XX
+  - Rendu 3D automatique : dépose un .3mf dans le dossier d'une commande,
+    l'image apparaît dans la fiche de production du hub (environ 10 à 60 s).
+  - Bouton « Produire le .3mf » du hub : lance Georama Production
+    (à brancher par Claude, réglage « commande_3mf »).
+  - Optionnel : état en direct de l'imprimante Bambu (pourcentage, temps restant).
+  - Optionnel : les commandes du site Wix arrivent toutes seules dans le hub.
+
+INSTALLER (5 minutes, une seule fois)
+  1. Le hub doit déjà être créé avec Microsoft 365 (le dossier Hub-Georama
+     doit exister dans OneDrive sur ce PC).
+  2. Décompresser agent-georama.zip n'importe où (ex. Téléchargements).
+  3. Double-cliquer sur Installer.bat. Il :
+       - copie l'agent dans %LOCALAPPDATA%\Agent-Georama (hors OneDrive) ;
+       - prépare Python (numpy, paho-mqtt) ;
+       - le fait démarrer avec Windows ;
+       - le lance tout de suite.
+  4. Dans le hub, page Production : « Ordi de la maison » passe à « En ligne ».
+
+GARDER LE PC DISPONIBLE
+  Paramètres Windows > Système > Alimentation : « Mettre en veille » = Jamais
+  (sur secteur). L'écran peut s'éteindre, ça ne dérange pas l'agent.
+  La session Windows doit rester ouverte (verrouillée, c'est correct).
+
+RÉGLAGES
+  %LOCALAPPDATA%\Agent-Georama\config.json  (ouvrir avec le Bloc-notes)
+  Après un changement : Arreter agent.bat, puis Demarrer agent.bat.
+
+EN CAS DE PROBLÈME
+  « Voir le journal.bat » ouvre agent.log. Envoie les dernières lignes à Claude.
+  Test d'un rendu à la main :
+    %LOCALAPPDATA%\Agent-Georama\.venv\Scripts\python.exe agent_georama.py --test-rendu chemin\vers\maquette.3mf
+
+DÉSINSTALLER
+  Arreter agent.bat, puis dans une invite de commandes :
+    schtasks /Delete /TN "Agent Georama" /F
+  et supprimer le dossier %LOCALAPPDATA%\Agent-Georama.
+
+Version 1.0 - novembre 2026

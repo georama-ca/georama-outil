@@ -1,6 +1,6 @@
 // Module Finances : ventes, dépenses, taxes, objectif.
 import { esc, argent, pct, dateCourte, options, ouvrirFenetre, aujourdhui, uid, toast, telecharger, csv } from '../ui.js';
-import { reglages, resume, ventes, depenses, CATEGORIES_DEPENSE, nomSegment, taxesDe, moisCourant, TPS, TVQ } from '../donnees.js';
+import { reglages, resume, ventes, depenses, CATEGORIES_DEPENSE, nomSegment, taxesDe, moisCourant, TPS, TVQ, journaliser } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
 
 function etatVue(ctx) {
@@ -44,7 +44,9 @@ function ouvrirDepense(ctx, id) {
     onSubmit(v) {
       const montant = Number(v.montant) || 0;
       const t = v.taxesAuto ? taxesDe(montant, true) : { tps: Number(v.tps) || 0, tvq: Number(v.tvq) || 0 };
-      m.mettre('depenses', Object.assign({}, d, { id: id || uid('d'), date: v.date, fournisseur: v.fournisseur, categorie: v.categorie, montant, tps: t.tps, tvq: t.tvq, taxesAuto: !!v.taxesAuto, note: v.note }));
+      m.mettre('depenses', Object.assign({}, d, { id: id || uid('d'), date: v.date, fournisseur: v.fournisseur, categorie: v.categorie, montant, tps: t.tps, tvq: t.tvq, taxesAuto: !!v.taxesAuto, note: v.note }), true);
+      if (!id) journaliser(m, 'Dépense ajoutée : ' + v.fournisseur + ' (' + argent(montant, 2) + ')', '#/finances/depenses', 'depense');
+      m.avertir('local');
       toast('Dépense enregistrée.');
     },
   });

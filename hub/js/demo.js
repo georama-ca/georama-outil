@@ -81,7 +81,30 @@ export function donneesDemo() {
 
   const reglagesDemo = [Object.assign({}, REGLAGES_DEFAUT, { maj: t, par: 'Démo' })];
 
-  return { commandes, plaques, taches, prospects, campagnes, depenses, filament, reglages: reglagesDemo };
+  const M = 'Maryse Perron Chartier', Ch = 'Charles Desbiens';
+  const A = (h, qui, texte, lien) => ({ id: 'a' + h + texte.length, quand: ilYa(h), qui, texte, lien, maj: t, par: 'Démo' });
+  const activite = [
+    A(1.5, M, 'Relance envoyée au club de golf pour l\u2019acompte', '#/marketing'),
+    A(3, M, 'Nouveau prospect : Parc régional (exemple)', '#/marketing'),
+    A(5, M, 'Dépense ajoutée : Postes Canada (64,00 $)', '#/finances/depenses'),
+    A(21, Ch, 'G-2026-041 : plaque 2/4 lancée sur la H2C', '#/production/fiche/c41'),
+    A(23, Ch, 'G-2026-041 : plaque 1/4 imprimée en 37 h', '#/production/fiche/c41'),
+    A(26, M, 'G-2026-037 expédiée à Sophie Côté', '#/production/fiche/c37'),
+    A(30, Ch, 'Nouvelle commande G-2026-044 : Éric Morin (Chasse)', '#/production/fiche/c44'),
+    A(50, Ch, 'G-2026-040 : .3mf prêt, les plaques peuvent partir', '#/production/fiche/c40'),
+  ];
+  const H = (j, qui, minutes, categorie, note) => ({ id: 'h' + j + qui.length + minutes, qui, date: ajouterJours(aujourdhui(), -j), minutes, categorie, note, commande: '', maj: t, par: 'Démo' });
+  const auj = new Date();
+  const jSem = (auj.getDay() + 6) % 7; // jours écoulés depuis lundi
+  const temps = [
+    H(Math.min(jSem, 1), Ch, 150, 'Production', 'Plaques G-2026-041'),
+    H(Math.min(jSem, 2), Ch, 120, 'Commandes et clients', 'Courriels clients'),
+    H(0, Ch, 90, 'Développement (outils)', 'Hub Georama'),
+    H(Math.min(jSem, 1), M, 180, 'Prospection', 'Appels Mauricie'),
+    H(0, M, 60, 'Finances', 'Reçus d\u2019octobre'),
+  ];
+
+  return { commandes, plaques, taches, prospects, campagnes, depenses, filament, reglages: reglagesDemo, activite, temps, travaux: [] };
 }
 
 // Fentes AMS par défaut pour un hub tout neuf (Microsoft 365) : vides, à remplir.

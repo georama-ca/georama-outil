@@ -2,11 +2,34 @@
 import { CONFIG } from '../../config.js';
 import * as auth from '../auth.js';
 import { lireLieu, ecrireLieu, COLLECTIONS } from '../store.js';
-import { reglages } from '../donnees.js';
+import { reglages, agent } from '../donnees.js';
 import { donneesDemo } from '../demo.js';
-import { esc, toast, telecharger, aujourdhui } from '../ui.js';
+import { esc, toast, telecharger, aujourdhui, ilYa, ico } from '../ui.js';
 
 const GUIDE = 'https://github.com/georama-ca/georama-outil/blob/main/hub/LISEZMOI.md';
+
+function blocAgent(ctx) {
+  const a = agent(ctx.m);
+  const etat = !a.installe ? '<span class="etiquette gris">Pas encore installé</span>'
+    : a.enLigne ? '<span class="etiquette vert">En ligne</span>' : '<span class="etiquette orange">Hors ligne</span>';
+  return `<section class="carte">
+    <div class="carte-tete"><h2 style="display:flex;align-items:center;gap:10px">${ico('maison').replace('<svg', '<svg width="22" height="22"')} Ordi de la maison</h2>${etat}</div>
+    ${a.installe ? `<p class="petit" style="margin:0 0 10px">${esc(a.machine || '')} · agent v${esc(a.version || '?')} · vu ${esc(ilYa(a.vu))} · démarré ${esc(ilYa(a.demarre))}</p>` : ''}
+    <p class="petit" style="margin:0 0 10px">Un PC toujours allumé à la maison, connecté au OneDrive Georama, fait le travail lourd pour le hub. Il ne parle au hub que par le dossier OneDrive : rien n'est ouvert sur Internet.</p>
+    <ul class="petit" style="margin:0 0 12px;padding-left:20px;line-height:24px">
+      <li><strong>Rendus 3D</strong> : dépose un .3mf dans le dossier d'une commande, l'image apparaît dans sa fiche.</li>
+      <li><strong>Georama Production</strong> : le bouton « Produire le .3mf » lance la production sur ce PC (branchement à faire avec Claude).</li>
+      <li><strong>Imprimante en direct</strong> : pourcentage, temps restant et fin réelle de la H2C (mode réseau local).</li>
+      <li><strong>Commandes du site</strong> : les commandes Wix arrivent toutes seules dans le hub, avec le lien de la zone.</li>
+    </ul>
+    ${ctx.mode === 'demo' ? '<p class="tres-petit doux" style="margin:0 0 10px">En mode démo, l\u2019ordi de la maison est simulé pour que tu puisses essayer.</p>' : ''}
+    <div class="actions">
+      <a class="btn" href="agent/agent-georama.zip" download>Télécharger l'agent (Windows)</a>
+      <a class="btn-lien" href="https://github.com/georama-ca/georama-outil/blob/main/hub/agent/LISEZMOI.txt" target="_blank" rel="noopener">Guide d'installation</a>
+    </div>
+    <p class="tres-petit doux" style="margin:10px 0 0">Installation : décompresser, double-cliquer sur Installer.bat. Il démarre ensuite tout seul avec Windows.</p>
+  </section>`;
+}
 
 function blocConnexion(ctx) {
   const ids = auth.lireIdsAffichage();
@@ -18,6 +41,7 @@ function blocConnexion(ctx) {
       <div class="ligne"><span class="grow">Compte</span><span class="petit">${esc(ctx.courriel)}</span></div>
       <div class="ligne"><span class="grow">Dossier des données</span><span class="petit">${esc(lieu ? lieu.nom : '—')}${lieu && lieu.partage ? ' (partagé)' : ''}</span></div>
       ${lieu && lieu.webUrl ? `<p style="margin:10px 0"><a href="${esc(lieu.webUrl)}" target="_blank" rel="noopener">Ouvrir le dossier dans OneDrive</a></p>` : ''}
+      <label class="case"><input type="checkbox" data-chg="partage"${reglages(ctx.m).partageFait ? ' checked' : ''}> Le dossier est partagé avec l'autre personne</label>
       <div class="bandeau info" style="margin:10px 0"><span><strong>Pour travailler à deux :</strong> dans OneDrive, partage le dossier Hub-Georama avec l'autre personne (peut modifier), puis envoie-lui le lien. À sa première connexion, elle choisit « On m'a partagé le dossier » et colle le lien.</span></div>
       <div class="actions">
         <button type="button" class="btn-2" data-act="changer-dossier">Changer de dossier</button>
@@ -50,6 +74,7 @@ export default {
       <span class="tres-petit doux">${i.active ? 'En service' : 'Pas en service'}</span></div>`).join('');
     return `<header class="entete"><div><p class="surtitre">Hub · v${esc(CONFIG.version)} · ${esc(CONFIG.versionDate)}</p><h1 class="titre-1">Paramètres</h1></div></header>
       ${blocConnexion(ctx)}
+      ${blocAgent(ctx)}
       <form data-form="reglages" style="display:flex;flex-direction:column;gap:16px">
         <div class="g2">
           <section class="carte">
@@ -57,6 +82,7 @@ export default {
             <div class="champs">
               <div class="champ"><label for="r-hpp">Heures par plaque 10 × 12</label><input id="r-hpp" name="heuresParPlaque" type="number" min="1" max="200" step="0.5" value="${esc(R.heuresParPlaque)}"><span class="aide">Estimé à 37 h (à mesurer). Sert aux nouvelles plaques.</span></div>
               <div class="champ"><label for="r-hpj">Heures d'impression par jour</label><input id="r-hpj" name="heuresParJour" type="number" min="1" max="24" step="1" value="${esc(R.heuresParJour)}"></div>
+              <div class="champ"><label for="r-hsem">Heures Georama visées par semaine (chacun)</label><input id="r-hsem" name="heuresSemaine" type="number" min="1" max="80" step="0.5" value="${esc(R.heuresSemaine || 10)}"></div>
               <div class="champ"><label for="r-delai">Délai promis (jours)</label><input id="r-delai" name="delaiJours" type="number" min="1" max="120" value="${esc(R.delaiJours)}"><span class="aide">3 semaines : 2 de production + 7 jours de livraison.</span></div>
               <div class="champ plein"><span class="lbl">Imprimantes</span>${imp}</div>
             </div>
@@ -112,6 +138,7 @@ export default {
     },
   },
   changes: {
+    partage: (ctx, el) => ctx.m.mettre('reglages', Object.assign({}, reglages(ctx.m), { id: 'general', partageFait: el.checked })),
     importer: async (ctx, el) => {
       const f = el.files && el.files[0];
       if (!f) return;
@@ -140,6 +167,7 @@ export default {
         heuresParPlaque: Number(d.heuresParPlaque) || R.heuresParPlaque,
         heuresParJour: Math.min(24, Number(d.heuresParJour) || R.heuresParJour),
         delaiJours: Number(d.delaiJours) || R.delaiJours,
+        heuresSemaine: Number(d.heuresSemaine) || R.heuresSemaine || 10,
         objectif: Number(d.objectif) || 0,
         livraison: Number(d.livraison) || 0,
         dateLimiteNoel: d.dateLimiteNoel || R.dateLimiteNoel,

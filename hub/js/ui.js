@@ -87,6 +87,12 @@ const P = {
   plus: '<path d="M12 5v14M5 12h14"/>',
   crayon: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
   poubelle: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  loupe: '<circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/>',
+  maison: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-5h4v5"/>',
+  image: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 16-5-5-8 8"/>',
+  fichier: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+  dossier: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  eclair: '<path d="M13 3 5 14h6l-1 7 8-11h-6z"/>',
 };
 export function ico(nom) {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[nom] || ''}</svg>`;
@@ -162,4 +168,15 @@ export function csv(lignes) {
     return /[",;\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   };
   return '﻿' + lignes.map(l => l.map(c).join(',')).join('\r\n');
+}
+
+export function ilYa(iso) {
+  const d = versDate(iso);
+  if (!d) return '';
+  const s = Math.round((Date.now() - d.getTime()) / 1000);
+  if (s < 60) return 'à l’instant';
+  if (s < 3600) return 'il y a ' + Math.round(s / 60) + ' min';
+  if (s < 86400) return 'il y a ' + Math.round(s / 3600) + ' h';
+  if (s < 7 * 86400) { const j = Math.round(s / 86400); return j === 1 ? 'hier' : 'il y a ' + j + ' jours'; }
+  return dateCourte(isoJour(d));
 }

@@ -2,9 +2,11 @@
 import { CONFIG } from '../config.js';
 import * as auth from './auth.js';
 import { Magasin, AdaptateurLocal, AdaptateurOneDrive, lireLieu, ecrireLieu } from './store.js';
-import { reglages, REGLAGES_DEFAUT } from './donnees.js';
+import { reglages, REGLAGES_DEFAUT, importerWix, journaliser, CATEGORIES_TEMPS, minutesSemaine, nomSegment, statut as statutCmd, icoSegment } from './donnees.js';
 import { donneesDemo, amsVides } from './demo.js';
-import { esc, ico, toast, initiales, prenom } from './ui.js';
+import { demarrerAgentDemo } from './demo-agent.js';
+import { esc, ico, toast, initiales, prenom, ouvrirFenetre, fermerFenetre, options, uid, heures, aujourdhui, argent, dateCourte } from './ui.js';
+import { ouvrirCommande } from './vues/commandes.js';
 import tableau from './vues/tableau.js';
 import commandes from './vues/commandes.js';
 import production from './vues/production.js';
@@ -22,6 +24,7 @@ const MENU = [
 ];
 const CLE_MODE = 'georama-hub-mode';
 const CLE_MOI_DEMO = 'georama-hub-moi-demo';
+const CLE_CHRONO_G = 'georama-hub-chrono-global';
 
 const racine = document.getElementById('app');
 const ctx = {
@@ -61,17 +64,140 @@ function coquille(corps) {
     <nav class="menu" aria-label="Menu principal">
       <p class="marque">GEORAMA</p>
       <p class="surtitre sous-marque" style="font-size:11px">Hub · v${esc(CONFIG.version)}</p>
+      <button type="button" class="nav-recherche" data-act="recherche" aria-label="Rechercher (Ctrl+K)">${ico('loupe')}<span>Rechercher…</span><kbd>Ctrl K</kbd></button>
       ${nav}
       <div class="espace"></div>
       <a class="nav" href="#/parametres"${r.vue === 'parametres' ? ' aria-current="page"' : ''}>${ico('reglages')}<span>Paramètres</span></a>
       <div class="qui">
         <div class="qui-ligne"><span class="initiales moi">${esc(initiales(ctx.moi))}</span><span class="petit" style="font-weight:600">${esc(ctx.moi)}</span></div>
+        <div id="chrono-g">${chronoHtml()}</div>
         ${choixMoi}
       </div>
       <p class="sync" id="sync">${etatSync()}</p>
     </nav>
     <main class="contenu" id="contenu">${corps}</main>
   </div>`;
+}
+
+/* ---------- Chrono Georama (temps de travail) ---------- */
+function lireChronoG() { try { return JSON.parse(localStorage.getItem(CLE_CHRONO_G) || 'null'); } catch (e) { return null; } }
+function chronoHtml() {
+  const c = lireChronoG();
+  const sem = minutesSemaine(ctx.m, ctx.moi);
+  const obj = (ctx.R.heuresSemaine || 10) * 60;
+  if (c && c.qui === ctx.moi) {
+    const min = Math.floor((Date.now() - c.debut) / 60000);
+    return `<button type="button" class="btn" data-act="chrono-stop" style="width:100%"><span class="pastille-etat" style="background:var(--sur-accent)"></span>Arrêter · <span class="num">${heures(min / 60)}</span></button>
+      <span class="tres-petit doux">Semaine : ${heures((sem + min) / 60)} sur ${heures(obj / 60)}</span>`;
+  }
+  return `<button type="button" class="btn-2" data-act="chrono-start" style="width:100%">Démarrer mon chrono</button>
+    <span class="tres-petit doux">Semaine : ${heures(sem / 60)} sur ${heures(obj / 60)}</span>`;
+}
+function majChrono() { const el = document.getElementById('chrono-g'); if (el && ctx.m) el.innerHTML = chronoHtml(); }
+function arreterChrono() {
+  const c = lireChronoG();
+  if (!c) return;
+  const min = Math.max(1, Math.round((Date.now() - c.debut) / 60000));
+  const cmds = ctx.m.liste('commandes').filter(x => ['nouvelle', 'approbation', 'production', 'finition'].includes(x.statut));
+  ouvrirFenetre({
+    titre: 'Bravo : ' + heures(min / 60) + ' pour Georama',
+    corps: `<div class="champs">
+      <div class="champ"><label for="ch-min">Minutes</label><input id="ch-min" name="minutes" type="number" min="1" max="1440" value="${min}"></div>
+      <div class="champ"><label for="ch-cat">Sur quoi ?</label><select id="ch-cat" name="categorie">${options(CATEGORIES_TEMPS, c.categorie || 'Production')}</select></div>
+      <div class="champ plein"><label for="ch-cmd">Commande (optionnel)</label><select id="ch-cmd" name="commande">${options(cmds.map(x => ({ id: x.id, nom: x.numero + ' · ' + (x.lieu || x.client) })), '', 'Aucune')}</select></div>
+      <div class="champ plein"><label for="ch-note">Note</label><input id="ch-note" name="note" type="text" placeholder="Ex. : appels de prospection Mauricie"></div>
+    </div>`,
+    onSubmit(d) {
+      const minutes = Math.max(1, Number(d.minutes) || min);
+      ctx.m.mettre('temps', { id: uid('h'), qui: ctx.moi, date: aujourdhui(), minutes, categorie: d.categorie, commande: d.commande || '', note: d.note || '' }, true);
+      if (d.commande) { const x = ctx.m.get('commandes', d.commande); if (x) ctx.m.modifier('commandes', x.id, { tempsMin: (Number(x.tempsMin) || 0) + minutes }, true); }
+      try { localStorage.removeItem(CLE_CHRONO_G); } catch (e) { /* rien */ }
+      ctx.m.avertir('local');
+      toast(heures(minutes / 60) + ' ajoutées à ta semaine. Beau travail.');
+    },
+  });
+}
+
+/* ---------- Recherche rapide (Ctrl+K) ---------- */
+function ouvrirRecherche() {
+  const pages = [
+    { t: 'Tableau de bord', s: 'Page', h: '#/' }, { t: 'Commandes', s: 'Page', h: '#/commandes' }, { t: 'Clients', s: 'Page', h: '#/commandes/clients' },
+    { t: 'File d\u2019impression', s: 'Production', h: '#/production' }, { t: 'Fiche de production', s: 'Production', h: '#/production/fiche' },
+    { t: 'Planification', s: 'Production', h: '#/production/planification' }, { t: 'Filament et AMS', s: 'Production', h: '#/production/filament' },
+    { t: 'Prospection', s: 'Marketing', h: '#/marketing' }, { t: 'Campagnes', s: 'Marketing', h: '#/marketing/campagnes' },
+    { t: 'Finances', s: 'Page', h: '#/finances' }, { t: 'Dépenses', s: 'Finances', h: '#/finances/depenses' }, { t: 'Paramètres', s: 'Page', h: '#/parametres' },
+  ];
+  const actions = [
+    { t: 'Nouvelle commande', s: 'Action', f: () => ouvrirCommande(ctx, null) },
+    { t: 'Démarrer mon chrono', s: 'Action', f: () => GLOBAL['chrono-start']() },
+  ];
+  const { dialog } = ouvrirFenetre({
+    titre: 'Rechercher', pied: false,
+    corps: `<label class="sr" for="rech">Rechercher</label>
+      <input id="rech" type="search" placeholder="Numéro, client, lieu, prospect, page…" autocomplete="off">
+      <div id="rech-res" role="listbox" style="margin-top:12px;display:flex;flex-direction:column;gap:2px;max-height:60vh;overflow:auto"></div>
+      <p class="tres-petit doux" style="margin:10px 0 0">↑ ↓ pour choisir, Entrée pour ouvrir, Échap pour fermer.</p>`,
+  });
+  const inp = dialog.querySelector('#rech');
+  const zone = dialog.querySelector('#rech-res');
+  let res = [], actif = 0;
+  const calc = () => {
+    const q = inp.value.trim().toLowerCase();
+    const l = [];
+    const ok = (...v) => !q || v.some(x => String(x || '').toLowerCase().includes(q));
+    ctx.m.liste('commandes').filter(c => ok(c.numero, c.client, c.lieu, c.courriel, nomSegment(c.segment)))
+      .sort((a, b) => String(b.recue).localeCompare(String(a.recue))).slice(0, q ? 8 : 4)
+      .forEach(c => l.push({ t: c.numero + ' · ' + c.client, s: statutCmd(c.statut).nom + ' · ' + (c.lieu || nomSegment(c.segment)), seg: c.segment, f: () => ouvrirCommande(ctx, c.id) }));
+    ctx.m.liste('prospects').filter(p => q && ok(p.organisation, p.contact, p.region)).slice(0, 5)
+      .forEach(p => l.push({ t: p.organisation, s: 'Prospect · ' + (p.region || p.type || ''), h: '#/marketing' }));
+    ctx.m.liste('depenses').filter(d => q && ok(d.fournisseur, d.note, d.categorie)).slice(0, 3)
+      .forEach(d => l.push({ t: d.fournisseur + ' · ' + argent(d.montant, 2), s: 'Dépense · ' + dateCourte(d.date), h: '#/finances/depenses' }));
+    actions.filter(a => ok(a.t)).forEach(a => l.push(a));
+    pages.filter(p => ok(p.t, p.s)).forEach(p => l.push(p));
+    res = l.slice(0, 14);
+    actif = 0;
+    zone.innerHTML = res.map((r, i) => `<button type="button" class="ligne ligne-btn rech-item" data-i="${i}" role="option" aria-selected="${i === actif}" style="border-top:0;border-radius:6px;padding:10px 12px">
+      ${r.seg ? icoSegment(r.seg) : ''}<span class="grow"><strong>${esc(r.t)}</strong><br><span class="tres-petit doux">${esc(r.s)}</span></span></button>`).join('') || '<p class="vide">Rien trouvé.</p>';
+  };
+  const choisir = i => { const r = res[i]; if (!r) return; fermerFenetre(); if (r.f) r.f(); else ctx.aller(r.h); };
+  const surligner = () => zone.querySelectorAll('.rech-item').forEach((b, i) => { b.setAttribute('aria-selected', i === actif); b.style.background = i === actif ? 'var(--fond)' : ''; if (i === actif) b.scrollIntoView({ block: 'nearest' }); });
+  inp.addEventListener('input', () => { calc(); surligner(); });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { actif = Math.min(res.length - 1, actif + 1); surligner(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { actif = Math.max(0, actif - 1); surligner(); e.preventDefault(); }
+    else if (e.key === 'Enter') { e.preventDefault(); choisir(actif); }
+  });
+  zone.addEventListener('click', e => { const b = e.target.closest('.rech-item'); if (b) choisir(Number(b.dataset.i)); });
+  calc(); surligner();
+  inp.focus();
+}
+
+function aideRaccourcis() {
+  ouvrirFenetre({ titre: 'Raccourcis clavier', pied: false, corps: `
+    <div class="ligne"><span class="grow">Rechercher n'importe quoi</span><kbd>Ctrl K</kbd> <kbd>/</kbd></div>
+    <div class="ligne"><span class="grow">Nouvelle commande</span><kbd>N</kbd></div>
+    <div class="ligne"><span class="grow">Démarrer ou arrêter mon chrono</span><kbd>T</kbd></div>
+    <div class="ligne"><span class="grow">Tableau de bord · Commandes · Production · Marketing · Finances</span><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd></div>
+    <div class="ligne"><span class="grow">Cette aide</span><kbd>?</kbd></div>` });
+}
+
+document.addEventListener('keydown', e => {
+  if (!ctx.m) return;
+  const modal = document.getElementById('modal').open;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); if (!modal) ouvrirRecherche(); return; }
+  const t = e.target;
+  if (modal || e.ctrlKey || e.metaKey || e.altKey || (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))) return;
+  const k = e.key;
+  if (k === '/') { e.preventDefault(); ouvrirRecherche(); }
+  else if (k === 'n' || k === 'N') { e.preventDefault(); ouvrirCommande(ctx, null); }
+  else if (k === 't' || k === 'T') { e.preventDefault(); (lireChronoG() ? GLOBAL['chrono-stop'] : GLOBAL['chrono-start'])(); }
+  else if (k === '?') { e.preventDefault(); aideRaccourcis(); }
+  else if (/^[1-5]$/.test(k)) { ctx.aller('#/' + MENU[Number(k) - 1].id); }
+});
+
+function verifierWix() {
+  const l = importerWix(ctx.m);
+  if (l.length) toast(l.length === 1 ? 'Nouvelle commande du site : ' + l[0].numero + ' (' + l[0].client + '). Elle est dans la file.' : l.length + ' nouvelles commandes du site ajoutées.');
 }
 
 function rendre() {
@@ -128,6 +254,13 @@ racine.addEventListener('submit', ev => {
 });
 
 const GLOBAL = {
+  recherche: () => ouvrirRecherche(),
+  'chrono-start': () => {
+    try { localStorage.setItem(CLE_CHRONO_G, JSON.stringify({ debut: Date.now(), qui: ctx.moi })); } catch (e) { /* rien */ }
+    majChrono();
+    toast('Chrono démarré. Bonne session de travail.');
+  },
+  'chrono-stop': () => arreterChrono(),
   'moi-demo': el => { ctx.moi = el.value; try { localStorage.setItem(CLE_MOI_DEMO, el.value); } catch (e) { /* rien */ } ctx.m.qui = el.value; rendre(); },
   deconnexion: () => { if (confirm('Te déconnecter du hub ?')) auth.seDeconnecter(); },
   connexion: () => auth.seConnecter(),
@@ -228,13 +361,24 @@ async function demarrer() {
     }
   }
 
+  try {
+    ctx.vuAvant = localStorage.getItem('georama-hub-vu:' + ctx.moi) || '';
+    // Première visite en démo : faire comme si la dernière visite datait d'hier soir
+    if (!ctx.vuAvant && ctx.mode === 'demo') ctx.vuAvant = new Date(Date.now() - 12 * 3600000).toISOString();
+    localStorage.setItem('georama-hub-vu:' + ctx.moi, new Date().toISOString());
+  } catch (e) { ctx.vuAvant = ''; }
+  ctx.journal = (texte, lien, type) => journaliser(ctx.m, texte, lien, type);
   ctx.m.abonner(source => {
     if (source === 'etat') { const s = document.getElementById('sync'); if (s) s.innerHTML = etatSync(); return; }
+    if (source === 'distant') verifierWix();
     rendre();
   });
+  verifierWix();
+  if (ctx.mode === 'demo') demarrerAgentDemo(ctx.m);
+  setInterval(majChrono, 20000);
   window.addEventListener('hashchange', rendre);
   if (ctx.mode !== 'demo') {
-    setInterval(() => { if (document.visibilityState === 'visible') ctx.m.rafraichir(); }, 45000);
+    setInterval(() => { if (document.visibilityState === 'visible') ctx.m.rafraichir(); }, 30000);
     window.addEventListener('focus', () => ctx.m.rafraichir());
   }
   window.addEventListener('beforeunload', ev => { if (ctx.m.enAttente() && ctx.mode !== 'demo') { ev.preventDefault(); ev.returnValue = ''; } });
