@@ -8890,7 +8890,7 @@ window.addEventListener("message", function (e) {
   }
   window.georamaOuvrages = function (d, versZone) {
     const z = d && d.zone;
-    if (!z || !(z.w <= 10)) return null;
+    if (!z || !(z.w <= 10) || profil() === "ville") return null;   // en ville, les arbres sont déjà limités aux parcs
     const cle = cleZ(z);
     let e = ouvrages.get(cle);
     if (!e) { chargerOuvrages(z, cle); e = ouvrages.get(cle); }
