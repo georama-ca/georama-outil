@@ -61,6 +61,13 @@ kbd { display: inline-block; padding: 1px 6px; border-radius: 4px; border: 1px s
 
 /* Cellulaire et tablette : barre du haut simple + onglets en bas (v1.4) */
 .barre-mobile, .onglets-bas { display: none; }
+.icone-barre { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; height: 44px; padding: 0 10px;
+               border-radius: 22px; border: 1px solid var(--bordure); background: var(--surface-2); color: var(--texte);
+               font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; }
+.icone-barre svg { width: 20px; height: 20px; flex-shrink: 0; }
+.icone-barre.chrono-actif { background: var(--accent); color: var(--sur-accent); border-color: var(--accent); }
+.initiales-barre { width: 44px; padding: 0; background: var(--surface); }
+.initiales-barre.actif { background: var(--accent); color: var(--sur-accent); border-color: var(--accent); }
 @media (max-width: 900px) {
   .coquille { flex-direction: column; }
   .menu { width: auto; height: auto; position: sticky; top: 0; z-index: 20; flex-direction: row; align-items: center; gap: 6px;
@@ -68,13 +75,6 @@ kbd { display: inline-block; padding: 1px 6px; border-radius: 4px; border: 1px s
   .marque { font-size: 16px; margin: 0; letter-spacing: .2em; }
   .sous-marque, .menu .espace, .qui, .sync, .nav-recherche, .menu a.nav { display: none; }
   .barre-mobile { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-  .icone-barre { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; height: 44px; padding: 0 10px;
-                 border-radius: 22px; border: 1px solid var(--bordure); background: var(--surface-2); color: var(--texte);
-                 font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; }
-  .icone-barre svg { width: 20px; height: 20px; flex-shrink: 0; }
-  .icone-barre.chrono-actif { background: var(--accent); color: var(--sur-accent); border-color: var(--accent); }
-  .initiales-barre { width: 44px; padding: 0; background: var(--surface); }
-  .initiales-barre.actif { background: var(--accent); color: var(--sur-accent); border-color: var(--accent); }
   .onglets-bas { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
              background: var(--fond-profond); border-top: 1px solid var(--bordure); padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
   .onglets-bas a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; border-radius: 12px;
@@ -86,6 +86,31 @@ kbd { display: inline-block; padding: 1px 6px; border-radius: 4px; border: 1px s
   .toast { max-width: none; }
 }
 .qui-mobile { display: none !important; }
+
+/* Mode Georama Production (v1.7, ordinateur) : menu réduit à une colonne d'icônes, pas de grand titre,
+   le programme prend toute la hauteur de l'écran. « Agrandir » cache aussi le menu et les onglets. */
+.zone-production { height: calc(100vh - 230px); min-height: 560px; border: 1px dashed var(--bordure); border-radius: 8px;
+                   display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; }
+.barre-prod { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.barre-prod select { max-width: 340px; }
+.barre-prod .btn-2, .barre-prod .btn-lien { min-height: 36px; }
+@media (min-width: 901px) {
+  body.mode-prod .menu { width: 72px; padding: 14px 10px; align-items: center; }
+  body.mode-prod .marque { margin: 0 0 14px; font-size: 0; letter-spacing: 0; }
+  body.mode-prod .marque::before { content: 'G'; font-size: 22px; letter-spacing: 0; }
+  body.mode-prod .sous-marque, body.mode-prod .qui, body.mode-prod .sync, body.mode-prod .nav-recherche { display: none; }
+  body.mode-prod .menu a.nav { width: 48px; padding: 0; justify-content: center; }
+  body.mode-prod .menu a.nav span { display: none; }
+  body.mode-prod .barre-mobile { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  body.mode-prod .barre-mobile .icone-barre { min-width: 48px; padding: 0 6px; }
+  body.mode-prod .barre-mobile .chrono-actif { flex-direction: column; gap: 0; height: auto; min-height: 48px; padding: 4px; border-radius: 14px; font-size: 11px; }
+  body.mode-prod .contenu { height: 100vh; padding: 12px 16px; gap: 10px; max-width: none; overflow: hidden; }
+  body.mode-prod .contenu > .entete { display: none; }
+  body.mode-prod .contenu > .onglets a { min-height: 38px; }
+  body.mode-prod .zone-production { flex: 1 1 auto; height: auto; min-height: 320px; }
+  body.mode-prod.mode-prod-max .menu, body.mode-prod.mode-prod-max .contenu > .onglets { display: none; }
+  body.mode-prod.mode-prod-max .contenu { padding: 8px 10px; gap: 8px; }
+}
 
 /* En-tête de page */
 .entete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }

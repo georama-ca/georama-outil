@@ -563,6 +563,17 @@ function cadreProduction() {
   }
   return cadre;
 }
+// « Agrandir » : cache aussi le menu et les onglets du hub (retenu sur cet ordi).
+const CLE_MAX = 'georama-hub-prod-max';
+export function modeProdMax() { try { return localStorage.getItem(CLE_MAX) === '1'; } catch (e) { return false; } }
+function basculerMax() {
+  const v = !modeProdMax();
+  try { localStorage.setItem(CLE_MAX, v ? '1' : '0'); } catch (e) { /* navigation privée */ }
+  document.body.classList.toggle('mode-prod-max', v);
+  const b = document.querySelector('[data-act="gp-agrandir"]');
+  if (b) { b.textContent = v ? 'Réduire (voir le menu du hub)' : 'Agrandir'; b.setAttribute('aria-pressed', String(v)); }
+  placerCadre();
+}
 export function placerCadre() {
   if (!cadre) return;
   const z = document.getElementById('zone-production');
@@ -576,13 +587,16 @@ async function serveurPret() {
 function vueGeorama(ctx) {
   const c = ctx.route.id ? ctx.m.get('commandes', ctx.route.id) : null;
   const cmds = ctx.m.liste('commandes').filter(x => ACTIVES.includes(x.statut) && x.lien).sort((a, b) => String(a.promise || '9').localeCompare(String(b.promise || '9')));
-  return `<div class="filtres seulement-ordi" style="align-items:center">
+  const max = modeProdMax();
+  return `<div class="barre-prod seulement-ordi">
       <label for="gp-commande" class="petit">Commande</label>
       <select id="gp-commande" data-chg="gp-commande"><option value="">Aucune (nouvelle zone)</option>${cmds.map(x => `<option value="${esc(x.id)}"${c && c.id === x.id ? ' selected' : ''}>${esc(x.numero)} · ${esc(x.client)}</option>`).join('')}</select>
       ${c ? `<a class="btn-lien petit" href="#/production/fiche/${esc(c.id)}">Fiche de ${esc(c.numero)}</a>` : ''}
-      <span class="tres-petit doux grow" style="text-align:right">Ce qui est produit ici arrive tout seul dans la fiche de la commande (même numéro).</span>
+      <span class="tres-petit doux grow">Ce qui est produit ici arrive tout seul dans la fiche de la commande (même numéro).</span>
+      <button type="button" class="btn-2" data-act="gp-recharger" title="Recharger Georama Production (après une mise à jour ou un redémarrage)">Recharger</button>
+      <button type="button" class="btn-2" data-act="gp-agrandir" aria-pressed="${max}">${max ? 'Réduire (voir le menu du hub)' : 'Agrandir'}</button>
     </div>
-    <div id="zone-production" style="height:calc(100vh - 230px);min-height:560px;border:1px dashed var(--bordure);border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px">
+    <div id="zone-production" class="zone-production">
       <div id="gp-etat" class="petit doux">Recherche de Georama Production sur cet ordi…</div>
     </div>
     <p class="tres-petit doux seulement-mobile" style="margin:0">Georama Production s’utilise sur un ordinateur. Sur le cellulaire : boutons « Aperçu rapide », « Produire le .3mf » et « PDF client » dans la fiche de la commande.</p>`;
@@ -657,6 +671,11 @@ export default {
       const c = ficheCourante(ctx);
       ctx.m.mettre('temps', { id: uid('h'), qui: ctx.moi, date: aujourdhui(), minutes: 15, categorie: 'Production', commande: c.id, note: c.numero }, true);
       ctx.m.modifier('commandes', c.id, { tempsMin: (Number(c.tempsMin) || 0) + 15 });
+    },
+    'gp-agrandir': () => basculerMax(),
+    'gp-recharger': ctx => {
+      if (cadre && cadreSrc) { const src = cadreSrc; cadre.src = 'about:blank'; setTimeout(() => { cadre.src = src; }, 50); }
+      else monterGeorama(ctx);
     },
     'gp-forcer': ctx => { etatVue(ctx).forcerCadre = true; monterGeorama(ctx); },
     'gp-demarrer': ctx => {

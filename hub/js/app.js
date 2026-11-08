@@ -9,7 +9,7 @@ import { esc, ico, toast, initiales, prenom, ouvrirFenetre, fermerFenetre, optio
 import { ouvrirCommande } from './vues/commandes.js';
 import tableau from './vues/tableau.js';
 import commandes from './vues/commandes.js';
-import production, { placerCadre } from './vues/production.js';
+import production, { placerCadre, modeProdMax } from './vues/production.js';
 import marketing from './vues/marketing.js';
 import finances from './vues/finances.js';
 import parametres from './vues/parametres.js';
@@ -55,7 +55,7 @@ function etatSync() {
 
 function coquille(corps) {
   const r = ctx.route;
-  const nav = MENU.map(i => `<a class="nav" href="#/${i.id}"${r.vue === i.id ? ' aria-current="page"' : ''}>${ico(i.ico)}<span>${esc(i.nom)}</span></a>`).join('');
+  const nav = MENU.map(i => `<a class="nav" href="#/${i.id}" title="${esc(i.nom)}"${r.vue === i.id ? ' aria-current="page"' : ''}>${ico(i.ico)}<span>${esc(i.nom)}</span></a>`).join('');
   const choixMoi = ctx.mode === 'demo'
     ? `<label class="tres-petit doux" for="moi-demo">Je suis</label>
        <select id="moi-demo" data-chg="moi-demo">${ctx.membres.map(n => `<option${n === ctx.moi ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>`
@@ -67,7 +67,7 @@ function coquille(corps) {
       <button type="button" class="nav-recherche" data-act="recherche" aria-label="Rechercher (Ctrl+K)">${ico('loupe')}<span>Rechercher…</span><kbd>Ctrl K</kbd></button>
       ${nav}
       <div class="espace"></div>
-      <a class="nav" href="#/parametres"${r.vue === 'parametres' ? ' aria-current="page"' : ''}>${ico('reglages')}<span>Paramètres</span></a>
+      <a class="nav" href="#/parametres" title="Paramètres"${r.vue === 'parametres' ? ' aria-current="page"' : ''}>${ico('reglages')}<span>Paramètres</span></a>
       <div class="qui">
         <div class="qui-ligne"><span class="initiales moi">${esc(initiales(ctx.moi))}</span><span class="petit" style="font-weight:600">${esc(ctx.moi)}</span></div>
         <div id="chrono-g">${chronoHtml()}</div>
@@ -239,6 +239,9 @@ function rendre() {
       <button type="button" class="btn-2" onclick="location.reload()">Recharger</button>
       <pre class="tres-petit doux" style="white-space:pre-wrap;margin:0">v${esc(CONFIG.version)} · ${esc(pile)}</pre></div>`;
   }
+  const modeProd = ctx.route.vue === 'production' && ctx.route.sous === 'georama';
+  document.body.classList.toggle('mode-prod', modeProd);
+  document.body.classList.toggle('mode-prod-max', modeProd && modeProdMax());
   racine.innerHTML = coquille(corps);
   document.title = (vue.titre ? vue.titre + ' · ' : '') + 'Hub Georama';
   if (focusId) {

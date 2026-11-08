@@ -1,5 +1,7 @@
 ' Georama Production depuis le Hub Georama : ouvre l'interface (http://127.0.0.1:8765),
 ' en lancant le programme en arriere-plan s'il ne tourne pas deja. Installe par « Installer le bouton du hub.cmd ».
+' Lance par le bouton du hub (avec un argument) : n'ouvre PAS d'onglet, le hub affiche le programme dans sa page.
+' Double-clic sur ce fichier (sans argument) : ouvre l'interface dans le navigateur.
 Option Explicit
 Dim sh, fso, dossier, py, adresse, i
 Set sh = CreateObject("WScript.Shell")
@@ -24,7 +26,7 @@ If Not Repond(adresse & "api/infos") Then
     WScript.Quit 1
   End If
 End If
-sh.Run adresse
+If WScript.Arguments.Count = 0 Then sh.Run adresse
 
 Function Repond(url)
   On Error Resume Next

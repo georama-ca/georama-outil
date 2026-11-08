@@ -48,6 +48,11 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.7 (8 novembre 2026)
+- **Mode Georama Production** (ordinateur) : dans Production › Georama Production, le menu du hub devient une colonne d'icônes (chrono, recherche et compte restent au bas), le grand titre disparaît et le programme prend toute la hauteur de l'écran. Bouton **« Agrandir »** : cache aussi le menu et les onglets du hub (retenu sur cet ordi) ; « Réduire » pour les revoir. Bouton **« Recharger »** : relance l'affichage du programme.
+- **Plus d'onglet en trop** : le bouton « Démarrer Georama Production » lance le programme sans ouvrir de nouvel onglet ; le hub l'affiche dans sa page (« Lancer depuis le hub.vbs » mis à jour dans le dossier georama-production, rien à réinstaller).
+- suivi.js ajouté à la liste des fichiers versionnés (évite un mélange de versions en cache).
+
 ### v1.6 (8 novembre 2026)
 - **Georama Production dans le hub** (ordinateur) : Production › Georama Production. L'interface du programme s'affiche dans le hub et reste ouverte pendant qu'on navigue ailleurs. Choisir une commande charge son lien et son numéro tout seuls (Georama Production v4.13). Bouton « Démarrer » s'il n'est pas ouvert (une fois par ordi : « Installer le bouton du hub.cmd »). Ce qui est produit dans Georama Production arrive tout seul dans la fiche de la commande (agent 1.4).
 - **Demandes reçues par le site** (Prospection) : les formulaires Wix (Prévisualisation gratuite, Évaluation Premium, Contact) arrivent dans le hub ; « Ajouter aux prospects » en un clic, ou « Ignorer ».
