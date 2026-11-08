@@ -7,7 +7,7 @@ import {
 import { badgeStatut, promiseTexte, ouvrirCommande } from './commandes.js';
 import { suggestion, nomModele } from '../courriels.js';
 import { totauxMeta, statsWix } from './suivi.js';
-import { tachesDuMoment, cocherTache, ajouterTache, colonneDe } from './taches.js';
+import { tachesDuMoment, cocherTache, ajouterTache, colonneDe, ongletsAccueil } from './taches.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.tableau) ctx.etat.tableau = { voirFaites: false };
@@ -170,6 +170,7 @@ export default {
     ].filter(Boolean).join(' · ');
 
     return `
+      ${ongletsAccueil('')}
       <header class="entete">
         <div><p class="surtitre">${esc(dateLongue(aujourdhui()))}</p><h1 class="titre-1">Bonjour ${esc(prenom(ctx.moi))}</h1>
           <p class="petit doux" style="margin:6px 0 0">${esc(resumeSemaine)}.</p></div>

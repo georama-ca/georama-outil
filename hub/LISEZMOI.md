@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.8.1 (8 novembre 2026)
+- **Cellulaire** : Tâches est maintenant dans Accueil (onglets « Aperçu » et « Tâches » en haut de l'accueil). La barre du bas revient à 5 boutons. À l'ordinateur, rien ne change (Tâches reste dans le menu).
+
 ### v1.8 (8 novembre 2026)
 - **Tâches** (nouveau menu, aussi en bas sur le cellulaire) : tableau Kanban qui remplace le tableau Trello « Georama · Pilotage ». Mêmes colonnes (J'ai besoin de toi, Cette semaine, Prochainement, Plus tard, En attente de quelqu'un, En cours (Claude), Terminé) et mêmes couleurs d'étiquettes. Glisser-déposer à l'ordinateur ; dans la carte : colonne, étiquette, pour qui, échéance, description, sous-tâches. « + Ajouter une carte » au bas de chaque colonne. Filtres par étiquette et par personne, recherche (aussi dans Ctrl K). Les 52 cartes de Trello sont importées (taches.json).
 - **Tableau de bord** : « À faire » montre les décisions, la semaine et ce qui arrive dans 7 jours ; lien vers toutes les tâches.

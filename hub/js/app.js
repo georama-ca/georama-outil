@@ -18,7 +18,7 @@ import taches, { colonneDe, COLONNES } from './vues/taches.js';
 const VUES = { '': tableau, taches, commandes, production, marketing, finances, parametres };
 const MENU = [
   { id: '', nom: 'Tableau de bord', court: 'Accueil', ico: 'accueil' },
-  { id: 'taches', nom: 'Tâches', court: 'Tâches', ico: 'taches' },
+  { id: 'taches', nom: 'Tâches', court: 'Tâches', ico: 'taches', pasEnBas: true }, // au cellulaire : dans Accueil
   { id: 'commandes', nom: 'Commandes et clients', court: 'Commandes', ico: 'commandes' },
   { id: 'production', nom: 'Production', court: 'Production', ico: 'production' },
   { id: 'marketing', nom: 'Marketing et prospection', court: 'Marketing', ico: 'marketing' },
@@ -84,7 +84,7 @@ function coquille(corps) {
     </nav>
     <main class="contenu" id="contenu">${corps}</main>
     <nav class="onglets-bas" aria-label="Menu principal">
-      ${MENU.map(i => `<a href="#/${i.id}"${r.vue === i.id ? ' aria-current="page"' : ''}>${ico(i.ico)}<span>${esc(i.court)}</span></a>`).join('')}
+      ${MENU.filter(i => !i.pasEnBas).map(i => `<a href="#/${i.id}"${r.vue === i.id || (i.id === '' && r.vue === 'taches') ? ' aria-current="page"' : ''}>${ico(i.ico)}<span>${esc(i.court)}</span></a>`).join('')}
     </nav>
   </div>`;
 }

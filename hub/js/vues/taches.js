@@ -97,7 +97,8 @@ function vueTableau(ctx) {
       </section>`;
   }).join('');
   const quiOpts = [{ id: '', nom: 'Tout le monde' }].concat(ctx.membres.map(n => ({ id: n, nom: prenom(n) })), [{ id: '-', nom: 'Personne d’assigné' }]);
-  return `<header class="entete">
+  return `${ongletsAccueil('taches')}
+    <header class="entete">
       <div><p class="surtitre">Pilotage</p><h1 class="titre-1">Tâches</h1>
         <p class="petit doux" style="margin:6px 0 0">${ouvertes.length} à faire${decisions ? ` · <strong>${decisions} décision${decisions > 1 ? 's' : ''} t’attend${decisions > 1 ? 'ent' : ''}</strong>` : ''}${retard ? ` · <span class="retard">${retard} en retard</span>` : ''}</p></div>
       <div class="actions"><button type="button" class="btn" data-act="k-nouvelle">+ Nouvelle tâche</button></div>
@@ -261,6 +262,13 @@ function brancherGlisser(ctx) {
 }
 
 /* ---------- Pour le tableau de bord ---------- */
+// Au cellulaire, Tâches est dans Accueil : deux onglets en haut (pas de 6e bouton en bas).
+export function ongletsAccueil(actif) {
+  return `<nav class="onglets onglets-accueil seulement-mobile" aria-label="Accueil">
+      <a href="#/"${actif === '' ? ' aria-current="page"' : ''}>Aperçu</a>
+      <a href="#/taches"${actif === 'taches' ? ' aria-current="page"' : ''}>Tâches</a>
+    </nav>`;
+}
 // Ce qui mérite d'être vu tout de suite : décisions, cette semaine, et tout ce qui arrive dans 7 jours.
 export function tachesDuMoment(m) {
   const fin = ajouterJours(aujourdhui(), 6);

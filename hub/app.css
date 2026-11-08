@@ -75,7 +75,7 @@ kbd { display: inline-block; padding: 1px 6px; border-radius: 4px; border: 1px s
   .marque { font-size: 16px; margin: 0; letter-spacing: .2em; }
   .sous-marque, .menu .espace, .qui, .sync, .nav-recherche, .menu a.nav { display: none; }
   .barre-mobile { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-  .onglets-bas { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  .onglets-bas { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
              background: var(--fond-profond); border-top: 1px solid var(--bordure); padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
   .onglets-bas a { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-height: 52px; border-radius: 12px;
                color: var(--texte-doux); text-decoration: none; font-size: 11px; font-weight: 600; }
@@ -308,7 +308,7 @@ dialog#modal::backdrop { background: rgba(13,17,16,.72); }
 #carte-zones .leaflet-popup-content { color: #1b1f1c; font-family: Montserrat, system-ui, sans-serif; }
 @media (max-width: 900px) { .seulement-ordi { display: none !important; } }
 .seulement-mobile { display: none; }
-@media (max-width: 900px) { .seulement-mobile { display: block; } }
+@media (max-width: 900px) { .seulement-mobile { display: block; } .onglets.seulement-mobile { display: flex; } .onglets-accueil a { flex: 1 1 0; justify-content: center; } }
 
 /* Tâches : tableau Kanban (v1.8) */
 .kanban { display: flex; gap: 12px; align-items: flex-start; overflow-x: auto; padding-bottom: 12px; margin: 0 -4px; padding-left: 4px; padding-right: 4px; scroll-snap-type: x proximity; }
