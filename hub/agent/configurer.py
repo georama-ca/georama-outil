@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """Assistant de configuration de l'agent Georama (Wix et imprimante).
 Les réponses sont gardées dans config.json, sur ce PC seulement."""
-import getpass
 import json
 import os
 import sys
@@ -41,8 +40,12 @@ def main():
         print()
         print('    Clé API : manage.wix.com > Paramètres du compte > Clés API > Générer une clé.')
         print('    Nom : Agent Georama. Permission à cocher : Wix eCommerce > Lire les commandes')
-        print('    (« Read Orders »). Colle la clé ici (rien ne s\'affiche, c\'est normal).')
-        cle = getpass.getpass('    Clé API Wix : ').strip()
+        print('    (« Read Orders »). Colle la clé ici avec Ctrl+V ou un clic droit, puis Entrée.')
+        print('    (Elle reste sur ce PC seulement.)')
+        cle = ''.join(ch for ch in input('    Clé API Wix : ') if ch.isprintable()).strip()
+        if cle and len(cle) < 40:
+            print('    Cette clé semble incomplète (%d caractères). Copie-la de nouveau dans Wix.' % len(cle))
+            cle = ''.join(ch for ch in input('    Clé API Wix : ') if ch.isprintable()).strip()
         if cle:
             cfg['wix_cle_api'] = cle
         cfg['wix_site_id'] = demander('    ID du site', cfg.get('wix_site_id') or SITE_GEORAMA)
@@ -66,7 +69,7 @@ def main():
         imp['id'] = 'h2c'
         imp['ip'] = demander('    Adresse IP', imp.get('ip', ''))
         imp['serie'] = demander('    Numéro de série', imp.get('serie', ''))
-        code = getpass.getpass('    Code d\'accès (rien ne s\'affiche) : ').strip()
+        code = ''.join(ch for ch in input('    Code d\'accès LAN (8 caractères, écran de l\'imprimante) : ') if ch.isprintable()).strip()
         if code:
             imp['code_acces'] = code
         cfg['imprimantes'] = [imp]

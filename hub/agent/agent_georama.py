@@ -29,6 +29,7 @@ import sys
 import threading
 import time
 import traceback
+import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
@@ -204,10 +205,15 @@ def lire_lien(lien):
 
 def commandes_wix(cfg):
     corps = json.dumps({'search': {'cursorPaging': {'limit': 50}, 'sort': [{'fieldName': 'createdDate', 'order': 'DESC'}]}}).encode()
+    cle = ''.join(ch for ch in str(cfg['wix_cle_api']) if ch.isprintable()).strip()
     req = urllib.request.Request('https://www.wixapis.com/ecom/v1/orders/search', data=corps, method='POST', headers={
-        'Authorization': cfg['wix_cle_api'], 'wix-site-id': cfg['wix_site_id'], 'Content-Type': 'application/json'})
-    with urllib.request.urlopen(req, timeout=60) as r:
-        donnees = json.loads(r.read().decode('utf-8'))
+        'Authorization': cle, 'wix-site-id': str(cfg['wix_site_id']).strip(), 'Content-Type': 'application/json'})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            donnees = json.loads(r.read().decode('utf-8'))
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode('utf-8', 'replace')[:300]
+        raise RuntimeError('Wix répond %s : %s' % (e.code, detail or e.reason)) from None
     sortie = []
     for o in donnees.get('orders', []):
         cree = o.get('createdDate', '')
