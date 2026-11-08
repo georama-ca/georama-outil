@@ -13,10 +13,12 @@ import production, { placerCadre, modeProdMax } from './vues/production.js';
 import marketing from './vues/marketing.js';
 import finances from './vues/finances.js';
 import parametres from './vues/parametres.js';
+import taches, { colonneDe, COLONNES } from './vues/taches.js';
 
-const VUES = { '': tableau, commandes, production, marketing, finances, parametres };
+const VUES = { '': tableau, taches, commandes, production, marketing, finances, parametres };
 const MENU = [
   { id: '', nom: 'Tableau de bord', court: 'Accueil', ico: 'accueil' },
+  { id: 'taches', nom: 'Tâches', court: 'Tâches', ico: 'taches' },
   { id: 'commandes', nom: 'Commandes et clients', court: 'Commandes', ico: 'commandes' },
   { id: 'production', nom: 'Production', court: 'Production', ico: 'production' },
   { id: 'marketing', nom: 'Marketing et prospection', court: 'Marketing', ico: 'marketing' },
@@ -142,7 +144,7 @@ function arreterChrono() {
 /* ---------- Recherche rapide (Ctrl+K) ---------- */
 function ouvrirRecherche() {
   const pages = [
-    { t: 'Tableau de bord', s: 'Page', h: '#/' }, { t: 'Commandes', s: 'Page', h: '#/commandes' }, { t: 'Clients', s: 'Page', h: '#/commandes/clients' },
+    { t: 'Tableau de bord', s: 'Page', h: '#/' }, { t: 'Tâches', s: 'Page', h: '#/taches' }, { t: 'Commandes', s: 'Page', h: '#/commandes' }, { t: 'Clients', s: 'Page', h: '#/commandes/clients' },
     { t: 'File d\u2019impression', s: 'Production', h: '#/production' }, { t: 'Fiche de production', s: 'Production', h: '#/production/fiche' },
     { t: 'Planification', s: 'Production', h: '#/production/planification' }, { t: 'Filament et AMS', s: 'Production', h: '#/production/filament' },
     { t: 'Prospection', s: 'Marketing', h: '#/marketing' }, { t: 'Campagnes', s: 'Marketing', h: '#/marketing/campagnes' },
@@ -169,6 +171,8 @@ function ouvrirRecherche() {
     ctx.m.liste('commandes').filter(c => ok(c.numero, c.client, c.lieu, c.courriel, nomSegment(c.segment)))
       .sort((a, b) => String(b.recue).localeCompare(String(a.recue))).slice(0, q ? 8 : 4)
       .forEach(c => l.push({ t: c.numero + ' · ' + c.client, s: statutCmd(c.statut).nom + ' · ' + (c.lieu || nomSegment(c.segment)), seg: c.segment, f: () => ouvrirCommande(ctx, c.id) }));
+    ctx.m.liste('taches').filter(t => q && ok(t.titre, t.desc)).sort((a, b) => Number(colonneDe(a) === 'termine') - Number(colonneDe(b) === 'termine')).slice(0, 6)
+      .forEach(t => l.push({ t: t.titre, s: 'Tâche · ' + ((COLONNES.find(c => c.id === colonneDe(t)) || {}).nom || ''), h: '#/taches/carte/' + t.id }));
     ctx.m.liste('prospects').filter(p => q && ok(p.organisation, p.contact, p.region)).slice(0, 5)
       .forEach(p => l.push({ t: p.organisation, s: 'Prospect · ' + (p.region || p.type || ''), h: '#/marketing' }));
     ctx.m.liste('depenses').filter(d => q && ok(d.fournisseur, d.note, d.categorie)).slice(0, 3)

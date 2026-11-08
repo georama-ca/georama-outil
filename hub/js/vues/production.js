@@ -571,7 +571,12 @@ function basculerMax() {
   try { localStorage.setItem(CLE_MAX, v ? '1' : '0'); } catch (e) { /* navigation privée */ }
   document.body.classList.toggle('mode-prod-max', v);
   const b = document.querySelector('[data-act="gp-agrandir"]');
-  if (b) { b.textContent = v ? 'Réduire (voir le menu du hub)' : 'Agrandir'; b.setAttribute('aria-pressed', String(v)); }
+  if (b) {
+    b.innerHTML = ico(v ? 'reduire' : 'agrandir');
+    b.title = v ? 'Réduire : revoir le menu du hub' : 'Agrandir : cacher le menu du hub';
+    b.setAttribute('aria-label', v ? 'Réduire' : 'Agrandir');
+    b.setAttribute('aria-pressed', String(v));
+  }
   placerCadre();
 }
 export function placerCadre() {
@@ -589,12 +594,11 @@ function vueGeorama(ctx) {
   const cmds = ctx.m.liste('commandes').filter(x => ACTIVES.includes(x.statut) && x.lien).sort((a, b) => String(a.promise || '9').localeCompare(String(b.promise || '9')));
   const max = modeProdMax();
   return `<div class="barre-prod seulement-ordi">
-      <label for="gp-commande" class="petit">Commande</label>
-      <select id="gp-commande" data-chg="gp-commande"><option value="">Aucune (nouvelle zone)</option>${cmds.map(x => `<option value="${esc(x.id)}"${c && c.id === x.id ? ' selected' : ''}>${esc(x.numero)} · ${esc(x.client)}</option>`).join('')}</select>
+      <label for="gp-commande" class="sr">Commande</label>
+      <select id="gp-commande" data-chg="gp-commande" title="Ce qui est produit ici arrive tout seul dans la fiche de la commande (même numéro)."><option value="">Aucune commande</option>${cmds.map(x => `<option value="${esc(x.id)}"${c && c.id === x.id ? ' selected' : ''}>${esc(x.numero)} · ${esc(x.client)}</option>`).join('')}</select>
       ${c ? `<a class="btn-lien petit" href="#/production/fiche/${esc(c.id)}">Fiche de ${esc(c.numero)}</a>` : ''}
-      <span class="tres-petit doux grow">Ce qui est produit ici arrive tout seul dans la fiche de la commande (même numéro).</span>
-      <button type="button" class="btn-2" data-act="gp-recharger" title="Recharger Georama Production (après une mise à jour ou un redémarrage)">Recharger</button>
-      <button type="button" class="btn-2" data-act="gp-agrandir" aria-pressed="${max}">${max ? 'Réduire (voir le menu du hub)' : 'Agrandir'}</button>
+      <button type="button" class="btn-ico" data-act="gp-recharger" title="Recharger Georama Production" aria-label="Recharger Georama Production">${ico('recharger')}</button>
+      <button type="button" class="btn-ico" data-act="gp-agrandir" aria-pressed="${max}" title="${max ? 'Réduire : revoir le menu du hub' : 'Agrandir : cacher le menu du hub'}" aria-label="${max ? 'Réduire' : 'Agrandir'}">${ico(max ? 'reduire' : 'agrandir')}</button>
     </div>
     <div id="zone-production" class="zone-production">
       <div id="gp-etat" class="petit doux">Recherche de Georama Production sur cet ordi…</div>

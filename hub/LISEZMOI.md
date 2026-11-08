@@ -48,6 +48,11 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.8 (8 novembre 2026)
+- **Tâches** (nouveau menu, aussi en bas sur le cellulaire) : tableau Kanban qui remplace le tableau Trello « Georama · Pilotage ». Mêmes colonnes (J'ai besoin de toi, Cette semaine, Prochainement, Plus tard, En attente de quelqu'un, En cours (Claude), Terminé) et mêmes couleurs d'étiquettes. Glisser-déposer à l'ordinateur ; dans la carte : colonne, étiquette, pour qui, échéance, description, sous-tâches. « + Ajouter une carte » au bas de chaque colonne. Filtres par étiquette et par personne, recherche (aussi dans Ctrl K). Les 52 cartes de Trello sont importées (taches.json).
+- **Tableau de bord** : « À faire » montre les décisions, la semaine et ce qui arrive dans 7 jours ; lien vers toutes les tâches.
+- **Georama Production** : une seule ligne en haut (onglets, commande, boutons Recharger et Agrandir en icônes).
+
 ### v1.7 (8 novembre 2026)
 - **Mode Georama Production** (ordinateur) : dans Production › Georama Production, le menu du hub devient une colonne d'icônes (chrono, recherche et compte restent au bas), le grand titre disparaît et le programme prend toute la hauteur de l'écran. Bouton **« Agrandir »** : cache aussi le menu et les onglets du hub (retenu sur cet ordi) ; « Réduire » pour les revoir. Bouton **« Recharger »** : relance l'affichage du programme.
 - **Plus d'onglet en trop** : le bouton « Démarrer Georama Production » lance le programme sans ouvrir de nouvel onglet ; le hub l'affiche dans sa page (« Lancer depuis le hub.vbs » mis à jour dans le dossier georama-production, rien à réinstaller).

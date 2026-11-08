@@ -7,6 +7,7 @@ import {
 import { badgeStatut, promiseTexte, ouvrirCommande } from './commandes.js';
 import { suggestion, nomModele } from '../courriels.js';
 import { totauxMeta, statsWix } from './suivi.js';
+import { tachesDuMoment, cocherTache, ajouterTache, colonneDe } from './taches.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.tableau) ctx.etat.tableau = { voirFaites: false };
@@ -22,8 +23,8 @@ function sept(ctx) {
   const ajout = (date, type, texte, h, couleur) => evts.push({ date: date < auj ? 'retard' : date, type, texte, h, couleur });
   m.liste('commandes').filter(c => estActive(c) && c.promise && c.promise <= fin)
     .forEach(c => ajout(c.promise, 'cmd', `<strong>${esc(c.numero)}</strong> promise à ${esc(c.client)}`, '#/production/fiche/' + c.id, 'var(--accent)'));
-  m.liste('taches').filter(t => !t.fait && t.echeance && t.echeance <= fin)
-    .forEach(t => ajout(t.echeance, 'tache', `${esc(t.titre)} <span class="doux">· ${esc(prenom(t.qui))}</span>`, '#/', 'var(--eau)'));
+  m.liste('taches').filter(t => colonneDe(t) !== 'termine' && t.echeance && t.echeance <= fin)
+    .forEach(t => ajout(t.echeance, 'tache', `${esc(t.titre)}${t.qui ? ` <span class="doux">· ${esc(prenom(t.qui))}</span>` : ''}`, '#/taches/carte/' + t.id, 'var(--eau)'));
   m.liste('prospects').filter(p => !['gagne', 'perdu'].includes(p.statut) && p.prochaine && p.prochaine <= fin)
     .forEach(p => ajout(p.prochaine, 'prospect', `${esc(p.action || statutProspect(p.statut).nom)} · ${esc(p.organisation)}`, '#/marketing', 'var(--balise)'));
   m.liste('campagnes').filter(k => k.fin && k.fin >= auj && k.fin <= fin)
@@ -140,16 +141,16 @@ export default {
         <span class="petit num" style="min-width:120px;text-align:right">${promiseTexte(c)}</span>
       </button>`).join('');
 
-    const taches = m.liste('taches').filter(t => e.voirFaites || !t.fait)
-      .sort((a, b) => Number(a.fait) - Number(b.fait) || String(a.echeance || '9').localeCompare(String(b.echeance || '9')));
+    const tousMoment = tachesDuMoment(m);
+    const taches = tousMoment.slice(0, 8);
+    const decisionsN = tousMoment.filter(t => colonneDe(t) === 'decisions').length;
     const lignesT = taches.map(t => {
       const j = t.echeance ? joursEntre(aujourdhui(), t.echeance) : null;
       const quand = t.echeance ? `<span class="tres-petit ${!t.fait && j < 0 ? 'retard' : 'doux'}">${j === 0 ? 'Aujourd’hui' : esc(dateCourte(t.echeance))}</span>` : '';
       return `<div class="ligne">
-        <input type="checkbox" id="t-${esc(t.id)}" data-chg="tache" data-id="${esc(t.id)}"${t.fait ? ' checked' : ''}>
-        <label for="t-${esc(t.id)}" class="grow" style="cursor:pointer;${t.fait ? 'text-decoration:line-through;color:var(--texte-doux)' : ''}">${esc(t.titre)}<br>${quand}</label>
-        <span class="initiales${t.qui === ctx.moi ? ' moi' : ''}" title="${esc(t.qui)}">${esc(initiales(t.qui))}</span>
-        <button type="button" class="btn-ico" data-act="suppr-tache" data-id="${esc(t.id)}" aria-label="Supprimer la tâche">×</button>
+        <input type="checkbox" id="t-${esc(t.id)}" data-chg="tache" aria-label="Marquer comme faite" data-id="${esc(t.id)}"${t.fait ? ' checked' : ''}>
+        <a href="#/taches/carte/${esc(t.id)}" class="grow" style="color:inherit;text-decoration:none">${colonneDe(t) === 'decisions' ? '<span class="etiquette orange" style="font-size:11px;padding:0 8px;margin-right:6px">Décision</span>' : ''}${esc(t.titre)}<br>${quand}</a>
+        ${t.qui ? `<span class="initiales${t.qui === ctx.moi ? ' moi' : ''}" title="${esc(t.qui)}">${esc(t.qui === 'Les deux' ? '2' : initiales(t.qui))}</span>` : ''}
       </div>`;
     }).join('');
 
@@ -195,7 +196,7 @@ export default {
           ${lignesCmd || '<p class="vide">Aucune commande en cours. <button type="button" class="btn-lien" data-act="nouvelle">Ajouter une commande</button></p>'}
         </section>
         <section class="carte">
-          <div class="carte-tete"><h2>À faire</h2><button type="button" class="btn-lien" data-act="voir-faites">${e.voirFaites ? 'Cacher les faites' : 'Voir les faites'}</button></div>
+          <div class="carte-tete"><h2>À faire${decisionsN ? ` <span class="etiquette orange" style="font-size:11px;vertical-align:middle">${decisionsN} décision${decisionsN > 1 ? 's' : ''}</span>` : ''}</h2><a href="#/taches">Toutes les tâches${tousMoment.length > taches.length ? ' (+' + (tousMoment.length - taches.length) + ')' : ''}</a></div>
           <form data-form="tache" class="filtres" style="margin-bottom:6px">
             <label class="sr" for="nv-tache">Nouvelle tâche</label>
             <input id="nv-tache" name="titre" type="text" placeholder="Nouvelle tâche" required style="flex:1 1 160px">
@@ -205,7 +206,7 @@ export default {
             <input id="nv-quand" name="echeance" type="date" style="flex:1 1 140px">
             <button type="submit" class="btn-2">Ajouter</button>
           </form>
-          ${lignesT || '<p class="vide">Rien à faire. Profites-en.</p>'}
+          ${lignesT || '<p class="vide">Rien pour cette semaine. Profites-en.</p>'}
         </section>
       </div>
       <div class="g3">
@@ -229,19 +230,12 @@ export default {
     'masquer-pp': ctx => ctx.m.mettre('reglages', Object.assign({}, reglages(ctx.m), { id: 'general', premiersPasMasques: true })),
   },
   changes: {
-    tache: (ctx, el) => {
-      const t = ctx.m.get('taches', el.getAttribute('data-id'));
-      ctx.m.modifier('taches', t.id, { fait: el.checked, faitLe: el.checked ? new Date().toISOString() : null }, true);
-      if (el.checked) ctx.journal('Tâche faite : ' + t.titre, '#/', 'tache');
-      ctx.m.avertir('local');
-    },
+    tache: (ctx, el) => cocherTache(ctx, el.getAttribute('data-id'), el.checked),
   },
   formulaires: {
     tache: (ctx, d) => {
       if (!d.titre) return;
-      ctx.m.mettre('taches', { id: uid('t'), titre: d.titre, qui: d.qui || ctx.moi, echeance: d.echeance || '', fait: false }, true);
-      if (d.qui && d.qui !== ctx.moi) ctx.journal('Nouvelle tâche pour ' + prenom(d.qui) + ' : ' + d.titre, '#/', 'tache');
-      ctx.m.avertir('local');
+      ajouterTache(ctx, { titre: d.titre, qui: d.qui || ctx.moi, echeance: d.echeance || '', colonne: 'semaine' });
       setTimeout(() => { const i = document.getElementById('nv-tache'); if (i) i.focus(); }, 0);
     },
   },

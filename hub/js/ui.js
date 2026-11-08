@@ -76,6 +76,10 @@ export function uid(prefixe = '') {
 // Icônes au trait (style Georama : trait 2, bouts arrondis)
 const P = {
   accueil: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/>',
+  taches: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 4v16"/><path d="M5.5 8h1.5M11 8h2M11 11h2M17 8h1.5"/>',
+  recharger: '<path d="M20 12a8 8 0 1 1-2.3-5.7"/><path d="M20 4v5h-5"/>',
+  agrandir: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
+  reduire: '<path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/>',
   commandes: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
   production: '<path d="M12 3 21 8 12 13 3 8z"/><path d="M3 12l9 5 9-5M3 16l9 5 9-5"/>',
   marketing: '<path d="M4 10v4h3l6 4V6L7 10z"/><path d="M17 9a4 4 0 0 1 0 6"/>',
