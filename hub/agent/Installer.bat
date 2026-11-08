@@ -23,6 +23,7 @@ echo  Python trouvé : %PY%
 if not exist "%DEST%" mkdir "%DEST%"
 copy /Y "%~dp0agent_georama.py" "%DEST%\" >nul
 copy /Y "%~dp0rendu3mf.py" "%DEST%\" >nul
+copy /Y "%~dp0stats.py" "%DEST%\" >nul
 copy /Y "%~dp0configurer.py" "%DEST%\" >nul
 copy /Y "%~dp0Configurer.bat" "%DEST%\" >nul
 copy /Y "%~dp0Demarrer agent.bat" "%DEST%\" >nul
@@ -34,6 +35,8 @@ if not exist "%DEST%\config.json" copy /Y "%~dp0config.exemple.json" "%DEST%\con
 rem Pont vers Georama Production (boutons Aperçu rapide, .3mf et PDF client du hub)
 set "PROD=%USERPROFILE%\OneDrive - Georama\04_Operations_et_Ressources_Techniques\05_Georama-production\georama-production"
 if exist "%PROD%\georama_prod" copy /Y "%~dp0produire_hub.py" "%PROD%\" >nul
+if exist "%PROD%\georama_prod" copy /Y "%~dp0Lancer depuis le hub.vbs" "%PROD%\" >nul
+if exist "%PROD%\georama_prod" copy /Y "%~dp0Installer le bouton du hub.cmd" "%PROD%\" >nul
 echo  Préparation de l'environnement Python (1 à 3 minutes)...
 if not exist "%DEST%\.venv\Scripts\python.exe" %PY% -m venv "%DEST%\.venv"
 "%DEST%\.venv\Scripts\python.exe" -m pip install --upgrade pip --quiet --disable-pip-version-check

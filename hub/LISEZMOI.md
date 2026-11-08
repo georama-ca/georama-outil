@@ -48,6 +48,12 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.5 (8 novembre 2026)
+- **Marketing › Site et pubs** : achalandage du site Wix (visites et visiteurs par jour), zones choisies par les visiteurs sur une carte (segment, provenance, appareil, étape la plus loin, lien pour revoir la zone), pubs Meta par campagne (dépensé, vues, clics, visites, conversions), paniers abandonnés. Alerte quand le compteur « Entonnoir » du site est plein. Le tableau de bord prend les visites (Wix) et le dépensé (Meta) automatiquement quand ils sont branchés.
+- **Dépenses** : photo ou PDF de la facture (appareil photo du cellulaire), réduite et gardée dans OneDrive › Hub-Georama › factures › AAAA-MM. Étiquette « Facture » dans la liste.
+- **Ouvrir Georama Production sur cet ordi** (sur ordinateur seulement) : lance Georama Production sur l'ordi où l'on se trouve et copie le lien de la commande. Une fois par ordi : « Installer le bouton du hub.cmd » dans le dossier georama-production.
+- **Agent 1.3** : lit chaque heure l'achalandage (Wix Analytics), les paniers abandonnés, les zones de la collection Entonnoir et les pubs Meta (jeton ads_read collé dans Configurer.bat) ; écrit stats-wix.json et stats-meta.json. Permissions de la clé Wix : Wix Data et Wix Données analytiques en plus de la boutique.
+
 ### v1.4 (8 novembre 2026)
 - **Georama Production depuis le hub**, sur n'importe quel appareil : dans la fiche de production d'une commande, choisir le format (celui du lien, 10 × 12, 20 × 24 ou 24 × 30 po) et la gamme, puis « Aperçu rapide », « Produire le .3mf » ou « PDF client ». L'ordi de la maison fait le calcul ; les images, le .3mf et le PDF arrivent dans le dossier de la commande.
 - **Interface cellulaire** : barre du haut simple (chrono, recherche, mon compte) et 5 onglets en bas (Accueil, Commandes, Production, Marketing, Finances). Les sous-onglets glissent de côté.

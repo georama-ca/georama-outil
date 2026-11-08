@@ -538,6 +538,7 @@ function blocProduction(ctx, c, a, petiteIco) {
       <button type="button" class="btn-2" data-act="travail" data-type="apercu"${sansLien}>Aperçu rapide</button>
       <button type="button" class="btn" data-act="travail" data-type="3mf"${sansLien}>${petiteIco('eclair')} Produire le .3mf</button>
       <button type="button" class="btn-2" data-act="travail" data-type="pdf"${sansLien}>PDF client</button>
+      <button type="button" class="btn-lien seulement-ordi" data-act="ouvrir-production">Ouvrir dans Georama Production (cet ordi)</button>
     </div>
     <p class="tres-petit doux" style="margin:6px 0 0">Fait sur l’ordi de la maison. Aperçu : quelques minutes. .3mf : jusqu’à quelques heures. Le PDF reprend le dernier calcul (et le rendu 3D s’il y en a un). Pour la carte, les repères et les couleurs une à une : Georama Production sur l’ordi.</p>
     ${vieux}
@@ -553,7 +554,7 @@ export default {
     const corps = sous === 'fiche' ? vueFiche(ctx) : sous === 'planification' ? vuePlanif(ctx) : sous === 'filament' ? vueFilament(ctx) : vueFile(ctx);
     return `<header class="entete">
         <div><p class="surtitre">Production</p><h1 class="titre-1">${titres[sous] || titres['']}</h1></div>
-        <div class="actions"><span class="petit doux">Le .3mf se fait dans Georama Production, sur le PC.</span></div>
+        <div class="actions"><button type="button" class="btn-2 seulement-ordi" data-act="ouvrir-production">Ouvrir Georama Production sur cet ordi</button></div>
       </header>
       <nav class="onglets" aria-label="Sections de la production">${ong('', 'File d’impression')}${ong('fiche', 'Fiche de production')}${ong('planification', 'Planification')}${ong('filament', 'Filament et AMS')}</nav>
       ${corps}`;
@@ -582,6 +583,14 @@ export default {
       const c = ficheCourante(ctx);
       ctx.m.mettre('temps', { id: uid('h'), qui: ctx.moi, date: aujourdhui(), minutes: 15, categorie: 'Production', commande: c.id, note: c.numero }, true);
       ctx.m.modifier('commandes', c.id, { tempsMin: (Number(c.tempsMin) || 0) + 15 });
+    },
+    'ouvrir-production': async ctx => {
+      // Lance Georama Production sur l'ordi où l'on se trouve (bouton installé une fois par ordi), lien de la commande copié.
+      const c = ctx.route.sous === 'fiche' ? ficheCourante(ctx) : null;
+      let copie = false;
+      if (c && c.lien) { try { await navigator.clipboard.writeText(c.lien); copie = true; } catch (e) { /* rien */ } }
+      location.href = 'georama-production:ouvrir';
+      toast((copie ? 'Lien de ' + c.numero + ' copié : colle-le dans Georama Production. ' : '') + 'Rien ne s’ouvre ? Sur cet ordi, lance une fois « Installer le bouton du hub » dans le dossier georama-production.');
     },
     travail: (ctx, el) => {
       const c = ficheCourante(ctx);

@@ -33,7 +33,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.2'
+VERSION = '1.3'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -76,6 +76,9 @@ def lire_config():
         'wix_site_id': '',
         'wix_depuis': '2026-11-01',
         'wix_minutes': 10,
+        'stats_minutes': 60,
+        'meta_jeton': '',
+        'meta_compte': '',
     }
     chemin = os.path.join(ICI, 'config.json')
     if os.path.exists(chemin):
@@ -292,7 +295,9 @@ class Agent:
         pont = bool(self.pont())
         capacites = {'rendu': True, '3mf': pont or bool(self.cfg.get('commande_3mf')), 'apercu': pont, 'pdf': pont,
                      'imprimantes': bool(self.imprimantes),
-                     'wix': bool(self.cfg.get('wix_cle_api') and self.cfg.get('wix_site_id'))}
+                     'wix': bool(self.cfg.get('wix_cle_api') and self.cfg.get('wix_site_id')),
+                     'stats_wix': bool(self.cfg.get('wix_cle_api') and self.cfg.get('wix_site_id')),
+                     'meta': bool(self.cfg.get('meta_jeton') and self.cfg.get('meta_compte'))}
         item = {'id': 'maison', 'nom': self.cfg.get('nom'), 'machine': socket.gethostname(), 'systeme': platform.platform(terse=True),
                 'version': VERSION, 'vu': maintenant(), 'demarre': self.demarre, 'capacites': capacites,
                 'travail': self.travail_en_cours, 'imprimantes': [t.instantane() for t in self.imprimantes],
@@ -477,6 +482,27 @@ class Agent:
             self.messages.append({'quand': maintenant(), 'texte': 'Wix : %s' % e})
             log.warning('Wix : %s', e)
 
+    def stats(self):
+        """Achalandage Wix, paniers abandonnés, zones des visiteurs et pubs Meta, une fois l'heure (stats-wix.json, stats-meta.json)."""
+        if time.time() - getattr(self, 'dernier_stats', 0) < 60 * float(self.cfg.get('stats_minutes', 60)):
+            return
+        self.dernier_stats = time.time()
+        import stats
+        if self.cfg.get('wix_cle_api') and self.cfg.get('wix_site_id'):
+            try:
+                d = stats.stats_wix(self.cfg)
+                ecrire_json(self.chemin('stats-wix.json'), [dict(d, id='wix', lu=maintenant())])
+                log.info('Stats Wix : %d zone(s), erreurs : %s', len(d.get('zones') or []), d.get('erreurs') or 'aucune')
+            except Exception as e:  # noqa: BLE001
+                log.warning('Stats Wix : %s', e)
+        if self.cfg.get('meta_jeton') and self.cfg.get('meta_compte'):
+            try:
+                d = stats.stats_meta(self.cfg)
+                ecrire_json(self.chemin('stats-meta.json'), [dict(d, id='meta', lu=maintenant())])
+                log.info('Stats Meta : %d ligne(s), erreurs : %s', len(d.get('jours') or []), d.get('erreurs') or 'aucune')
+            except Exception as e:  # noqa: BLE001
+                log.warning('Stats Meta : %s', e)
+
     def tour(self):
         self.signal()
         cmds = self.commandes()
@@ -485,6 +511,7 @@ class Agent:
         self.travaux(cmds)
         self.rendus_automatiques()
         self.wix()
+        self.stats()
         self.signal()
 
     def boucle(self):

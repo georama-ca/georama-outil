@@ -2,6 +2,7 @@
 import { esc, argent, nombre, dateCourte, options, ouvrirFenetre, aujourdhui, joursEntre, uid, toast, initiales } from '../ui.js';
 import { STATUTS_PROSPECT, statutProspect, TYPES_PROSPECT, CANAUX, SEGMENTS, nomSegment, journaliser } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
+import { vueSuivi, monterCarte, etatSuivi, totauxMeta } from './suivi.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.mkt) ctx.etat.mkt = { q: '', statut: 'actifs' };
@@ -145,7 +146,7 @@ function vueCampagnes(ctx) {
       <table class="liste"><thead><tr><th>Campagne</th><th>Segment</th><th>Période</th><th>Dépensé / budget</th><th class="droite">Visites</th><th class="droite">Commandes</th><th class="droite">Coût / commande</th></tr></thead>
       <tbody>${lignes || '<tr><td colspan="7" class="vide">Aucune campagne. <button type="button" class="btn-lien" data-act="nouvelle-k">Ajouter une campagne</button></td></tr>'}</tbody></table>
     </div>
-    <p class="tres-petit doux" style="margin:0">Les visites viennent du rapport de conversions (collection Entonnoir du site). À mettre à jour à la main pour l'instant.</p>`;
+    <p class="tres-petit doux" style="margin:0">${totauxMeta(ctx.m, 30) ? 'Les chiffres Meta lus automatiquement sont dans <a href="#/marketing/suivi">Site et pubs</a>. Ici : le suivi de tes campagnes, à la main.' : 'Les visites et les zones des visiteurs sont dans <a href="#/marketing/suivi">Site et pubs</a> (lu par l’ordi de la maison).'}</p>`;
 }
 
 export default {
@@ -153,14 +154,15 @@ export default {
   render(ctx) {
     const sous = ctx.route.sous;
     return `<header class="entete">
-        <div><p class="surtitre">Marketing et prospection</p><h1 class="titre-1">${sous === 'campagnes' ? 'Campagnes' : 'Prospection Entreprise'}</h1></div>
-        <div class="actions">${sous === 'campagnes' ? '<button type="button" class="btn" data-act="nouvelle-k">+ Nouvelle campagne</button>' : '<button type="button" class="btn" data-act="nouveau">+ Nouveau prospect</button>'}</div>
+        <div><p class="surtitre">Marketing et prospection</p><h1 class="titre-1">${sous === 'campagnes' ? 'Campagnes' : sous === 'suivi' ? 'Site et pubs' : 'Prospection Entreprise'}</h1></div>
+        <div class="actions">${sous === 'campagnes' ? '<button type="button" class="btn" data-act="nouvelle-k">+ Nouvelle campagne</button>' : sous === 'suivi' ? '' : '<button type="button" class="btn" data-act="nouveau">+ Nouveau prospect</button>'}</div>
       </header>
       <nav class="onglets" aria-label="Sections">
-        <a href="#/marketing"${sous !== 'campagnes' ? ' aria-current="page"' : ''}>Prospection</a>
+        <a href="#/marketing/suivi"${sous === 'suivi' ? ' aria-current="page"' : ''}>Site et pubs</a>
+        <a href="#/marketing"${!sous ? ' aria-current="page"' : ''}>Prospection</a>
         <a href="#/marketing/campagnes"${sous === 'campagnes' ? ' aria-current="page"' : ''}>Campagnes</a>
       </nav>
-      ${sous === 'campagnes' ? vueCampagnes(ctx) : vueProspects(ctx)}`;
+      ${sous === 'campagnes' ? vueCampagnes(ctx) : sous === 'suivi' ? vueSuivi(ctx) : vueProspects(ctx)}`;
   },
   actions: {
     nouveau: ctx => ouvrirProspect(ctx, null),
@@ -172,8 +174,10 @@ export default {
   changes: {
     cherche: (ctx, el) => { etatVue(ctx).q = el.value; ctx.rendre(); },
     statut: (ctx, el) => { etatVue(ctx).statut = el.value; ctx.rendre(); },
+    suivi: (ctx, el) => { const e = etatSuivi(ctx); e[el.getAttribute('data-cle')] = el.value; e.vue = null; ctx.rendre(); },
   },
   apres(ctx, racine) {
     racine.querySelectorAll('tr.cliquable').forEach(tr => tr.addEventListener('keydown', ev => { if (ev.key === 'Enter') tr.click(); }));
+    if (ctx.route.sous === 'suivi') monterCarte(ctx, racine);
   },
 };

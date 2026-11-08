@@ -8,10 +8,11 @@ if not exist "%DEST%\.venv\Scripts\python.exe" (
   exit /b 1
 )
 copy /Y "%~dp0configurer.py" "%DEST%\" >nul 2>&1
+if exist "%~dp0stats.py" copy /Y "%~dp0stats.py" "%DEST%\" >nul 2>&1
 "%DEST%\.venv\Scripts\python.exe" "%DEST%\configurer.py"
 echo.
 echo  Redémarrage de l'agent avec les nouveaux réglages...
-powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='pythonw.exe'\" | Where-Object { $_.CommandLine -like '*agent_georama*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter \"Name='pythonw.exe'\" | Where-Object { $_.CommandLine -like '*agent_georama*' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }"
 call "%DEST%\Demarrer agent.bat"
 echo  C'est fait. Dans le hub, la carte « Ordi de la maison » se met à jour d'ici 1 minute.
 pause

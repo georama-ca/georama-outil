@@ -75,6 +75,29 @@ def main():
         cfg['imprimantes'] = [imp]
         print()
 
+    if oui(' 3. Brancher les statistiques des pubs Meta ?'):
+        print()
+        print('    business.facebook.com > Paramètres > Utilisateurs système > Ajouter (rôle Employé),')
+        print('    lui donner accès au compte publicitaire Georama, puis « Générer un nouveau jeton »')
+        print('    avec la permission « ads_read ». Colle le jeton ici (il reste sur ce PC seulement).')
+        jeton = ''.join(ch for ch in input('    Jeton Meta : ') if ch.isprintable()).strip()
+        if jeton:
+            cfg['meta_jeton'] = jeton
+        compte = demander('    Numéro du compte publicitaire (act_…, dans le Gestionnaire de publicités)', cfg.get('meta_compte', ''))
+        cfg['meta_compte'] = compte.strip()
+        if cfg.get('meta_jeton') and cfg.get('meta_compte'):
+            print('    Test de la connexion à Meta...')
+            try:
+                import stats
+                d = stats.stats_meta(cfg, jours=7)
+                if d.get('erreurs'):
+                    print('    Meta refuse : %s' % '; '.join(d['erreurs'].values()))
+                else:
+                    print('    Ça marche : %d campagne(s), %d ligne(s) de statistiques sur 7 jours.' % (len(d.get('campagnes') or []), len(d.get('jours') or [])))
+            except Exception as e:  # noqa: BLE001
+                print('    Meta refuse : %s' % e)
+        print()
+
     with open(CHEMIN, 'w', encoding='utf-8') as f:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
     print(' Réglages enregistrés dans %s' % CHEMIN)

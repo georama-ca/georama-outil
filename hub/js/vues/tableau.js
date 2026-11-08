@@ -6,6 +6,7 @@ import {
 } from '../donnees.js';
 import { badgeStatut, promiseTexte, ouvrirCommande } from './commandes.js';
 import { suggestion, nomModele } from '../courriels.js';
+import { totauxMeta, statsWix } from './suivi.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.tableau) ctx.etat.tableau = { voirFaites: false };
@@ -155,8 +156,10 @@ export default {
     const prospects = m.liste('prospects').filter(p => !['gagne', 'perdu'].includes(p.statut));
     const aRelancer = prospects.filter(p => p.prochaine && p.prochaine <= aujourdhui()).length;
     const soum = prospects.filter(p => p.statut === 'soumission').length;
-    const pubs = m.liste('campagnes').reduce((s, k) => s + (Number(k.depense) || 0), 0);
-    const visites = m.liste('campagnes').reduce((s, k) => s + (Number(k.visites) || 0), 0);
+    const meta30 = totauxMeta(m, 30);
+    const wix30 = statsWix(m);
+    const pubs = meta30 ? meta30.depense : m.liste('campagnes').reduce((s, k) => s + (Number(k.depense) || 0), 0);
+    const visites = wix30 && wix30.achalandage && wix30.achalandage.TOTAL_SESSIONS ? (wix30.achalandage.TOTAL_SESSIONS.total || 0) : m.liste('campagnes').reduce((s, k) => s + (Number(k.visites) || 0), 0);
     const demo = ctx.mode === 'demo';
     const f = fil(ctx);
     const resumeSemaine = [
@@ -212,8 +215,8 @@ export default {
       </div>
       <section class="carte g4" aria-label="Marketing et finances" style="display:grid">
         <a href="#/marketing" style="text-decoration:none;color:inherit"><p class="surtitre">Prospects actifs</p><p style="margin:8px 0 0;font-size:26px;font-weight:700" class="num">${prospects.length}</p><p class="petit doux" style="margin:4px 0 0">${soum} en soumission${aRelancer ? ` · <span class="retard">${aRelancer} à relancer</span>` : ''}</p></a>
-        <a href="#/marketing/campagnes" style="text-decoration:none;color:inherit"><p class="surtitre">Visites des pubs</p><p style="margin:8px 0 0;font-size:26px;font-weight:700" class="num">${nombre(visites)}</p><p class="petit doux" style="margin:4px 0 0">Toutes campagnes</p></a>
-        <a href="#/marketing/campagnes" style="text-decoration:none;color:inherit"><p class="surtitre">Dépensé en pubs</p><p style="margin:8px 0 0;font-size:26px;font-weight:700" class="num">${argent(pubs, 2)}</p><p class="petit doux" style="margin:4px 0 0">Toutes campagnes</p></a>
+        <a href="#/marketing/suivi" style="text-decoration:none;color:inherit"><p class="surtitre">${wix30 && wix30.achalandage ? 'Visites du site' : 'Visites des pubs'}</p><p style="margin:8px 0 0;font-size:26px;font-weight:700" class="num">${nombre(visites)}</p><p class="petit doux" style="margin:4px 0 0">${wix30 && wix30.achalandage ? '30 derniers jours (Wix)' : 'Toutes campagnes'}</p></a>
+        <a href="#/marketing/suivi" style="text-decoration:none;color:inherit"><p class="surtitre">Dépensé en pubs</p><p style="margin:8px 0 0;font-size:26px;font-weight:700" class="num">${argent(pubs, 2)}</p><p class="petit doux" style="margin:4px 0 0">${meta30 ? '30 derniers jours (Meta)' : 'Toutes campagnes'}</p></a>
         <a href="#/finances" style="text-decoration:none;color:inherit"><p class="surtitre">À encaisser</p><p style="margin:8px 0 0;font-size:26px;font-weight:700" class="num">${argent(annee.aEncaisser, 2)}</p><p class="petit doux" style="margin:4px 0 0">Commandes non payées</p></a>
       </section>`;
   },

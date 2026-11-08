@@ -8,7 +8,7 @@ import { CONFIG } from '../config.js';
 
 export const COLLECTIONS = ['commandes', 'plaques', 'taches', 'prospects', 'campagnes', 'depenses', 'filament', 'reglages', 'travaux', 'activite', 'temps'];
 // Fichiers écrits par l'agent de l'ordi de la maison (lecture seule pour le hub)
-export const EXTERNES = { agent: 'agent', resultats: 'travaux-resultats', wix: 'boite-wix' };
+export const EXTERNES = { agent: 'agent', resultats: 'travaux-resultats', wix: 'boite-wix', statsWix: 'stats-wix', statsMeta: 'stats-meta' };
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
 /* ---------- Mode démo ---------- */
@@ -29,6 +29,13 @@ export class AdaptateurLocal {
     catch (e) { return []; }
   }
   async urlDossier() { return null; }
+  // Fichier joint (ex. photo de facture) : en démo, gardé dans ce navigateur (petite image seulement).
+  async televerser(chemin, blob) {
+    const url = await new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = ko; r.readAsDataURL(blob); });
+    try { localStorage.setItem(this.prefixe + 'piece:' + chemin, url); } catch (e) { throw new Error('Image trop grosse pour le mode démo.'); }
+    return { chemin, webUrl: '' };
+  }
+  async lienFichier(chemin) { try { return localStorage.getItem(this.prefixe + 'piece:' + chemin) || ''; } catch (e) { return ''; } }
   vider() { COLLECTIONS.concat(Object.values(EXTERNES), ['fichiers']).forEach(c => { try { localStorage.removeItem(this.prefixe + c); } catch (e) { /* rien */ } }); }
 }
 
@@ -118,6 +125,22 @@ export class AdaptateurOneDrive {
       nom: x.name, taille: x.size, maj: x.lastModifiedDateTime, webUrl: x.webUrl,
       url: x['@microsoft.graph.downloadUrl'] || '', image: /\.(png|jpe?g|webp)$/i.test(x.name),
     }));
+  }
+  // Dépose un fichier (≤ 4 Mo) dans le dossier du hub, ex. factures/2026-11/….jpg
+  async televerser(chemin, blob) {
+    const r = await graph('/drives/' + encodeURIComponent(this.lieu.driveId) + '/items/' + encodeURIComponent(this.lieu.itemId) + ':/' + cheminEncode(chemin) + ':/content?@microsoft.graph.conflictBehavior=rename', {
+      method: 'PUT', headers: { 'Content-Type': blob.type || 'application/octet-stream' }, body: blob,
+    });
+    if (!r.ok) throw new Error('Envoi du fichier refusé (' + r.status + ').');
+    const it = await r.json();
+    return { chemin: chemin.replace(/[^/]+$/, it.name), webUrl: it.webUrl || '' };
+  }
+  // Lien de téléchargement frais (valide environ 1 h) pour afficher une image.
+  async lienFichier(chemin) {
+    const r = await graph('/drives/' + encodeURIComponent(this.lieu.driveId) + '/items/' + encodeURIComponent(this.lieu.itemId) + ':/' + cheminEncode(chemin));
+    if (!r.ok) return '';
+    const it = await r.json();
+    return it['@microsoft.graph.downloadUrl'] || it.webUrl || '';
   }
   async urlDossier(sousChemin) {
     const r = await graph('/drives/' + encodeURIComponent(this.lieu.driveId) + '/items/' + encodeURIComponent(this.lieu.itemId) + (sousChemin ? ':/' + cheminEncode(sousChemin) + ':' : '') + '?$select=webUrl');

@@ -268,3 +268,10 @@ dialog#modal::backdrop { background: rgba(13,17,16,.72); }
 .premiers-pas li { padding: 6px 0; }
 .premiers-pas li.fait { color: var(--texte-doux); text-decoration: line-through; }
 .visionneuse img { width: 100%; height: auto; border-radius: var(--rayon-md); display: block; }
+
+/* Facture jointe à une dépense (v1.5) */
+.facture-boite { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.facture-apercu { width: 120px; height: 120px; border: 1px dashed var(--bordure); border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--surface-2); text-align: center; padding: 4px; }
+.facture-apercu img { width: 100%; height: 100%; object-fit: cover; }
+#carte-zones .leaflet-popup-content { color: #1b1f1c; font-family: Montserrat, system-ui, sans-serif; }
+@media (max-width: 900px) { .seulement-ordi { display: none !important; } }

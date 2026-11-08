@@ -26,7 +26,20 @@ const nomPeriode = id => (periodes().find(p => p.id === id) || { nom: id }).nom;
 function ouvrirDepense(ctx, id) {
   const m = ctx.m;
   const d = (id && m.get('depenses', id)) || { date: aujourdhui(), categorie: 'Filament', taxesAuto: true };
-  const corps = `<div class="champs">
+  const fact = d.facture;
+  const corps = `<div class="champ plein" style="margin-bottom:14px">
+      <label for="d-photo">Photo ou PDF de la facture</label>
+      <div class="facture-boite">
+        <div id="d-apercu" class="facture-apercu">${fact ? '<span class="petit doux">Chargement…</span>' : '<span class="petit doux">Aucune facture jointe</span>'}</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label class="btn-2" for="d-photo" style="cursor:pointer;text-align:center">${fact ? 'Remplacer' : 'Prendre une photo ou choisir'}</label>
+          <input id="d-photo" type="file" accept="image/*,application/pdf" class="sr">
+          ${fact && fact.webUrl ? `<a class="btn-lien petit" href="${esc(fact.webUrl)}" target="_blank" rel="noopener">Ouvrir dans OneDrive</a>` : ''}
+        </div>
+      </div>
+      <span class="aide">Sur le cellulaire, le bouton ouvre l’appareil photo. La facture est gardée dans OneDrive › Hub-Georama › factures.</span>
+    </div>
+    <div class="champs">
     <div class="champ"><label for="d-date">Date</label><input id="d-date" name="date" type="date" required value="${esc(d.date)}"></div>
     <div class="champ"><label for="d-four">Fournisseur</label><input id="d-four" name="fournisseur" type="text" required value="${esc(d.fournisseur)}"></div>
     <div class="champ"><label for="d-cat">Catégorie</label><select id="d-cat" name="categorie">${options(CATEGORIES_DEPENSE, d.categorie)}</select></div>
@@ -44,10 +57,16 @@ function ouvrirDepense(ctx, id) {
     onSubmit(v) {
       const montant = Number(v.montant) || 0;
       const t = v.taxesAuto ? taxesDe(montant, true) : { tps: Number(v.tps) || 0, tvq: Number(v.tvq) || 0 };
-      m.mettre('depenses', Object.assign({}, d, { id: id || uid('d'), date: v.date, fournisseur: v.fournisseur, categorie: v.categorie, montant, tps: t.tps, tvq: t.tvq, taxesAuto: !!v.taxesAuto, note: v.note }), true);
+      const idD = id || uid('d');
+      m.mettre('depenses', Object.assign({}, d, { id: idD, date: v.date, fournisseur: v.fournisseur, categorie: v.categorie, montant, tps: t.tps, tvq: t.tvq, taxesAuto: !!v.taxesAuto, note: v.note }), true);
       if (!id) journaliser(m, 'Dépense ajoutée : ' + v.fournisseur + ' (' + argent(montant, 2) + ')', '#/finances/depenses', 'depense');
       m.avertir('local');
-      toast('Dépense enregistrée.');
+      if (fichierChoisi) {
+        toast('Dépense enregistrée. Envoi de la facture…');
+        envoyerFacture(m, idD, v, fichierChoisi)
+          .then(() => toast('Facture gardée dans OneDrive.'))
+          .catch(err => toast('La facture n’a pas pu être envoyée : ' + err.message + ' La dépense, elle, est enregistrée.', true));
+      } else toast('Dépense enregistrée.');
     },
   });
   const maj = () => {
@@ -60,6 +79,45 @@ function ouvrirDepense(ctx, id) {
   form.querySelector('#d-auto').addEventListener('change', maj);
   form.querySelector('#d-montant').addEventListener('input', maj);
   maj();
+  let fichierChoisi = null;
+  const apercu = form.querySelector('#d-apercu');
+  const montrer = (url, pdf) => { apercu.innerHTML = pdf ? '<span class="petit">PDF prêt à envoyer</span>' : `<img src="${esc(url)}" alt="Facture">`; };
+  form.querySelector('#d-photo').addEventListener('change', ev => {
+    const f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    if (f.type === 'application/pdf' && f.size > 4 * 1048576) { toast('Ce PDF dépasse 4 Mo. Prends plutôt une photo.', true); return; }
+    fichierChoisi = f;
+    if (f.type === 'application/pdf') montrer('', true); else montrer(URL.createObjectURL(f));
+  });
+  if (fact && fact.chemin && m.a.lienFichier) {
+    m.a.lienFichier(fact.chemin).then(url => {
+      if (!url) { apercu.innerHTML = '<span class="petit doux">Facture introuvable</span>'; return; }
+      if (/\.pdf$/i.test(fact.chemin)) apercu.innerHTML = `<a href="${esc(url)}" target="_blank" rel="noopener">Ouvrir le PDF</a>`;
+      else apercu.innerHTML = `<a href="${esc(url)}" target="_blank" rel="noopener"><img src="${esc(url)}" alt="Facture"></a>`;
+    }).catch(() => { apercu.innerHTML = '<span class="petit doux">Facture introuvable</span>'; });
+  }
+}
+
+// Photo réduite (1800 px, JPEG) pour rester légère ; un PDF part tel quel.
+async function preparerFichier(f) {
+  if (f.type === 'application/pdf' || !/^image\//.test(f.type)) return { blob: f, ext: f.type === 'application/pdf' ? 'pdf' : (f.name.split('.').pop() || 'bin') };
+  const img = await new Promise((ok, ko) => { const i = new Image(); i.onload = () => ok(i); i.onerror = ko; i.src = URL.createObjectURL(f); });
+  const k = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+  const c = document.createElement('canvas');
+  c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+  c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+  const blob = await new Promise(ok => c.toBlob(ok, 'image/jpeg', 0.82));
+  return { blob: blob || f, ext: blob ? 'jpg' : (f.name.split('.').pop() || 'jpg') };
+}
+async function envoyerFacture(m, idD, v, f) {
+  if (!m.a.televerser) throw new Error('stockage sans fichiers');
+  const { blob, ext } = await preparerFichier(f);
+  if (blob.size > 4 * 1048576) throw new Error('fichier de plus de 4 Mo.');
+  const propre = String(v.fournisseur || 'facture').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'facture';
+  const chemin = `factures/${String(v.date || '').slice(0, 7) || 'sans-date'}/${v.date || 'sans-date'}_${propre}_${idD}.${ext}`;
+  const r = await m.a.televerser(chemin, blob);
+  const actuelle = m.get('depenses', idD);
+  if (actuelle) m.modifier('depenses', idD, { facture: { chemin: r.chemin, webUrl: r.webUrl, type: blob.type || '', ajoutee: new Date().toISOString() } });
 }
 
 function vueResume(ctx) {
@@ -144,7 +202,7 @@ function vueDepenses(ctx) {
         <div class="carte-tete"><h2>Dépenses · ${esc(nomPeriode(e.periode))}</h2><button type="button" class="btn-2" data-act="export-depenses">Exporter (CSV)</button></div>
         <table class="liste"><thead><tr><th>Date</th><th>Fournisseur</th><th>Catégorie</th><th class="droite">Avant taxes</th><th class="droite">TPS</th><th class="droite">TVQ</th></tr></thead>
         <tbody>${d.map(x => `<tr class="cliquable" data-act="ouvrir-d" data-id="${esc(x.d.id)}" tabindex="0">
-          <td class="petit num">${esc(dateCourte(x.d.date))}</td><td>${esc(x.d.fournisseur)}${x.d.note ? `<br><span class="petit doux">${esc(x.d.note)}</span>` : ''}</td>
+          <td class="petit num">${esc(dateCourte(x.d.date))}</td><td>${esc(x.d.fournisseur)}${x.d.facture ? ' <span class="etiquette plein" title="Facture jointe">Facture</span>' : ''}${x.d.note ? `<br><span class="petit doux">${esc(x.d.note)}</span>` : ''}</td>
           <td class="petit">${esc(x.d.categorie)}</td><td class="droite num">${argent(x.ht, 2)}</td><td class="droite num">${argent(x.tps, 2)}</td><td class="droite num">${argent(x.tvq, 2)}</td></tr>`).join('') || '<tr><td colspan="6" class="vide">Aucune dépense pour cette période. <button type="button" class="btn-lien" data-act="nouvelle-d">Ajouter une dépense</button></td></tr>'}</tbody></table>
       </section>
       <aside class="carte lateral">
