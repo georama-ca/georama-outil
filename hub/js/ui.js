@@ -85,6 +85,7 @@ const P = {
   bas: '<path d="m6 9 6 6 6-6"/>',
   fermer: '<path d="M6 6l12 12M18 6 6 18"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  chrono: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/>',
   crayon: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
   poubelle: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
   loupe: '<circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/>',

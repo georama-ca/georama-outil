@@ -48,6 +48,11 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.4 (8 novembre 2026)
+- **Georama Production depuis le hub**, sur n'importe quel appareil : dans la fiche de production d'une commande, choisir le format (celui du lien, 10 × 12, 20 × 24 ou 24 × 30 po) et la gamme, puis « Aperçu rapide », « Produire le .3mf » ou « PDF client ». L'ordi de la maison fait le calcul ; les images, le .3mf et le PDF arrivent dans le dossier de la commande.
+- **Interface cellulaire** : barre du haut simple (chrono, recherche, mon compte) et 5 onglets en bas (Accueil, Commandes, Production, Marketing, Finances). Les sous-onglets glissent de côté.
+- **Agent 1.2** : nouveaux travaux (aperçu, PDF), gamme et format transmis à Georama Production par le pont `produire_hub.py` (inclus dans le zip et copié par Installer.bat). Les anciens agents 1.1 gardent « Produire le .3mf ».
+
 ### v1.3 (8 novembre 2026)
 - **Appli sur le cellulaire** : le hub s'installe comme une appli (icône Georama, plein écran) sur Android, iPhone et ordinateur. Paramètres > « Appli sur le cellulaire » : bouton Installer (Android, Chrome) ou marche à suivre (iPhone, Safari). Rien n'est gardé en cache : l'appli charge toujours la dernière version du hub.
 

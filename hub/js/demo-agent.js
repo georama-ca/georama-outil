@@ -28,7 +28,7 @@ function signal(m) {
   ecrire('agent', [{
     id: 'maison', nom: 'Ordi de la maison (démo)', machine: 'PC-GEORAMA', version: '1.0', vu: new Date().toISOString(),
     demarre: new Date(Date.now() - 3 * 86400000).toISOString(),
-    capacites: { rendu: true, '3mf': true, imprimantes: true, wix: true },
+    capacites: { rendu: true, '3mf': true, apercu: true, pdf: true, imprimantes: true, wix: true },
     travail: enCours ? enCours.message : null,
     imprimantes: [imp ? {
       id: 'h2c', connecte: true, etat: 'RUNNING', pct: Math.round(avancement(imp) * 100), resteMin: Math.round(heuresRestantes(imp) * 60),
@@ -46,13 +46,19 @@ function travailler(m) {
     const dossier = 'commandes/' + String(c.numero || t.numero || '').replace(/[^A-Za-z0-9_-]/g, '');
     const r = parId.get(t.id);
     if (!r) {
-      parId.set(t.id, { id: t.id, type: t.type, commande: t.commande, statut: 'en_cours', debut: new Date().toISOString(), message: t.type === '3mf' ? 'Georama Production travaille… (démo)' : 'Rendu 3D en cours… (démo)' });
+      parId.set(t.id, { id: t.id, type: t.type, commande: t.commande, statut: 'en_cours', debut: new Date().toISOString(), message: t.type === 'rendu' ? 'Rendu 3D en cours… (démo)' : 'Georama Production travaille… (démo)' });
       change = true;
     } else if (r.statut === 'en_cours' && Date.now() - new Date(r.debut).getTime() > 4000) {
       if (t.type === '3mf') {
         ajouterFichier(dossier, 'plaque-1.3mf', false);
         ajouterFichier(dossier, 'plaque-1-rendu.png', true);
         Object.assign(r, { statut: 'fait', fin: new Date().toISOString(), fichiers: ['plaque-1.3mf'], message: '1 fichier .3mf produit (démo). Le rendu a suivi.' });
+      } else if (t.type === 'apercu') {
+        ajouterFichier(dossier, 'apercu-rapide.png', true);
+        Object.assign(r, { statut: 'fait', fin: new Date().toISOString(), fichiers: ['apercu-rapide.png'], message: 'Aperçu rapide prêt (démo).' });
+      } else if (t.type === 'pdf') {
+        ajouterFichier(dossier, 'Confirmation_Georama_' + (c.numero || 'demo') + '.pdf', false);
+        Object.assign(r, { statut: 'fait', fin: new Date().toISOString(), fichiers: ['Confirmation_Georama.pdf'], message: 'PDF client prêt (démo).' });
       } else {
         ajouterFichier(dossier, 'plaque-1-rendu.png', true);
         Object.assign(r, { statut: 'fait', fin: new Date().toISOString(), fichiers: ['plaque-1-rendu.png'], message: 'plaque-1.3mf : 5 pièces, 114 412 triangles, 7 s (démo)' });

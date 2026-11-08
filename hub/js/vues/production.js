@@ -323,13 +323,13 @@ function carteFichiers(ctx, c) {
       <button type="button" class="btn-lien" data-act="rafraichir-fichiers">Actualiser</button></div></div>
     ${galerie}
     ${listeFichiers ? `<div style="margin-top:10px">${listeFichiers}</div>` : ''}
-    <div class="actions" style="margin-top:14px">
-      <button type="button" class="btn" data-act="travail" data-type="3mf"${c.lien ? '' : ' disabled title="Ajoute le lien de la zone dans la commande"'}>${petiteIco('eclair')} Produire le .3mf sur l'ordi de la maison</button>
+    ${blocProduction(ctx, c, a, petiteIco)}
+    <div class="actions" style="margin-top:10px">
       <button type="button" class="btn-2" data-act="travail" data-type="rendu"${modeles.length ? '' : ' disabled title="Il faut d’abord un .3mf"'}>Refaire le rendu 3D</button>
       ${etatAgent}
     </div>
     ${c.lien ? '' : '<p class="tres-petit doux" style="margin:6px 0 0">Pour produire le .3mf ici, ajoute le lien de la zone dans la commande.</p>'}
-    ${tr.length ? `<div style="margin-top:12px">${tr.map(t => `<div class="ligne"><span class="grow petit"><strong>${t.type === '3mf' ? 'Production du .3mf' : 'Rendu 3D'}</strong> · demandé par ${esc(prenom(t.demandePar))} ${esc(ilYa(t.demandeLe))}${t.resultat && t.resultat.message ? '<br><span class="doux">' + esc(t.resultat.message) + '</span>' : ''}</span>${etiquette(t)}</div>`).join('')}</div>` : ''}
+    ${tr.length ? `<div style="margin-top:12px">${tr.map(t => `<div class="ligne"><span class="grow petit"><strong>${esc(NOMS_TRAVAUX[t.type] || t.type)}</strong>${t.options && (t.options.gamme || t.options.format) ? ' <span class="tres-petit doux">(' + esc([t.options.format && FORMATS_PROD[t.options.format], t.options.gamme && GAMMES_PROD[t.options.gamme]].filter(Boolean).join(', ')) + ')</span>' : ''} · demandé par ${esc(prenom(t.demandePar))} ${esc(ilYa(t.demandeLe))}${t.resultat && t.resultat.message ? '<br><span class="doux">' + esc(t.resultat.message) + '</span>' : ''}</span>${etiquette(t)}</div>`).join('')}</div>` : ''}
     ${enCours ? '<p class="tres-petit doux" style="margin:8px 0 0">La page se met à jour toute seule.</p>' : ''}
   </section>`;
 }
@@ -517,6 +517,33 @@ function changerStock(m, couleur, delta) {
 }
 
 /* ---------- Vue ---------- */
+// Georama Production depuis le hub (v1.4) : aperçu rapide, .3mf et PDF client, gamme et format au choix.
+const NOMS_TRAVAUX = { apercu: 'Aperçu rapide', '3mf': 'Production du .3mf', pdf: 'PDF client', rendu: 'Rendu 3D' };
+const FORMATS_PROD = { base: '10 × 12 po', gf4: '20 × 24 po', gf6: '24 × 30 po' };
+const GAMMES_PROD = { boreal: 'Boréal', sapiniere: 'Sapinière', arctique: 'Arctique', terre: 'Terre', unie: 'Monochrome' };
+function blocProduction(ctx, c, a, petiteIco) {
+  const cap = a.capacites || {};
+  const choix = ((etatVue(ctx).choixProd || {})[c.id]) || {};
+  const sansLien = c.lien ? '' : ' disabled title="Ajoute le lien de la zone dans la commande"';
+  const opt = (liste, val) => Object.entries(liste).map(([k, v]) => `<option value="${k}"${k === val ? ' selected' : ''}>${esc(v)}</option>`).join('');
+  const vieux = a.installe && cap['3mf'] && !cap.apercu
+    ? '<p class="tres-petit doux" style="margin:6px 0 0">L’ordi de la maison a une ancienne version de l’agent : seul « Produire le .3mf » marche (réglages du lien). Mets l’agent à jour pour l’aperçu, le PDF, la gamme et le format.</p>' : '';
+  return `<div class="bloc-prod" style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bordure)">
+    <h3 class="petit" style="margin:0 0 8px">Georama Production</h3>
+    <div class="champs">
+      <div class="champ"><label for="gp-format">Format</label><select id="gp-format" data-chg="choix-prod" data-cle="format"><option value="">Celui du lien</option>${opt(FORMATS_PROD, choix.format)}</select></div>
+      <div class="champ"><label for="gp-gamme">Gamme de couleurs</label><select id="gp-gamme" data-chg="choix-prod" data-cle="gamme"><option value="">Celle du lien</option>${opt(GAMMES_PROD, choix.gamme)}</select></div>
+    </div>
+    <div class="actions" style="margin-top:10px">
+      <button type="button" class="btn-2" data-act="travail" data-type="apercu"${sansLien}>Aperçu rapide</button>
+      <button type="button" class="btn" data-act="travail" data-type="3mf"${sansLien}>${petiteIco('eclair')} Produire le .3mf</button>
+      <button type="button" class="btn-2" data-act="travail" data-type="pdf"${sansLien}>PDF client</button>
+    </div>
+    <p class="tres-petit doux" style="margin:6px 0 0">Fait sur l’ordi de la maison. Aperçu : quelques minutes. .3mf : jusqu’à quelques heures. Le PDF reprend le dernier calcul (et le rendu 3D s’il y en a un). Pour la carte, les repères et les couleurs une à une : Georama Production sur l’ordi.</p>
+    ${vieux}
+  </div>`;
+}
+
 export default {
   titre: 'Production',
   render(ctx) {
@@ -559,8 +586,15 @@ export default {
     travail: (ctx, el) => {
       const c = ficheCourante(ctx);
       const type = el.getAttribute('data-type');
-      ctx.m.mettre('travaux', { id: uid('w'), type, commande: c.id, numero: c.numero, lien: c.lien || '', demandePar: ctx.moi, demandeLe: new Date().toISOString() }, true);
-      journaliser(ctx.m, (type === '3mf' ? 'Production du .3mf demandée pour ' : 'Rendu 3D demandé pour ') + c.numero, '#/production/fiche/' + c.id, 'travail');
+      const options = {};
+      if (type !== 'rendu') {
+        const f = document.getElementById('gp-format'), g = document.getElementById('gp-gamme');
+        if (f && f.value) options.format = f.value;
+        if (g && g.value) options.gamme = g.value;
+        etatVue(ctx).choixProd = Object.assign({}, etatVue(ctx).choixProd, { [c.id]: options });
+      }
+      ctx.m.mettre('travaux', { id: uid('w'), type, commande: c.id, numero: c.numero, lien: c.lien || '', options, demandePar: ctx.moi, demandeLe: new Date().toISOString() }, true);
+      journaliser(ctx.m, ({ apercu: 'Aperçu rapide demandé pour ', '3mf': 'Production du .3mf demandée pour ', pdf: 'PDF client demandé pour ' }[type] || 'Rendu 3D demandé pour ') + c.numero, '#/production/fiche/' + c.id, 'travail');
       ctx.m.avertir('local');
       const a = agent(ctx.m);
       toast(a.enLigne ? 'Demande envoyée à l\u2019ordi de la maison.' : 'Demande enregistrée. L\u2019ordi de la maison s\u2019en occupera dès qu\u2019il sera en ligne.', !a.enLigne);
@@ -582,6 +616,12 @@ export default {
     charger: (ctx, el) => chargerCouleur(ctx, el.getAttribute('data-c')),
   },
   changes: {
+    'choix-prod': (ctx, el) => {
+      const c = ficheCourante(ctx);
+      if (!c) return;
+      const e = etatVue(ctx);
+      e.choixProd = Object.assign({}, e.choixProd, { [c.id]: Object.assign({}, (e.choixProd || {})[c.id], { [el.getAttribute('data-cle')]: el.value }) });
+    },
     etape: (ctx, el) => {
       const c = ficheCourante(ctx);
       const id = el.getAttribute('data-etape');

@@ -10,8 +10,10 @@ OneDrive du hub. Rien n'est ouvert sur Internet.
   - Un dossier par commande en cours : OneDrive > Hub-Georama > commandes > G-2026-0XX
   - Rendu 3D automatique : dépose un .3mf dans le dossier d'une commande,
     l'image apparaît dans la fiche de production du hub (environ 10 à 60 s).
-  - Bouton « Produire le .3mf » du hub : lance Georama Production
-    (à brancher par Claude, réglage « commande_3mf »).
+  - Georama Production depuis le hub (v1.2) : boutons « Aperçu rapide », « Produire le .3mf »
+    et « PDF client » dans la fiche d'une commande, avec la gamme et le format choisis.
+    L'agent trouve Georama Production tout seul (OneDrive - Georama > 04_Operations... >
+    05_Georama-production > georama-production, avec son fichier produire_hub.py).
   - Optionnel : état en direct de l'imprimante Bambu (pourcentage, temps restant).
   - Optionnel : les commandes du site Wix arrivent toutes seules dans le hub.
 

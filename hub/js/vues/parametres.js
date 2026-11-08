@@ -19,7 +19,7 @@ function blocAgent(ctx) {
     <p class="petit" style="margin:0 0 10px">Un PC toujours allumé à la maison, connecté au OneDrive Georama, fait le travail lourd pour le hub. Il ne parle au hub que par le dossier OneDrive : rien n'est ouvert sur Internet.</p>
     <ul class="petit" style="margin:0 0 12px;padding-left:20px;line-height:24px">
       <li><strong>Rendus 3D</strong> : dépose un .3mf dans le dossier d'une commande, l'image apparaît dans sa fiche.</li>
-      <li><strong>Georama Production</strong> : le bouton « Produire le .3mf » lance la production sur ce PC (branchement à faire avec Claude).</li>
+      <li><strong>Georama Production</strong> : dans la fiche d’une commande, « Aperçu rapide », « Produire le .3mf » et « PDF client », avec la gamme et le format au choix.</li>
       <li><strong>Imprimante en direct</strong> : pourcentage, temps restant et fin réelle de la H2C (mode réseau local).</li>
       <li><strong>Commandes du site</strong> : les commandes Wix arrivent toutes seules dans le hub, avec le lien de la zone.</li>
     </ul>

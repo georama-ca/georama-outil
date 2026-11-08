@@ -31,6 +31,9 @@ copy /Y "%~dp0Voir le journal.bat" "%DEST%\" >nul
 copy /Y "%~dp0LISEZMOI.txt" "%DEST%\" >nul
 copy /Y "%~dp0config.exemple.json" "%DEST%\" >nul
 if not exist "%DEST%\config.json" copy /Y "%~dp0config.exemple.json" "%DEST%\config.json" >nul
+rem Pont vers Georama Production (boutons Aperçu rapide, .3mf et PDF client du hub)
+set "PROD=%USERPROFILE%\OneDrive - Georama\04_Operations_et_Ressources_Techniques\05_Georama-production\georama-production"
+if exist "%PROD%\georama_prod" copy /Y "%~dp0produire_hub.py" "%PROD%\" >nul
 echo  Préparation de l'environnement Python (1 à 3 minutes)...
 if not exist "%DEST%\.venv\Scripts\python.exe" %PY% -m venv "%DEST%\.venv"
 "%DEST%\.venv\Scripts\python.exe" -m pip install --upgrade pip --quiet --disable-pip-version-check

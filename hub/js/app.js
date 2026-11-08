@@ -16,11 +16,11 @@ import parametres from './vues/parametres.js';
 
 const VUES = { '': tableau, commandes, production, marketing, finances, parametres };
 const MENU = [
-  { id: '', nom: 'Tableau de bord', ico: 'accueil' },
-  { id: 'commandes', nom: 'Commandes et clients', ico: 'commandes' },
-  { id: 'production', nom: 'Production', ico: 'production' },
-  { id: 'marketing', nom: 'Marketing et prospection', ico: 'marketing' },
-  { id: 'finances', nom: 'Finances', ico: 'finances' },
+  { id: '', nom: 'Tableau de bord', court: 'Accueil', ico: 'accueil' },
+  { id: 'commandes', nom: 'Commandes et clients', court: 'Commandes', ico: 'commandes' },
+  { id: 'production', nom: 'Production', court: 'Production', ico: 'production' },
+  { id: 'marketing', nom: 'Marketing et prospection', court: 'Marketing', ico: 'marketing' },
+  { id: 'finances', nom: 'Finances', court: 'Finances', ico: 'finances' },
 ];
 const CLE_MODE = 'georama-hub-mode';
 const CLE_MOI_DEMO = 'georama-hub-moi-demo';
@@ -74,8 +74,16 @@ function coquille(corps) {
         ${choixMoi}
       </div>
       <p class="sync" id="sync">${etatSync()}</p>
+      <div class="barre-mobile" aria-label="Raccourcis">
+        <span id="chrono-m">${chronoMobile()}</span>
+        <button type="button" class="icone-barre" data-act="recherche" aria-label="Rechercher">${ico('loupe')}</button>
+        <a class="icone-barre initiales-barre${r.vue === 'parametres' ? ' actif' : ''}" href="#/parametres" aria-label="Paramètres et mon compte (${esc(ctx.moi)})">${esc(initiales(ctx.moi))}</a>
+      </div>
     </nav>
     <main class="contenu" id="contenu">${corps}</main>
+    <nav class="onglets-bas" aria-label="Menu principal">
+      ${MENU.map(i => `<a href="#/${i.id}"${r.vue === i.id ? ' aria-current="page"' : ''}>${ico(i.ico)}<span>${esc(i.court)}</span></a>`).join('')}
+    </nav>
   </div>`;
 }
 
@@ -93,7 +101,20 @@ function chronoHtml() {
   return `<button type="button" class="btn-2" data-act="chrono-start" style="width:100%">Démarrer mon chrono</button>
     <span class="tres-petit doux">Semaine : ${heures(sem / 60)} sur ${heures(obj / 60)}</span>`;
 }
-function majChrono() { const el = document.getElementById('chrono-g'); if (el && ctx.m) el.innerHTML = chronoHtml(); }
+// Cellulaire : le chrono tient dans un bouton de la barre du haut.
+function chronoMobile() {
+  const c = lireChronoG();
+  if (c && c.qui === ctx.moi) {
+    const min = Math.floor((Date.now() - c.debut) / 60000);
+    return `<button type="button" class="icone-barre chrono-actif" data-act="chrono-stop" aria-label="Arrêter mon chrono">${ico('chrono')}<span class="num">${heures(min / 60)}</span></button>`;
+  }
+  return `<button type="button" class="icone-barre" data-act="chrono-start" aria-label="Démarrer mon chrono">${ico('chrono')}</button>`;
+}
+function majChrono() {
+  if (!ctx.m) return;
+  const el = document.getElementById('chrono-g'); if (el) el.innerHTML = chronoHtml();
+  const em = document.getElementById('chrono-m'); if (em) em.innerHTML = chronoMobile();
+}
 function arreterChrono() {
   const c = lireChronoG();
   if (!c) return;

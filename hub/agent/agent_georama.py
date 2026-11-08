@@ -33,7 +33,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.1'
+VERSION = '1.2'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -67,6 +67,9 @@ def lire_config():
         'rendu_largeur': 1600,
         'rendu_hauteur': 1200,
         'commande_3mf': '',
+        'dossier_production': os.path.join(os.path.expanduser('~'), 'OneDrive - Georama', '04_Operations_et_Ressources_Techniques',
+                                           '05_Georama-production', 'georama-production'),
+        'delai_apercu_minutes': 60,
         'delai_3mf_minutes': 360,
         'imprimantes': [],
         'wix_cle_api': '',
@@ -79,6 +82,7 @@ def lire_config():
         with open(chemin, encoding='utf-8') as f:
             defaut.update(json.load(f))
     defaut['dossier_hub'] = os.path.expandvars(os.path.expanduser(defaut['dossier_hub']))
+    defaut['dossier_production'] = os.path.expandvars(os.path.expanduser(defaut['dossier_production'] or ''))
     return defaut
 
 
@@ -285,7 +289,9 @@ class Agent:
         return r
 
     def signal(self):
-        capacites = {'rendu': True, '3mf': bool(self.cfg.get('commande_3mf')), 'imprimantes': bool(self.imprimantes),
+        pont = bool(self.pont())
+        capacites = {'rendu': True, '3mf': pont or bool(self.cfg.get('commande_3mf')), 'apercu': pont, 'pdf': pont,
+                     'imprimantes': bool(self.imprimantes),
                      'wix': bool(self.cfg.get('wix_cle_api') and self.cfg.get('wix_site_id'))}
         item = {'id': 'maison', 'nom': self.cfg.get('nom'), 'machine': socket.gethostname(), 'systeme': platform.platform(terse=True),
                 'version': VERSION, 'vu': maintenant(), 'demarre': self.demarre, 'capacites': capacites,
@@ -355,11 +361,68 @@ class Agent:
                 for i, f in enumerate(fichiers):
                     self.rendre(f, rid=t['id'] if i == 0 else t['id'] + '-' + str(i + 1), cmd=t.get('commande'))
                 return
+            if t.get('type') in ('apercu', 'pdf') or (t.get('type') == '3mf' and self.pont()):
+                self.lancer_production(t, c, dossier)
+                return
             if t.get('type') == '3mf':
                 self.produire_3mf(t, c, dossier)
                 return
             self.resultat(t['id'], statut='erreur', debut=maintenant(), fin=maintenant(), message='Travail inconnu : %s' % t.get('type'))
             return
+
+    def pont(self):
+        """Georama Production avec son pont produire_hub.py (v2) : (python, script) ou None."""
+        d = self.cfg.get('dossier_production') or ''
+        py = os.path.join(d, '.venv', 'Scripts', 'python.exe') if os.name == 'nt' else os.path.join(d, '.venv', 'bin', 'python')
+        script = os.path.join(d, 'produire_hub.py')
+        return (py, script) if d and os.path.exists(py) and os.path.exists(script) else None
+
+    def lancer_production(self, t, c, dossier):
+        """Aperçu rapide, .3mf ou PDF client avec Georama Production (gamme et format choisis dans le hub)."""
+        mode = t.get('type')
+        noms = {'apercu': 'Aperçu rapide', '3mf': 'Production du .3mf', 'pdf': 'PDF client'}
+        lien = t.get('lien') or c.get('lien') or ''
+        if not lien:
+            self.resultat(t['id'], type=mode, statut='erreur', commande=t.get('commande'), debut=maintenant(), fin=maintenant(),
+                          message='La commande n\u2019a pas de lien de zone.')
+            return
+        py, script = self.pont()
+        opt = t.get('options') or {}
+        args = [py, script, '--mode', mode, '--lien', lien, '--numero', c.get('numero') or t.get('numero') or '',
+                '--sortie', dossier, '--client', c.get('client') or '']
+        if opt.get('gamme'):
+            args += ['--gamme', str(opt['gamme'])]
+        if opt.get('format'):
+            args += ['--format', str(opt['format'])]
+        self.travail_en_cours = noms.get(mode, mode) + ' de ' + (c.get('numero') or '')
+        self.resultat(t['id'], type=mode, statut='en_cours', commande=t.get('commande'), debut=maintenant(),
+                      message='Georama Production travaille… (' + noms.get(mode, mode).lower() + ')')
+        self.signal()
+        log.info('Georama Production (%s) : %s', mode, ' '.join(args[2:]))
+        minutes = int(self.cfg.get('delai_3mf_minutes' if mode == '3mf' else 'delai_apercu_minutes', 360 if mode == '3mf' else 60))
+        try:
+            p = subprocess.run(args, capture_output=True, text=True, timeout=minutes * 60, encoding='utf-8', errors='replace',
+                               cwd=os.path.dirname(script), env=dict(os.environ, PYTHONUTF8='1'),
+                               creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            res = {}
+            for ligne in (p.stdout or '').splitlines():
+                if ligne.startswith('##RESULTAT '):
+                    try:
+                        res = json.loads(ligne[len('##RESULTAT '):])
+                    except ValueError:
+                        pass
+            if p.returncode == 0 and res.get('statut') == 'fait':
+                self.resultat(t['id'], statut='fait', fin=maintenant(), fichiers=res.get('fichiers') or [], message=res.get('message') or 'Fait.')
+            else:
+                fin = res.get('message') or ' / '.join((p.stderr or p.stdout or '').strip().splitlines()[-3:])[:400]
+                log.error('Georama Production (%s) arrêté, code %s : %s', mode, p.returncode, (p.stderr or '')[-2000:])
+                self.resultat(t['id'], statut='erreur', fin=maintenant(), message='Georama Production s\u2019est arrêté. ' + fin)
+        except subprocess.TimeoutExpired:
+            self.resultat(t['id'], statut='erreur', fin=maintenant(), message='Trop long : arrêté après %s minutes.' % minutes)
+        except Exception as e:  # noqa: BLE001
+            self.resultat(t['id'], statut='erreur', fin=maintenant(), message='Lancement impossible : %s' % e)
+        finally:
+            self.travail_en_cours = None
 
     def produire_3mf(self, t, c, dossier):
         modele = self.cfg.get('commande_3mf') or ''
