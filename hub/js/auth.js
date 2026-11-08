@@ -3,6 +3,9 @@
 import { CONFIG } from '../config.js';
 
 const SCOPES = 'openid profile offline_access User.Read Files.ReadWrite.All';
+// Suivi des courriels de prospection : lecture des en-têtes seulement (objet, date, expéditeur,
+// destinataires). Jamais le contenu des messages. Autorisation demandée à part, une seule fois.
+export const SCOPE_COURRIEL = 'Mail.ReadBasic';
 const CLE = 'georama-hub-jetons';
 const CLE_IDS = 'georama-hub-ids';
 
@@ -51,17 +54,18 @@ export function utilisateur() {
   return { nom: c.name || c.preferred_username || 'Utilisateur', courriel: c.preferred_username || c.email || '', oid: c.oid || '', tid: c.tid || '' };
 }
 
-export async function seConnecter(choisirCompte = true) {
+export async function seConnecter(choisirCompte = true, scopesEnPlus = '') {
+  const scope = scopesEnPlus ? SCOPES + ' ' + scopesEnPlus : SCOPES;
   const verifier = aleatoire(48);
   const challenge = b64url(await sha256(verifier));
   const state = aleatoire(16);
-  sessionStorage.setItem('georama-hub-pkce', JSON.stringify({ verifier, state, retour: location.hash || '' }));
+  sessionStorage.setItem('georama-hub-pkce', JSON.stringify({ verifier, state, retour: location.hash || '', scope }));
   const q = new URLSearchParams({
     client_id: lireIds().clientId,
     response_type: 'code',
     redirect_uri: redirectUri(),
     response_mode: 'query',
-    scope: SCOPES,
+    scope,
     state,
     code_challenge: challenge,
     code_challenge_method: 'S256',
@@ -111,7 +115,7 @@ export async function traiterRetour() {
   if (p.has('error')) return { statut: 'erreur', message: p.get('error_description') || p.get('error') };
   if (!sauve.state || sauve.state !== p.get('state')) return { statut: 'erreur', message: 'La connexion a expiré. Recommence.' };
   try {
-    await demanderJetons({ grant_type: 'authorization_code', code: p.get('code'), redirect_uri: redirectUri(), code_verifier: sauve.verifier });
+    await demanderJetons({ grant_type: 'authorization_code', code: p.get('code'), redirect_uri: redirectUri(), code_verifier: sauve.verifier, scope: sauve.scope || SCOPES });
     return { statut: 'connecte' };
   } catch (e) {
     return { statut: 'erreur', message: e.message };
@@ -138,3 +142,24 @@ export async function jeton() {
     throw Object.assign(new Error('Session expirée. Reconnecte-toi.'), { code: 'non_connecte' });
   }
 }
+
+// Jeton pour lire les en-têtes des courriels. Ne touche pas au jeton principal (fichiers).
+// Erreur code 'consentement' tant que la personne n'a pas donné l'autorisation.
+let jetonMail = null;
+export async function jetonCourriel() {
+  if (jetonMail && jetonMail.expire > Date.now()) return jetonMail.access_token;
+  const j = lireJetons();
+  if (!j || !j.refresh_token) throw Object.assign(new Error('Non connecté'), { code: 'non_connecte' });
+  const corps = new URLSearchParams({ client_id: lireIds().clientId, grant_type: 'refresh_token', refresh_token: j.refresh_token, scope: 'https://graph.microsoft.com/' + SCOPE_COURRIEL + ' offline_access' });
+  const r = await fetch(autorite() + '/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: corps.toString() });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const txt = String(d.error_description || d.error || '');
+    const consent = /AADSTS65001|consent/i.test(txt);
+    throw Object.assign(new Error(consent ? 'Autorisation des courriels pas encore donnée.' : txt || ('Erreur ' + r.status)), { code: consent ? 'consentement' : (d.error || 'erreur') });
+  }
+  if (d.refresh_token) ecrireJetons(Object.assign({}, lireJetons() || {}, { refresh_token: d.refresh_token }));
+  jetonMail = { access_token: d.access_token, expire: Date.now() + (Number(d.expires_in) || 3600) * 1000 - 120000 };
+  return jetonMail.access_token;
+}
+export function autoriserCourriel() { return seConnecter(false, SCOPE_COURRIEL); }

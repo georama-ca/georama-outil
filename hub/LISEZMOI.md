@@ -48,6 +48,14 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.11 (8 novembre 2026)
+- Suivi automatique des courriels de prospection (js/suivi-courriels.js). Le hub lit seulement les en-têtes des courriels de la personne connectée (autorisation Microsoft « Mail.ReadBasic », demandée une fois par le bouton « Activer » de Prospection ; jamais le contenu), toutes les 15 minutes au plus.
+- Les échanges sont reliés aux prospects par adresse, ou par domaine quand un seul prospect l'utilise (jamais Gmail, Hotmail, Sogetel, regionmekinac.com partagé, etc.). Historique dans la nouvelle collection « courriels » et sur la fiche du prospect.
+- Premier envoi : le prospect passe à « Contacté », prochaine action « Relancer si pas de réponse » dans 7 jours. Réponse reçue : « Répondre », aujourd'hui.
+- Une seule carte « Relancer N prospects » dans « J'ai besoin de toi » (Tâches), tenue à jour ; filtre « À relancer » dans Prospection.
+- Fiche prospect : boutons « Écrire / Relancer dans Outlook » (Outlook Web) ou autre logiciel (mailto), avec un modèle prérempli.
+- 97 prospects ajoutés à partir des brouillons de prospection de info@ (27 et 26 octobre), étalés à 10 par jour ouvrable du 9 au 20 novembre.
+
 ### v1.10 (8 novembre 2026)
 - **Campagnes › Conversions Meta et zones choisies** : par jour, les conversions comptées par Meta à côté des zones vraiment choisies dans l'outil par les visiteurs des pubs (avec le degré de lien entre les deux). Par campagne : dépensé, clics, conversions Meta, zones choisies, jusqu'à l'étape 5, coût par zone. Par publicité (utm_content) : zones et visiteurs allés jusqu'à l'étape 5. Les groupes Facebook (gratuits) à part. Les jours où le compteur du site était plein ne comptent pas.
 - **Marketing › Contenu** : calendrier de contenu (mois), publications prévues à la main (page Facebook, groupes, Instagram, Reel, blogue, infolettre, presse ; statut idée / à préparer / prêt / publié ; segment ; texte prêt à copier) + automatique : articles du blogue Wix, infolettres envoyées, publications de la page Facebook (si le jeton le permet), début et fin des pubs Meta, tâches marketing avec échéance. Rythme du mois par canal, 3 prochaines semaines, idées sans date. Au cellulaire : liste du mois. Plan proposé par Claude jusqu'à la mi-décembre (à adapter).

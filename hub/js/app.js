@@ -5,6 +5,7 @@ import { Magasin, AdaptateurLocal, AdaptateurOneDrive, lireLieu, ecrireLieu } fr
 import { reglages, nomDuCompte, REGLAGES_DEFAUT, importerWix, journaliser, CATEGORIES_TEMPS, minutesSemaine, nomSegment, statut as statutCmd, icoSegment } from './donnees.js';
 import { donneesDemo, amsVides } from './demo.js';
 import { demarrerAgentDemo } from './demo-agent.js';
+import { synchroniserCourriels } from './suivi-courriels.js';
 import { esc, ico, toast, initiales, prenom, ouvrirFenetre, fermerFenetre, options, uid, heures, aujourdhui, argent, dateCourte } from './ui.js';
 import { ouvrirCommande } from './vues/commandes.js';
 import tableau from './vues/tableau.js';
@@ -419,6 +420,9 @@ async function demarrer() {
   if (ctx.mode !== 'demo') {
     setInterval(() => { if (document.visibilityState === 'visible') ctx.m.rafraichir(); }, 30000);
     window.addEventListener('focus', () => ctx.m.rafraichir());
+    // Suivi des courriels de prospection (en-têtes seulement), au plus toutes les 15 minutes
+    setTimeout(() => synchroniserCourriels(ctx), 4000);
+    setInterval(() => { if (document.visibilityState === 'visible') synchroniserCourriels(ctx); }, 5 * 60000);
   }
   window.addEventListener('beforeunload', ev => { if (ctx.m.enAttente() && ctx.mode !== 'demo') { ev.preventDefault(); ev.returnValue = ''; } });
   ctx.prenom = prenom(ctx.moi);

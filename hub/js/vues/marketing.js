@@ -5,6 +5,7 @@ import { ouvrirCommande } from './commandes.js';
 import { vueSuivi, monterCarte, etatSuivi, totauxMeta, statsWix, tableauMeta } from './suivi.js';
 import { blocCorrelation } from './correlation.js';
 import { vueContenu, actionsContenu, changesContenu } from './contenu.js';
+import { etatCourriel, activerCourriel, synchroniserCourriels, echanges, dernierEchange, aRelancer, modeleCourriel, lienOutlook, lienMailto } from '../suivi-courriels.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.mkt) ctx.etat.mkt = { q: '', statut: 'actifs' };
@@ -27,7 +28,8 @@ function ouvrirProspect(ctx, id, prerempli) {
     <div class="champ"><label for="p-action">Prochaine action</label><input id="p-action" name="action" type="text" value="${esc(p.action)}" placeholder="Ex. : Relancer par courriel"></div>
     <div class="champ"><label for="p-quand">Quand</label><input id="p-quand" name="prochaine" type="date" value="${esc(p.prochaine)}"></div>
     <div class="champ plein"><label for="p-notes">Notes</label><textarea id="p-notes" name="notes">${esc(p.notes)}</textarea></div>
-  </div>`;
+  </div>
+  ${id ? blocEchanges(ctx, p) : ''}`;
   const pied = id ? `<div class="actions"><button type="button" class="btn-2 btn-danger" data-modal-act="supprimer">Supprimer</button>
     <button type="button" class="btn-2" data-modal-act="commande">Créer une commande</button></div>` : '';
   ouvrirFenetre({
@@ -51,6 +53,42 @@ function ouvrirProspect(ctx, id, prerempli) {
       toast(id ? 'Prospect enregistré.' : 'Prospect ajouté.');
     },
   });
+}
+
+// Historique des courriels et boutons pour écrire (Outlook, avec un modèle).
+function blocEchanges(ctx, p) {
+  const l = echanges(ctx.m, p.id);
+  const e = etatCourriel(ctx);
+  const relance = p.statut === 'contacte' && l.length && l[0].sens === 'envoye';
+  const mod = modeleCourriel(ctx, p, relance);
+  const boutons = p.courriel ? `<div class="actions" style="margin:4px 0 10px;flex-wrap:wrap">
+      <a class="btn" href="${esc(lienOutlook(p, mod))}" target="_blank" rel="noopener">${relance ? 'Relancer' : 'Écrire'} dans Outlook</a>
+      <a class="btn-lien petit" href="${esc(lienMailto(p, mod))}">ou avec un autre logiciel</a>
+      ${p.brouillon && p.statut === 'a_contacter' ? '<span class="tres-petit doux" style="flex-basis:100%">Un courriel personnalisé est déjà prêt dans les brouillons (objet « ' + esc(p.brouillon) + ' »). Le plus simple : l’envoyer de là.</span>' : ''}
+    </div>` : '<p class="petit doux">Ajoute un courriel pour pouvoir écrire et suivre les échanges.</p>';
+  const lignes = l.slice(0, 15).map(c => `<div class="ligne petit" style="align-items:flex-start">
+      <span class="etiquette ${c.sens === 'recu' ? 'vert' : ''}" style="min-width:64px;text-align:center">${c.sens === 'recu' ? 'Reçu' : 'Envoyé'}</span>
+      <span class="grow">${esc(c.sujet || '(sans objet)')}<br><span class="tres-petit doux">${esc(dateCourte(c.date.slice(0, 10)))} · ${esc(c.avec)}</span></span>
+      ${c.lien && c.boite === String(ctx.courriel || '').toLowerCase() ? `<a class="btn-lien tres-petit" href="${esc(c.lien)}" target="_blank" rel="noopener">Ouvrir</a>` : ''}
+    </div>`).join('');
+  const aide = e.etat === 'inactif' ? '<p class="tres-petit doux">Le suivi automatique des courriels n’est pas encore activé pour ton compte (Prospection, en haut).</p>'
+    : e.etat === 'demo' ? '' : '<p class="tres-petit doux">Rempli automatiquement à partir des courriels envoyés et reçus (objet et date seulement).</p>';
+  return `<section style="margin-top:16px;border-top:1px solid var(--bordure);padding-top:12px">
+    <h3 class="titre-3" style="margin:0 0 6px;font-size:16px">Courriels${l.length ? ' · ' + l.length : ''}</h3>
+    ${boutons}${lignes || '<p class="petit doux">Aucun échange trouvé pour l’instant.</p>'}${aide}
+  </section>`;
+}
+
+function carteCourriel(ctx) {
+  const e = etatCourriel(ctx);
+  if (e.etat === 'demo') return '';
+  if (e.etat === 'inactif' || e.erreur === 'consentement') {
+    return `<div class="bandeau info"><span><strong>Suivi des courriels.</strong> Le hub peut suivre tout seul tes courriels de prospection : il passe le prospect à « Contacté » quand tu envoies, te signale les réponses et te rappelle de relancer après 7 jours. Il lit seulement l’objet, la date et les adresses, jamais le contenu. Microsoft va te demander une autorisation, une seule fois.</span>
+      <button type="button" class="btn" data-act="courriel-activer">${e.erreur === 'consentement' ? 'Donner l’autorisation' : 'Activer'}</button></div>`;
+  }
+  const quand = e.derniere ? Math.max(0, Math.round((Date.now() - Date.parse(e.derniere)) / 60000)) : null;
+  return `<p class="petit doux" style="margin:0 0 10px">Courriels suivis automatiquement${quand !== null ? ' · lus il y a ' + (quand < 1 ? 'moins d’une minute' : quand + ' min') : ''}${e.erreur ? ' · <span class="retard">' + esc(e.erreur) + '</span>' : ''}
+    · <button type="button" class="btn-lien petit" data-act="courriel-lire">Lire maintenant</button></p>`;
 }
 
 function ouvrirCampagne(ctx, id) {
@@ -106,8 +144,10 @@ function vueProspects(ctx) {
   const e = etatVue(ctx);
   const tous = ctx.m.liste('prospects');
   const q = e.q.toLowerCase();
+  const relances = aRelancer(ctx.m);
+  const idsRelance = new Set(relances.map(x => x.p.id));
   const liste = tous
-    .filter(p => e.statut === 'tous' || (e.statut === 'actifs' ? !['gagne', 'perdu'].includes(p.statut) : p.statut === e.statut))
+    .filter(p => e.statut === 'tous' || (e.statut === 'actifs' ? !['gagne', 'perdu'].includes(p.statut) : e.statut === 'relancer' ? idsRelance.has(p.id) : p.statut === e.statut))
     .filter(p => !q || [p.organisation, p.region, p.contact, p.type, p.notes].some(v => String(v || '').toLowerCase().includes(q)))
     .sort((a, b) => String(a.prochaine || '9').localeCompare(String(b.prochaine || '9')));
   const compte = id => tous.filter(p => p.statut === id).length;
@@ -118,23 +158,27 @@ function vueProspects(ctx) {
     const s = statutProspect(p.statut);
     const j = p.prochaine ? joursEntre(aujourdhui(), p.prochaine) : null;
     const actif = !['gagne', 'perdu'].includes(p.statut);
+    const der = dernierEchange(ctx.m, p.id);
+    const derTxt = der ? `<br><span class="tres-petit ${der.sens === 'recu' ? 'vert-t' : 'doux'}">${der.sens === 'recu' ? 'Réponse reçue' : 'Courriel envoyé'} · ${esc(dateCourte(der.date.slice(0, 10)))}</span>` : '';
     return `<tr class="cliquable" data-act="ouvrir" data-id="${esc(p.id)}" tabindex="0">
       <td><strong>${esc(p.organisation)}</strong><br><span class="petit doux">${esc(p.type)}${p.region ? ' · ' + esc(p.region) : ''}</span></td>
       <td class="petit">${esc(p.contact)}${p.courriel ? `<br><a href="mailto:${esc(p.courriel)}">${esc(p.courriel)}</a>` : ''}${p.telephone ? `<br>${esc(p.telephone)}` : ''}</td>
-      <td><span class="etiquette ${s.classe}">${esc(s.nom)}</span></td>
+      <td><span class="etiquette ${s.classe}">${esc(s.nom)}</span>${derTxt}</td>
       <td class="petit">${esc(p.action)}${p.prochaine && actif ? `<br><span class="${j < 0 ? 'retard' : j === 0 ? 'vert-t' : 'doux'}">${j < 0 ? 'En retard · ' : j === 0 ? 'Aujourd’hui · ' : ''}${esc(dateCourte(p.prochaine))}</span>` : ''}</td>
       <td class="droite num">${p.valeur ? argent(p.valeur) : ''}</td>
       <td><span class="initiales" title="${esc(p.responsable)}">${esc(initiales(p.responsable))}</span></td>
     </tr>`;
   }).join('');
   return `
+    ${carteCourriel(ctx)}
+    ${relances.length ? `<div class="bandeau"><span><strong>${relances.length} prospect${relances.length > 1 ? 's' : ''} à relancer</strong> : pas de réponse depuis 7 jours. Ouvre la fiche, puis « Relancer dans Outlook ».</span><button type="button" class="btn-2" data-act="filtre-statut" data-s="relancer">Voir la liste</button></div>` : ''}
     ${carteDemandes(ctx)}
     <section class="g6" aria-label="Étapes">${entonnoir}</section>
     <div class="filtres">
       <label class="sr" for="cherche-p">Chercher</label>
       <input id="cherche-p" type="search" placeholder="Organisation, région, contact" value="${esc(e.q)}" data-input="cherche">
       <label class="sr" for="filtre-p">Étape</label>
-      <select id="filtre-p" data-chg="statut">${options([{ id: 'actifs', nom: 'En cours' }, { id: 'tous', nom: 'Tous' }].concat(STATUTS_PROSPECT), e.statut)}</select>
+      <select id="filtre-p" data-chg="statut">${options([{ id: 'actifs', nom: 'En cours' }, { id: 'relancer', nom: 'À relancer (7 j sans réponse)' }, { id: 'tous', nom: 'Tous' }].concat(STATUTS_PROSPECT), e.statut)}</select>
       <span class="petit doux">Valeur en cours : ${argent(valeur)}</span>
     </div>
     <div class="carte table-boite" style="padding:6px 8px">
@@ -225,6 +269,11 @@ export default {
       toast('Demande mise de côté.');
     },
     'ouvrir-k': (ctx, el) => ouvrirCampagne(ctx, el.getAttribute('data-id')),
+    'courriel-activer': ctx => activerCourriel(ctx),
+    'courriel-lire': ctx => {
+      toast('Lecture des courriels…');
+      synchroniserCourriels(ctx, true).then(r => toast(r && r.erreur ? r.erreur : (r && r.nouveaux ? r.nouveaux + ' nouvel échange' + (r.nouveaux > 1 ? 's' : '') + ' trouvé' + (r.nouveaux > 1 ? 's' : '') + '.' : 'Rien de nouveau.'), !!(r && r.erreur)));
+    },
     'filtre-statut': (ctx, el) => { const e = etatVue(ctx); const s = el.getAttribute('data-s'); e.statut = e.statut === s ? 'actifs' : s; ctx.rendre(); },
   },
   changes: {
