@@ -210,7 +210,14 @@ function rendre() {
   const defile = window.scrollY;
   let corps;
   try { corps = vue.render(ctx); }
-  catch (e) { console.error(e); corps = `<div class="bandeau"><strong class="o">Oups.</strong><span>Cet écran a eu un problème : ${esc(e.message)}. Les données ne sont pas touchées.</span></div>`; }
+  catch (e) {
+    console.error(e);
+    const pile = String(e.stack || '').split('\n').slice(0, 4).map(l => l.replace(/https?:\/\/[^/]+\/hub\//g, '')).join('\n');
+    corps = `<div class="bandeau" style="flex-direction:column;align-items:flex-start"><span><strong class="o">Oups.</strong> Cet écran a eu un problème : ${esc(e.message)}. Les données ne sont pas touchées.</span>
+      <span class="petit">Essaie d'abord de recharger la page sans cache. Si ça revient, envoie une capture de ce cadre à Claude.</span>
+      <button type="button" class="btn-2" onclick="location.reload()">Recharger</button>
+      <pre class="tres-petit doux" style="white-space:pre-wrap;margin:0">v${esc(CONFIG.version)} · ${esc(pile)}</pre></div>`;
+  }
   racine.innerHTML = coquille(corps);
   document.title = (vue.titre ? vue.titre + ' · ' : '') + 'Hub Georama';
   if (focusId) {
