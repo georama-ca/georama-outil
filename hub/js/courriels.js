@@ -136,14 +136,14 @@ export function suggestion(c) {
   }
   if (s === 'expediee') {
     if (!envoyes.has('expediee')) return 'expediee';
-    const le = (c.courriels.find(x => x.modele === 'expediee') || {}).le;
+    const le = ((c.courriels || []).find(x => x.modele === 'expediee') || {}).le;
     if (!envoyes.has('merci') && le && joursEntre(le.slice(0, 10), aujourdhui()) >= 7) return 'merci';
     return null;
   }
   if (s === 'livree') {
     if (c.livraison === 'recuperation' && !envoyes.has('prete') && !envoyes.has('merci')) return 'prete';
     if (!envoyes.has('merci')) {
-      const base = (c.courriels.find(x => x.modele === 'prete') || {}).le || c.expedieeLe;
+      const base = ((c.courriels || []).find(x => x.modele === 'prete') || {}).le || c.expedieeLe;
       if (!base || joursEntre(String(base).slice(0, 10), aujourdhui()) >= 3) return 'merci';
     }
   }

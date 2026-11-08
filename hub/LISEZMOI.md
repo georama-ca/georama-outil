@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.1.2 (8 novembre 2026)
+- Correctif : le tableau de bord plantait (« Cannot read properties of undefined (reading 'find') ») dès qu'une commande expédiée ou livrée n'avait encore aucun courriel dans son historique.
+
 ### v1.1 (7 novembre 2026)
 - **Courriels aux clients en un clic** : 6 modèles (commande reçue, aperçu à approuver, en production, prête à récupérer, expédiée avec suivi Postes Canada, merci et avis). Le hub suggère le bon courriel au bon moment (fiche de production, liste des commandes, « Les 7 prochains jours »), l'ouvre prérempli dans la messagerie ou le copie, et garde l'historique. Modèles et signature modifiables dans Paramètres.
 - Filtre « Courriel à envoyer » dans les commandes.
