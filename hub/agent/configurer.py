@@ -83,7 +83,7 @@ def main():
         jeton = ''.join(ch for ch in input('    Jeton Meta : ') if ch.isprintable()).strip()
         if jeton:
             cfg['meta_jeton'] = jeton
-        compte = demander('    Numéro du compte publicitaire (act_…, dans le Gestionnaire de publicités)', cfg.get('meta_compte', ''))
+        compte = demander('    Numéro du compte publicitaire (Entrée = celui de Georama)', cfg.get('meta_compte') or 'act_10215769679460110')
         cfg['meta_compte'] = compte.strip()
         if cfg.get('meta_jeton') and cfg.get('meta_compte'):
             print('    Test de la connexion à Meta...')
