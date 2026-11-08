@@ -24,9 +24,9 @@ export function statsMeta(m) { return ((m.externes.statsMeta || [])[0]) || null;
 
 function provenance(z) {
   const s = (z.source || '').toLowerCase();
-  if (z.campagne || /facebook|meta|fb|instagram/.test(s) && z.contenu) return 'Pub Meta';
-  if (/groupe/.test(s)) return 'Groupes Facebook';
-  if (/facebook|fb|instagram|meta/.test(s)) return 'Facebook';
+  if (s === 'meta' || z.campagne) return 'Pub Meta';
+  if (/facebook|fb|groupe/.test(s)) return 'Facebook (groupes)';
+  if (/instagram/.test(s)) return 'Instagram';
   if (/google/.test(s)) return 'Google';
   if (/courriel|email|mail/.test(s)) return 'Courriel';
   if (!s || s === 'direct') return 'Direct';

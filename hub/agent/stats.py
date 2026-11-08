@@ -70,7 +70,7 @@ def paniers(cfg):
     return sortie
 
 
-def zones(cfg, maximum=1000):
+def zones(cfg, maximum=4000):
     """Une ligne par session de visiteur qui a choisi une zone : la zone, le segment, la provenance, l'étape atteinte."""
     sessions, total, offset = {}, None, 0
     while offset < maximum:
@@ -99,10 +99,14 @@ def zones(cfg, maximum=1000):
         if len(items) < 100:
             break
         offset += 100
+    gardees = []
     for s in sessions.values():
         rang = [ORDRE_ETAPES.index(e) for e in s['etapes'] if e in ORDRE_ETAPES]
-        s['plus_loin'] = ORDRE_ETAPES[max(rang)] if rang else (s['etapes'][0] if s['etapes'] else 'zone')
-    liste = sorted(sessions.values(), key=lambda x: x.get('date') or '', reverse=True)
+        if not rang:            # seulement « lieu » : le visiteur n'a pas encore choisi sa zone
+            continue
+        s['plus_loin'] = ORDRE_ETAPES[max(rang)]
+        gardees.append(s)
+    liste = sorted(gardees, key=lambda x: x.get('date') or '', reverse=True)
     return liste, total
 
 
