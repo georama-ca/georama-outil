@@ -115,7 +115,7 @@ def supprimer_entonnoir(cfg, ids):
 def zones(entrees):
     """Une ligne par session de visiteur qui a choisi une zone : la zone, le segment, la provenance, l'étape atteinte."""
     sessions = {}
-    for d in sorted((e for e in entrees if e.get('zone')), key=lambda e: e.get('_createdDate') or '', reverse=True):
+    for d in sorted((e for e in entrees if e.get('session') or e.get('zone')), key=lambda e: e.get('_createdDate') or '', reverse=True):
         quand = d.get('_createdDate') or ''
         cle = d.get('session') or d.get('_id')
         s = sessions.setdefault(cle, {'session': cle, 'date': quand, 'debut': quand, 'segment': d.get('segment') or '',
@@ -124,6 +124,11 @@ def zones(entrees):
                                       'page': d.get('page') or '', 'zone': d.get('zone') or '', 'etapes': []})
         if quand and quand < (s['debut'] or quand):
             s['debut'] = quand
+        if not s['zone'] and d.get('zone'):         # la zone n'est notée qu'aux étapes après le choix (3D, mur…)
+            s['zone'] = d.get('zone')
+        for k in ('segment', 'source', 'campagne', 'contenu', 'appareil'):
+            if not s[k] and d.get(k):
+                s[k] = d.get(k)
         e = d.get('etape') or ''
         if e and e not in s['etapes']:
             s['etapes'].append(e)

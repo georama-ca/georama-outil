@@ -104,7 +104,7 @@ export function vueSuivi(ctx) {
       <span class="pastille-etat" style="background:${couleurSeg(z.segment)};margin-top:6px"></span>
       <span class="grow petit"><strong>${esc(nomSeg(z.segment))}</strong> · ${esc(z.prov)}${z.contenu ? ' <span class="doux">(' + esc(z.contenu) + ')</span>' : ''}<br>
         <span class="doux">${esc(ilYa(z.date))} · ${esc(z.appareil || '')}${z.pz.km ? ' · ' + nombre(z.pz.km, 1) + ' km' : ''} · plus loin : ${esc(nomEtape(z.plus_loin))}</span></span>
-      <a class="btn-lien petit" href="${esc(OUTIL + z.zone)}" target="_blank" rel="noopener">Voir la zone</a>
+      ${z.zone ? `<a class="btn-lien petit" href="${esc(OUTIL + z.zone)}" target="_blank" rel="noopener">Voir la zone</a>` : '<span class="tres-petit doux" title="L’outil ne note la zone qu’à partir de la vue 3D">zone non notée</span>'}
     </div>`).join('');
 
   // pubs Meta par campagne (30 jours)
@@ -157,7 +157,7 @@ export function vueSuivi(ctx) {
     </section>
     <section class="carte"><div class="carte-tete"><h2>Achalandage du site</h2><span class="tres-petit doux">${w ? 'Lu ' + esc(ilYa(w.lu)) : ''}</span></div>${barres(sess.jours, 'visites')}</section>
     <section class="carte">
-      <div class="carte-tete"><h2>Zones choisies par les visiteurs</h2><span class="tres-petit doux">${nombre(zones.length)} zone${zones.length > 1 ? 's' : ''} · ${nombre(loin)} jusqu’à l’étape 5 ou plus</span></div>
+      <div class="carte-tete"><h2>Zones choisies par les visiteurs</h2><span class="tres-petit doux">${nombre(zones.length)} visiteur${zones.length > 1 ? 's' : ''} · ${nombre(zones.filter(z => z.pz.ok).length)} sur la carte · ${nombre(loin)} jusqu’à l’étape 5 ou plus</span></div>
       <div class="champs" style="margin-bottom:10px">
         <div class="champ"><label for="sv-per">Période</label><select id="sv-per" data-chg="suivi" data-cle="periode"><option value="7"${e.periode === '7' ? ' selected' : ''}>7 jours</option><option value="30"${e.periode === '30' ? ' selected' : ''}>30 jours</option><option value="tout"${e.periode === 'tout' ? ' selected' : ''}>Tout</option></select></div>
         <div class="champ"><label for="sv-seg">Segment</label><select id="sv-seg" data-chg="suivi" data-cle="seg">${opt(segs, e.seg, 'Tous')}</select></div>
