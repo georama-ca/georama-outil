@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.2 (8 novembre 2026)
+- **Qui est connecté** : Paramètres > Équipe > « Comptes Microsoft » associe chaque compte à une personne (ex. info@georama.ca = Maryse Perron Chartier). Le nom sert partout : « Bonjour », chrono, tâches, historique et signature des courriels. Gardé dans OneDrive (reglages.json), rien dans le code public.
+
 ### v1.1.2 (8 novembre 2026)
 - Correctif : le tableau de bord plantait (« Cannot read properties of undefined (reading 'find') ») dès qu'une commande expédiée ou livrée n'avait encore aucun courriel dans son historique.
 

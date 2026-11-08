@@ -126,11 +126,20 @@ export const REGLAGES_DEFAUT = {
   dateLimiteNoel: '2026-12-01',
   dernierEnvoi: '2026-12-18',
   membres: ['Charles Desbiens', 'Maryse Perron Chartier'],
+  comptes: {},   // courriel Microsoft -> personne (rempli dans Paramètres, gardé dans OneDrive)
   imprimantes: [
     { id: 'h2c', nom: 'Bambu Lab H2C', active: true },
     { id: 'h3c', nom: 'Bambu Lab H3C', active: false },
   ],
 };
+// Personne associée à un compte Microsoft (Paramètres > Équipe), sinon le nom du compte.
+export function nomDuCompte(R, courriel, nomCompte) {
+  const c = String(courriel || '').trim().toLowerCase();
+  const table = (R && R.comptes) || {};
+  const k = Object.keys(table).find(x => x.trim().toLowerCase() === c);
+  return (k && table[k]) || nomCompte;
+}
+
 export function reglages(m) {
   const r = m.get('reglages', 'general');
   return Object.assign({}, REGLAGES_DEFAUT, r || {});

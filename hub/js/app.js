@@ -2,7 +2,7 @@
 import { CONFIG } from '../config.js';
 import * as auth from './auth.js';
 import { Magasin, AdaptateurLocal, AdaptateurOneDrive, lireLieu, ecrireLieu } from './store.js';
-import { reglages, REGLAGES_DEFAUT, importerWix, journaliser, CATEGORIES_TEMPS, minutesSemaine, nomSegment, statut as statutCmd, icoSegment } from './donnees.js';
+import { reglages, nomDuCompte, REGLAGES_DEFAUT, importerWix, journaliser, CATEGORIES_TEMPS, minutesSemaine, nomSegment, statut as statutCmd, icoSegment } from './donnees.js';
 import { donneesDemo, amsVides } from './demo.js';
 import { demarrerAgentDemo } from './demo-agent.js';
 import { esc, ico, toast, initiales, prenom, ouvrirFenetre, fermerFenetre, options, uid, heures, aujourdhui, argent, dateCourte } from './ui.js';
@@ -349,6 +349,8 @@ async function demarrer() {
         ctx.m.mettre('reglages', Object.assign({}, REGLAGES_DEFAUT, { membres }), true);
       }
       if (vides.includes('filament')) amsVides().forEach(x => ctx.m.mettre('filament', x, true));
+      const nom = nomDuCompte(reglages(ctx.m), ctx.courriel, ctx.moi);
+      if (nom !== ctx.moi) { ctx.moi = nom; ctx.m.qui = nom; }
     } catch (e) {
       if (e.code === 'non_connecte') { ecranConnexion(e.message); return; }
       if (/\(40[34]\)/.test(e.message)) { ecrireLieu(null); ecranDossier(a, 'Le dossier n’est plus accessible. Choisis-le de nouveau.'); return; }

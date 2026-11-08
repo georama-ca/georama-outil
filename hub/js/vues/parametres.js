@@ -2,9 +2,9 @@
 import { CONFIG } from '../../config.js';
 import * as auth from '../auth.js';
 import { lireLieu, ecrireLieu, COLLECTIONS } from '../store.js';
-import { reglages, agent } from '../donnees.js';
+import { reglages, agent, nomDuCompte } from '../donnees.js';
 import { donneesDemo } from '../demo.js';
-import { esc, toast, telecharger, aujourdhui, ilYa, ico } from '../ui.js';
+import { esc, toast, telecharger, aujourdhui, ilYa, ico, prenom } from '../ui.js';
 import { modeles, SIGNATURE_DEFAUT, MODELES } from '../courriels.js';
 
 const GUIDE = 'https://github.com/georama-ca/georama-outil/blob/main/hub/LISEZMOI.md';
@@ -102,7 +102,9 @@ export default {
         <section class="carte">
           <h2>Équipe</h2>
           <div class="champ"><label for="r-membres">Membres (une personne par ligne)</label><textarea id="r-membres" name="membres" rows="3">${esc((R.membres || []).join('\n'))}</textarea>
-            <span class="aide">Pour assigner les commandes, les tâches et les prospects. Avec Microsoft 365, le nom vient du compte Georama.</span></div>
+            <span class="aide">Pour assigner les commandes, les tâches et les prospects.</span></div>
+          <div class="champ"><label for="r-comptes">Comptes Microsoft (une ligne par compte : courriel = personne)</label><textarea id="r-comptes" name="comptes" rows="3" placeholder="info@georama.ca = Maryse Perron Chartier">${esc(Object.entries(R.comptes || {}).map(([k, v]) => k + ' = ' + v).join('\n'))}</textarea>
+            <span class="aide">Qui est connecté avec quel compte. Sans ligne, le hub prend le nom du compte Microsoft.</span></div>
         </section>
         <div><button type="submit" class="btn">Enregistrer les paramètres</button></div>
       </form>
@@ -194,6 +196,12 @@ export default {
       const imprimantes = R.imprimantes.map((i, k) => ({ id: i.id, nom: (d['impnom-' + k] || i.nom).trim(), active: form.querySelector('[name="imp-' + k + '"]').checked }));
       if (!imprimantes.some(i => i.active)) { toast('Garde au moins une imprimante en service.', true); return; }
       const membres = String(d.membres || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const comptes = {};
+      for (const ligne of String(d.comptes || '').split(/\r?\n/)) {
+        const [cour, ...reste] = ligne.split('=');
+        const qui = reste.join('=').trim();
+        if (cour && cour.includes('@') && qui) comptes[cour.trim().toLowerCase()] = qui;
+      }
       ctx.m.mettre('reglages', Object.assign({}, R, {
         id: 'general',
         heuresParPlaque: Number(d.heuresParPlaque) || R.heuresParPlaque,
@@ -206,8 +214,14 @@ export default {
         dernierEnvoi: d.dernierEnvoi || R.dernierEnvoi,
         taxes: !!form.querySelector('[name="taxes"]').checked,
         membres: membres.length ? membres : R.membres,
+        comptes,
         imprimantes,
       }));
+      if (ctx.mode === 'm365') {
+        const auth0 = auth.utilisateur();
+        const nom = nomDuCompte({ comptes }, ctx.courriel, auth0 ? auth0.nom : ctx.moi);
+        if (nom !== ctx.moi) { ctx.moi = nom; ctx.m.qui = nom; ctx.prenom = prenom(nom); }
+      }
       toast('Paramètres enregistrés.');
     },
   },
