@@ -274,12 +274,33 @@ export function dansPeriode(iso, periode) {
   if (periode.length === 4) return iso.slice(0, 4) === periode;
   return iso.slice(0, 7) === periode;
 }
+/* ---------- Paiements reçus par Wix (lus par l'ordi de la maison, stats-wix.json) ---------- */
+// Factures Wix, boutique, paiement en personne : c'est là que l'argent arrive.
+export function paiementsWix(m) {
+  const s = ((m.externes.statsWix || [])[0]) || null;
+  return ((s && s.paiements) || []).filter(p => p.statut === 'APPROVED' && (p.type || 'SALE') === 'SALE' && Number(p.montant) > 0);
+}
+export function jourPaiement(p) { const d = new Date(p.date); return isNaN(d) ? String(p.date || '').slice(0, 10) : isoJour(d); }
+// Ventes = paiements reçus par Wix + commandes du hub qui n'ont pas été payées par Wix (ex. comptant).
 export function ventes(m, periode) {
   const R = reglages(m);
-  return m.liste('commandes').filter(c => estVendue(c) && dansPeriode(c.recue, periode)).map(c => {
+  const wix = paiementsWix(m);
+  const payeesParWix = new Set(wix.map(p => p.commandeWix).filter(Boolean));
+  const cmds = m.liste('commandes').filter(c => estVendue(c) && dansPeriode(c.recue, periode) && !(c.wixId && payeesParWix.has(c.wixId))).map(c => {
     const ht = totalHT(c);
     return Object.assign({ ht }, taxesDe(ht, R.taxes), { c });
   });
+  const recus = wix.filter(p => dansPeriode(jourPaiement(p), periode)).map(p => {
+    const net = Math.max(0, Number(p.montant) - (Number(p.rembourse) || 0));
+    const taxe = Math.min(Number(p.taxes) || 0, net);
+    const tps = Math.round(taxe * TPS / (TPS + TVQ) * 100) / 100;
+    return {
+      ht: Math.round((net - taxe) * 100) / 100, tps, tvq: Math.round((taxe - tps) * 100) / 100,
+      c: { id: 'wixpay-' + p.id, wixPaiement: p, recue: jourPaiement(p), numero: p.libelle || 'Paiement Wix', client: p.client || p.courriel || '—',
+           courriel: p.courriel || '', segment: '', produit: p.source === 'facture' ? 'Facture Wix' : p.source === 'boutique' ? 'Boutique Wix' : 'Wix', payee: true },
+    };
+  });
+  return recus.concat(cmds);
 }
 export function depenses(m, periode) {
   return m.liste('depenses').filter(d => dansPeriode(d.date, periode)).map(d => ({

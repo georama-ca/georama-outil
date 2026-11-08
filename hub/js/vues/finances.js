@@ -1,5 +1,5 @@
 // Module Finances : ventes, dépenses, taxes, objectif.
-import { esc, argent, pct, dateCourte, options, ouvrirFenetre, aujourdhui, uid, toast, telecharger, csv } from '../ui.js';
+import { esc, argent, pct, dateCourte, options, ouvrirFenetre, aujourdhui, uid, toast, telecharger, csv, ilYa } from '../ui.js';
 import { reglages, resume, ventes, depenses, CATEGORIES_DEPENSE, nomSegment, taxesDe, moisCourant, TPS, TVQ, journaliser } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
 
@@ -130,6 +130,10 @@ function vueResume(ctx) {
   const prog = R.objectif ? Math.max(0, Math.min(100, ra.benefice / R.objectif * 100)) : 0;
   const v = ventes(m, e.periode).sort((a, b) => String(b.c.recue).localeCompare(String(a.c.recue)));
   const netTps = r.tpsPercue - r.tpsPayee, netTvq = r.tvqPercue - r.tvqPayee;
+  const nbWix = v.filter(x => x.c.wixPaiement).length;
+  const sw = ((m.externes.statsWix || [])[0]) || null;
+  const errWix = sw && sw.erreurs && sw.erreurs.paiements;
+  const lu = sw && sw.lu;
   // Projection simple : bénéfice moyen par mois écoulé × 12
   const moisEcoules = new Date().getMonth() + 1;
   const parMois = [];
@@ -145,9 +149,13 @@ function vueResume(ctx) {
     const nom = new Date(Number(annee), Number(p.id.slice(5)) - 1, 1).toLocaleDateString('fr-CA', { month: 'long' });
     return `<tr${p.id === e.periode ? ' class="choisi"' : ''}><td>${esc(nom.charAt(0).toUpperCase() + nom.slice(1))}</td><td class="droite num">${argent(p.x.ventesHT, 2)}</td><td class="droite num">${argent(p.x.depensesHT, 2)}</td><td class="droite num ${p.x.benefice < 0 ? 'retard' : ''}">${argent(p.x.benefice, 2)}</td></tr>`;
   }).join('');
+  const bandeauWix = errWix ? `<div class="bandeau"><span><strong>Paiements Wix pas lus :</strong> ${esc(errWix)}</span></div>`
+    : !sw || !sw.paiements ? `<div class="bandeau info"><span>Les paiements reçus par Wix (factures et boutique) apparaîtront ici dès que l’ordi de la maison les aura lus (chaque heure).</span></div>`
+    : `<p class="tres-petit doux" style="margin:0">Ventes = paiements reçus par Wix (factures, boutique, en personne)${lu ? ', lus ' + esc(ilYa(lu)) : ''}, plus les commandes du hub payées autrement.</p>`;
   return `
+    ${bandeauWix}
     <section class="g4" aria-label="Indicateurs">
-      <div class="carte kpi"><p class="surtitre">Ventes · avant taxes</p><p class="valeur">${argent(r.ventesHT, 2)}</p><p class="detail">${r.nbVentes} commande${r.nbVentes > 1 ? 's' : ''} · ${esc(nomPeriode(e.periode))}</p></div>
+      <div class="carte kpi"><p class="surtitre">Ventes · avant taxes</p><p class="valeur">${argent(r.ventesHT, 2)}</p><p class="detail">${nbWix ? `${nbWix} paiement${nbWix > 1 ? 's' : ''} Wix${r.nbVentes - nbWix ? ' + ' + (r.nbVentes - nbWix) + ' autre' + (r.nbVentes - nbWix > 1 ? 's' : '') : ''}` : `${r.nbVentes} commande${r.nbVentes > 1 ? 's' : ''}`} · ${esc(nomPeriode(e.periode))}</p></div>
       <div class="carte kpi"><p class="surtitre">Dépenses · avant taxes</p><p class="valeur">${argent(r.depensesHT, 2)}</p><p class="detail">${r.nbDepenses} dépense${r.nbDepenses > 1 ? 's' : ''}</p></div>
       <div class="carte kpi"><p class="surtitre">Bénéfice</p><p class="valeur${r.benefice < 0 ? ' retard' : ''}">${argent(r.benefice, 2)}</p><p class="detail">Ventes moins dépenses</p></div>
       <div class="carte kpi"><p class="surtitre">À encaisser</p><p class="valeur">${argent(r.aEncaisser, 2)}</p><p class="detail">Commandes non payées, taxes incluses</p></div>
@@ -178,13 +186,13 @@ function vueResume(ctx) {
     </div>
     <section class="carte table-boite">
       <div class="carte-tete"><h2>Ventes · ${esc(nomPeriode(e.periode))}</h2><button type="button" class="btn-2" data-act="export-ventes">Exporter (CSV)</button></div>
-      <table class="liste"><thead><tr><th>Date</th><th>Commande</th><th>Client</th><th>Segment</th><th class="droite">Avant taxes</th><th class="droite">TPS</th><th class="droite">TVQ</th><th class="droite">Total</th><th>Payée</th></tr></thead>
+      <table class="liste"><thead><tr><th>Date</th><th>Commande</th><th>Client</th><th>Segment / paiement</th><th class="droite">Avant taxes</th><th class="droite">TPS</th><th class="droite">TVQ</th><th class="droite">Total</th><th>Payée</th></tr></thead>
       <tbody>${v.map(x => `<tr>
         <td class="petit num">${esc(dateCourte(x.c.recue))}</td>
-        <td><button type="button" class="btn-lien" data-act="ouvrir-cmd" data-id="${esc(x.c.id)}">${esc(x.c.numero)}</button></td>
-        <td>${esc(x.c.client)}</td><td class="petit">${esc(nomSegment(x.c.segment))}</td>
+        <td>${x.c.wixPaiement ? `<span class="etiquette bleu" title="Paiement reçu par Wix">Wix</span> ${x.c.wixPaiement.lienWix ? `<a href="${esc(x.c.wixPaiement.lienWix)}" target="_blank" rel="noopener">${esc(x.c.numero)}</a>` : esc(x.c.numero)}` : `<button type="button" class="btn-lien" data-act="ouvrir-cmd" data-id="${esc(x.c.id)}">${esc(x.c.numero)}</button>`}</td>
+        <td>${esc(x.c.client)}</td><td class="petit">${x.c.wixPaiement ? esc(x.c.wixPaiement.methode || '') : esc(nomSegment(x.c.segment))}</td>
         <td class="droite num">${argent(x.ht, 2)}</td><td class="droite num">${argent(x.tps, 2)}</td><td class="droite num">${argent(x.tvq, 2)}</td><td class="droite num"><strong>${argent(x.ht + x.tps + x.tvq, 2)}</strong></td>
-        <td><label class="case" style="min-height:32px"><input type="checkbox" data-chg="payee" data-id="${esc(x.c.id)}"${x.c.payee ? ' checked' : ''}><span class="sr">Payée</span></label></td>
+        <td>${x.c.wixPaiement ? '<span class="petit doux">Reçu</span>' : `<label class="case" style="min-height:32px"><input type="checkbox" data-chg="payee" data-id="${esc(x.c.id)}"${x.c.payee ? ' checked' : ''}><span class="sr">Payée</span></label>`}</td>
       </tr>`).join('') || '<tr><td colspan="9" class="vide">Aucune vente pour cette période.</td></tr>'}</tbody></table>
     </section>`;
 }

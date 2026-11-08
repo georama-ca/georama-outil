@@ -25,6 +25,7 @@ PERMISSIONS = {                     # noms affichés dans manage.wix.com > Clés
     'infolettres': 'Gérer les E-mails marketing',
     'coupons': 'Boutique Wix',
     'recherche': 'SEO',
+    'paiements': 'Wix Paiements (lire les transactions)',
 }
 FORMULAIRES_INFOLETTRE = ('infolettre', 'subscribe', 'newsletter')
 
@@ -248,11 +249,53 @@ def recherche(cfg, jours=30):
     return {'debut': base['startDate'], 'fin': base['endDate'], 'jours': appel('date', 60), 'requetes': appel('query', 15), 'pages': appel('page', 8)}
 
 
+APPS_PAIEMENT = {'13ee94c1-b635-8505-3391-97919052c16f': 'facture', '1380b703-ce81-ff05-f115-39571d94dfcd': 'boutique'}
+
+
+def paiements(cfg, maximum=2000):
+    """Paiements reçus par Wix (Finances > Paiements) : factures Wix, boutique, paiement en personne."""
+    sortie, offset = [], 0
+    while offset < maximum:
+        q = urllib.parse.urlencode({'limit': 100, 'offset': offset, 'includeRefunds': 'true', 'order': 'date:desc'})
+        r = wix(cfg, 'GET', '/payments/v2/transactions?' + q)
+        lot = r.get('transactions') or []
+        for t in lot:
+            o = t.get('order') or {}
+            d = o.get('description') or {}
+            articles = d.get('items') or []
+            adr = d.get('billingAddress') or d.get('shippingAddress') or {}
+            if not (adr.get('firstName') or adr.get('email')):
+                adr = d.get('shippingAddress') or adr
+            client = ' '.join(x for x in (adr.get('firstName'), adr.get('lastName')) if x).strip() or adr.get('email') or ''
+            frais = d.get('additionalCharges') or {}
+            source = APPS_PAIEMENT.get(t.get('appId'), 'autre')
+            libelle = (articles[0].get('name') if articles else '') or ''
+            if source == 'facture' and libelle.lower().startswith('payment for invoice'):
+                libelle = 'Facture ' + libelle.split()[-1]
+            elif source == 'boutique':
+                libelle = (libelle.split(' Système')[0].split(' | ')[0])[:80]
+            rembourse = sum(float((x.get('amount') or {}).get('amount') or 0) for x in t.get('refunds') or []
+                            if str(x.get('status', 'APPROVED')).upper() in ('APPROVED', 'COMPLETED', 'SUCCEEDED'))
+            sortie.append({
+                'id': t.get('transactionId'), 'date': t.get('createdAt'), 'statut': t.get('status'), 'type': t.get('type'),
+                'montant': float((t.get('amount') or {}).get('amount') or 0), 'devise': (t.get('amount') or {}).get('currency', 'CAD'),
+                'taxes': float(frais.get('tax') or 0), 'livraison': float(frais.get('shipping') or 0), 'rembourse': round(rembourse, 2),
+                'source': source, 'libelle': libelle, 'client': client[:80], 'courriel': adr.get('email', ''),
+                'methode': t.get('providerName') or t.get('paymentMethod') or '', 'commandeWix': d.get('wixAppOrderId', ''),
+                'lienWix': t.get('providerDashboardLink', ''),
+            })
+        total = (r.get('pagination') or {}).get('total') or 0
+        offset += len(lot)
+        if not lot or offset >= total:
+            break
+    return sortie
+
+
 def stats_wix(cfg, entrees=None):
     sortie, erreurs = {'version': 2}, {}
     for nom, fn in (('achalandage', lambda: achalandage(cfg)), ('paniers', lambda: paniers(cfg)), ('entonnoir', lambda: entonnoir_etat(cfg)),
                     ('formulaires', lambda: formulaires(cfg)), ('infolettres', lambda: infolettres(cfg)),
-                    ('coupons', lambda: coupons(cfg)), ('recherche', lambda: recherche(cfg))):
+                    ('coupons', lambda: coupons(cfg)), ('recherche', lambda: recherche(cfg)), ('paiements', lambda: paiements(cfg))):
         try:
             sortie[nom] = fn()
         except Exception as e:  # noqa: BLE001
