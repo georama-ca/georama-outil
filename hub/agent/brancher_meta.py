@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Brancher les statistiques des pubs Meta : une seule question, le jeton.
 Le jeton est gardé dans config.json, sur ce PC seulement (jamais dans OneDrive)."""
+import getpass
 import json
 import os
 import sys
@@ -27,7 +28,8 @@ def main():
         print(' (Entrée sans rien coller = garder le jeton déjà enregistré.)')
     print()
     for _ in range(3):
-        j = ''.join(ch for ch in input(' Jeton Meta : ') if ch.isprintable()).strip()
+        # Le jeton ne s'affiche pas à l'écran (comme un mot de passe) : on confirme seulement sa longueur et sa fin.
+        j = ''.join(ch for ch in getpass.getpass(' Jeton Meta (il reste invisible) : ') if ch.isprintable()).strip()
         if not j and actuel:
             print(' On garde le jeton déjà enregistré.')
             break

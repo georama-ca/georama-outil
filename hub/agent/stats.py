@@ -319,9 +319,12 @@ def _message(e, permission):
 
 
 # ---------------------------------------------------------------- Meta (pubs)
+META_VERSION = 'v27.0'
+
 def meta(cfg, chemin, **params):
     params['access_token'] = _propre(cfg.get('meta_jeton'))
-    url = 'https://graph.facebook.com/' + chemin.lstrip('/') + '?' + urllib.parse.urlencode(params)
+    # Version explicite : Meta refuse les versions trop vieilles (erreur #2635). Réglable dans config.json (meta_version).
+    url = 'https://graph.facebook.com/' + (cfg.get('meta_version') or META_VERSION) + '/' + chemin.lstrip('/') + '?' + urllib.parse.urlencode(params)
     try:
         with urllib.request.urlopen(url, timeout=60) as r:
             return json.loads(r.read().decode('utf-8'))
