@@ -22,6 +22,8 @@ import json
 import logging
 import os
 import platform
+import re
+import shutil
 import shlex
 import socket
 import subprocess
@@ -33,7 +35,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.3'
+VERSION = '1.4'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -354,6 +356,9 @@ class Agent:
         for t in sorted(d.get('items', []), key=lambda x: x.get('demandeLe', '')):
             if t.get('supprime') or t['id'] in self.resultats:
                 continue
+            if t.get('type') == 'vider-entonnoir':
+                self.vider_entonnoir(t)
+                return
             c = par_id.get(t.get('commande')) or {}
             dossier = self.chemin('commandes', nom_dossier(c.get('numero') or t.get('numero')))
             os.makedirs(dossier, exist_ok=True)
@@ -482,6 +487,80 @@ class Agent:
             self.messages.append({'quand': maintenant(), 'texte': 'Wix : %s' % e})
             log.warning('Wix : %s', e)
 
+    def archiver_entonnoir(self, live):
+        """Copie la collection Entonnoir du site dans OneDrive (Hub-Georama/entonnoir/AAAA-MM.json) ; rend tout l'historique."""
+        dossier = self.chemin('entonnoir')
+        os.makedirs(dossier, exist_ok=True)
+        par_mois = {}
+        for e in live:
+            par_mois.setdefault((e.get('_createdDate') or 'inconnu')[:7], []).append(e)
+        for mois, lst in par_mois.items():
+            f = os.path.join(dossier, mois + '.json')
+            ancien = {x.get('_id'): x for x in ((lire_json(f, {'items': []}) or {}).get('items') or [])}
+            n = len(ancien)
+            for e in lst:
+                ancien[e.get('_id')] = e
+            if len(ancien) != n or not os.path.exists(f):
+                ecrire_json(f, sorted(ancien.values(), key=lambda x: x.get('_createdDate') or ''))
+        tout = []
+        for f in sorted(glob.glob(os.path.join(dossier, '*.json'))):
+            tout += ((lire_json(f, {'items': []}) or {}).get('items') or [])
+        return tout
+
+    def vider_entonnoir(self, t):
+        """Demandé dans le hub (bouton) : archive à jour, puis retire du site les entrées archivées de plus de N jours."""
+        import stats
+        jours = int((t.get('options') or {}).get('jours') or 7)
+        self.resultat(t['id'], type='vider-entonnoir', statut='en_cours', debut=maintenant(), message='Archive du compteur…')
+        try:
+            live = stats.entrees_entonnoir(self.cfg)
+            archive = {e.get('_id') for e in self.archiver_entonnoir(live)}
+            limite = (dt.datetime.utcnow() - dt.timedelta(days=jours)).strftime('%Y-%m-%dT%H:%M:%S')
+            ids = [e['_id'] for e in live if (e.get('_createdDate') or '') < limite and e.get('_id') in archive]
+            faits = stats.supprimer_entonnoir(self.cfg, ids) if ids else 0
+            self.resultat(t['id'], statut='fait', fin=maintenant(),
+                          message='%d entrée(s) archivée(s) dans OneDrive puis retirée(s) du site ; il en reste %d.' % (faits, len(live) - faits))
+            log.info('Entonnoir vidé : %d entrée(s) retirée(s) (plus de %d jours).', faits, jours)
+            self.dernier_stats = 0
+        except Exception as e:  # noqa: BLE001
+            self.resultat(t['id'], statut='erreur', fin=maintenant(), message='Compteur non vidé : %s' % e)
+
+    def synchro_production(self, cmds):
+        """Ce qui est produit directement dans Georama Production (même numéro de commande) arrive dans la fiche du hub."""
+        if time.time() - getattr(self, 'dernier_synchro', 0) < 60:
+            return
+        self.dernier_synchro = time.time()
+        racine = os.path.join(self.cfg.get('dossier_production') or '', 'commandes')
+        if not os.path.isdir(racine):
+            return
+        noms = {'apercu_plan.png': 'apercu-rapide.png', 'coupe.png': 'coupe.png', 'plan_plaques.png': 'plan-plaques.png'}
+        for c in cmds:
+            num = (c.get('numero') or '').strip()
+            if not num:
+                continue
+            src = os.path.join(racine, 'georama_' + re.sub(r'[^\w\-]', '_', num))
+            if not os.path.isdir(src):
+                continue
+            dest = self.chemin('commandes', nom_dossier(num))
+            try:
+                os.makedirs(dest, exist_ok=True)
+                deja = [os.path.getmtime(f) for f in glob.glob(os.path.join(dest, '*.3mf'))]
+                for f in glob.glob(os.path.join(src, '*.3mf')):
+                    t = os.path.getmtime(f)
+                    if not any(d >= t - 1 for d in deja):          # pas déjà copié par le pont (même date)
+                        shutil.copy2(f, os.path.join(dest, os.path.basename(f)))
+                        log.info('Synchro Production : %s -> %s', os.path.basename(f), dest)
+                for f in glob.glob(os.path.join(src, '*')):
+                    b = os.path.basename(f)
+                    cible = noms.get(b) or (b if b.lower().endswith('.pdf') and b.split('_')[0] in ('Confirmation', 'Previsualisation', 'Soumission') else None)
+                    if not cible:
+                        continue
+                    d = os.path.join(dest, cible)
+                    if not os.path.exists(d) or os.path.getmtime(f) > os.path.getmtime(d) + 1:
+                        shutil.copy2(f, d)
+            except OSError as e:
+                log.warning('Synchro Production (%s) : %s', num, e)
+
     def stats(self):
         """Achalandage Wix, paniers abandonnés, zones des visiteurs et pubs Meta, une fois l'heure (stats-wix.json, stats-meta.json)."""
         if time.time() - getattr(self, 'dernier_stats', 0) < 60 * float(self.cfg.get('stats_minutes', 60)):
@@ -489,8 +568,13 @@ class Agent:
         self.dernier_stats = time.time()
         import stats
         if self.cfg.get('wix_cle_api') and self.cfg.get('wix_site_id'):
+            entrees = None
             try:
-                d = stats.stats_wix(self.cfg)
+                entrees = self.archiver_entonnoir(stats.entrees_entonnoir(self.cfg))
+            except Exception as e:  # noqa: BLE001
+                log.warning('Archive Entonnoir : %s', e)
+            try:
+                d = stats.stats_wix(self.cfg, entrees)
                 ecrire_json(self.chemin('stats-wix.json'), [dict(d, id='wix', lu=maintenant())])
                 log.info('Stats Wix : %d zone(s), erreurs : %s', len(d.get('zones') or []), d.get('erreurs') or 'aucune')
             except Exception as e:  # noqa: BLE001
@@ -509,6 +593,7 @@ class Agent:
         self.dossiers_commandes(cmds)
         self.charger_resultats()
         self.travaux(cmds)
+        self.synchro_production(cmds)
         self.rendus_automatiques()
         self.wix()
         self.stats()

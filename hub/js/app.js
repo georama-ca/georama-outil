@@ -9,7 +9,7 @@ import { esc, ico, toast, initiales, prenom, ouvrirFenetre, fermerFenetre, optio
 import { ouvrirCommande } from './vues/commandes.js';
 import tableau from './vues/tableau.js';
 import commandes from './vues/commandes.js';
-import production from './vues/production.js';
+import production, { placerCadre } from './vues/production.js';
 import marketing from './vues/marketing.js';
 import finances from './vues/finances.js';
 import parametres from './vues/parametres.js';
@@ -248,6 +248,7 @@ function rendre() {
   if (ctx.dernierHash === location.hash) window.scrollTo(0, defile);
   ctx.dernierHash = location.hash;
   if (vue.apres) vue.apres(ctx, racine);
+  placerCadre();
 }
 
 function vueActive() { return VUES[ctx.route.vue]; }

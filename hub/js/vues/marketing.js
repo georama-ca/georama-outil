@@ -1,17 +1,17 @@
 // Module Marketing et prospection.
 import { esc, argent, nombre, dateCourte, options, ouvrirFenetre, aujourdhui, joursEntre, uid, toast, initiales } from '../ui.js';
-import { STATUTS_PROSPECT, statutProspect, TYPES_PROSPECT, CANAUX, SEGMENTS, nomSegment, journaliser } from '../donnees.js';
+import { STATUTS_PROSPECT, statutProspect, TYPES_PROSPECT, CANAUX, SEGMENTS, nomSegment, journaliser, reglages } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
-import { vueSuivi, monterCarte, etatSuivi, totauxMeta } from './suivi.js';
+import { vueSuivi, monterCarte, etatSuivi, totauxMeta, statsWix } from './suivi.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.mkt) ctx.etat.mkt = { q: '', statut: 'actifs' };
   return ctx.etat.mkt;
 }
 
-function ouvrirProspect(ctx, id) {
+function ouvrirProspect(ctx, id, prerempli) {
   const m = ctx.m;
-  const p = (id && m.get('prospects', id)) || { statut: 'a_contacter', responsable: ctx.moi, prochaine: aujourdhui() };
+  const p = (id && m.get('prospects', id)) || Object.assign({ statut: 'a_contacter', responsable: ctx.moi, prochaine: aujourdhui() }, prerempli || {});
   const corps = `<div class="champs">
     <div class="champ plein"><label for="p-org">Organisation</label><input id="p-org" name="organisation" type="text" required value="${esc(p.organisation)}"></div>
     <div class="champ"><label for="p-type">Type</label><select id="p-type" name="type">${options(TYPES_PROSPECT, p.type, 'Choisir')}</select></div>
@@ -43,7 +43,7 @@ function ouvrirProspect(ctx, id) {
     },
     onSubmit(d) {
       const n = m.mettre('prospects', Object.assign({}, p, d, { id: id || uid('r'), valeur: Number(d.valeur) || 0 }), true);
-      if (!id) journaliser(m, 'Nouveau prospect : ' + n.organisation, '#/marketing', 'prospect');
+      if (!id) journaliser(m, 'Nouveau prospect : ' + n.organisation + (p.demande ? ' (demande reçue par le site)' : ''), '#/marketing', 'prospect');
       else if (p.statut !== n.statut) journaliser(m, n.organisation + ' passe à « ' + statutProspect(n.statut).nom + ' »', '#/marketing', 'prospect');
       m.avertir('local');
       toast(id ? 'Prospect enregistré.' : 'Prospect ajouté.');
@@ -78,6 +78,28 @@ function ouvrirCampagne(ctx, id) {
   });
 }
 
+// Demandes reçues par les formulaires du site (sauf l'infolettre) : à transformer en prospect en un clic.
+function demandesATraiter(ctx) {
+  const w = statsWix(ctx.m);
+  const deja = new Set(ctx.m.liste('prospects', true).map(p => p.demande).filter(Boolean));
+  const ignorees = new Set(reglages(ctx.m).demandesIgnorees || []);
+  return ((w && w.formulaires) || []).filter(d => !d.infolettre && !deja.has(d.id) && !ignorees.has(d.id));
+}
+function carteDemandes(ctx) {
+  const l = demandesATraiter(ctx);
+  if (!l.length) return '';
+  return `<section class="carte" style="border-color:var(--accent-texte)">
+    <div class="carte-tete"><h2>Demandes reçues par le site · ${l.length}</h2><span class="tres-petit doux">Formulaires Wix, lus par l’ordi de la maison</span></div>
+    ${l.slice(0, 10).map(d => `<div class="ligne" style="align-items:flex-start;flex-wrap:wrap">
+      <span class="grow petit" style="min-width:220px"><strong>${esc(d.nom || d.courriel || 'Sans nom')}</strong> · ${esc(d.formulaire)}<br>
+        <span class="doux">${esc(dateCourte((d.date || '').slice(0, 10)))}${d.courriel ? ' · <a href="mailto:' + esc(d.courriel) + '">' + esc(d.courriel) + '</a>' : ''}${d.lieu ? ' · ' + esc(d.lieu) : ''}</span>
+        ${d.message ? '<br><span class="doux">' + esc(d.message).slice(0, 200) + '</span>' : ''}</span>
+      <span class="actions"><button type="button" class="btn" data-act="demande-prospect" data-id="${esc(d.id)}">Ajouter aux prospects</button>
+      <button type="button" class="btn-lien" data-act="demande-ignorer" data-id="${esc(d.id)}">Ignorer</button></span>
+    </div>`).join('')}
+  </section>`;
+}
+
 function vueProspects(ctx) {
   const e = etatVue(ctx);
   const tous = ctx.m.liste('prospects');
@@ -104,6 +126,7 @@ function vueProspects(ctx) {
     </tr>`;
   }).join('');
   return `
+    ${carteDemandes(ctx)}
     <section class="g6" aria-label="Étapes">${entonnoir}</section>
     <div class="filtres">
       <label class="sr" for="cherche-p">Chercher</label>
@@ -168,6 +191,25 @@ export default {
     nouveau: ctx => ouvrirProspect(ctx, null),
     ouvrir: (ctx, el) => ouvrirProspect(ctx, el.getAttribute('data-id')),
     'nouvelle-k': ctx => ouvrirCampagne(ctx, null),
+    'demande-prospect': (ctx, el) => {
+      const d = demandesATraiter(ctx).find(x => x.id === el.getAttribute('data-id'));
+      if (!d) return;
+      const details = (d.champs || []).filter(c => c.valeur).map(c => (c.libelle || c.cle) + ' : ' + c.valeur).join('\n');
+      ouvrirProspect(ctx, null, { organisation: d.nom || d.courriel || 'Demande du site', contact: d.nom || '', courriel: d.courriel || '', telephone: d.telephone || '',
+        action: 'Répondre à la demande', notes: 'Demande reçue par le site (' + d.formulaire + ', ' + (d.date || '').slice(0, 10) + ')\n' + details, demande: d.id });
+    },
+    'vider-entonnoir': ctx => {
+      if (!confirm('Vider le compteur « Entonnoir » du site ?\n\nL’ordi de la maison vérifie d’abord que tout est copié dans OneDrive (Hub-Georama › entonnoir), puis retire du site Wix les entrées de plus de 7 jours. Sur le site, ces entrées ne pourront pas être remises ; la copie reste dans OneDrive.')) return;
+      ctx.m.mettre('travaux', { id: uid('w'), type: 'vider-entonnoir', options: { jours: 7 }, demandePar: ctx.moi, demandeLe: new Date().toISOString() }, true);
+      journaliser(ctx.m, 'Compteur Entonnoir : vidage demandé (archive gardée dans OneDrive)', '#/marketing/suivi', 'travail');
+      ctx.m.avertir('local');
+      toast('Demande envoyée à l’ordi de la maison.');
+    },
+    'demande-ignorer': (ctx, el) => {
+      const R = reglages(ctx.m);
+      ctx.m.mettre('reglages', Object.assign({}, R, { id: 'general', demandesIgnorees: (R.demandesIgnorees || []).concat([el.getAttribute('data-id')]).slice(-500) }));
+      toast('Demande mise de côté.');
+    },
     'ouvrir-k': (ctx, el) => ouvrirCampagne(ctx, el.getAttribute('data-id')),
     'filtre-statut': (ctx, el) => { const e = etatVue(ctx); const s = el.getAttribute('data-s'); e.statut = e.statut === s ? 'actifs' : s; ctx.rendre(); },
   },

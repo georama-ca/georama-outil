@@ -538,11 +538,79 @@ function blocProduction(ctx, c, a, petiteIco) {
       <button type="button" class="btn-2" data-act="travail" data-type="apercu"${sansLien}>Aperçu rapide</button>
       <button type="button" class="btn" data-act="travail" data-type="3mf"${sansLien}>${petiteIco('eclair')} Produire le .3mf</button>
       <button type="button" class="btn-2" data-act="travail" data-type="pdf"${sansLien}>PDF client</button>
-      <button type="button" class="btn-lien seulement-ordi" data-act="ouvrir-production">Ouvrir dans Georama Production (cet ordi)</button>
+      <a class="btn-lien seulement-ordi" href="#/production/georama/${esc(c.id)}">Ouvrir dans Georama Production (cet ordi)</a>
     </div>
     <p class="tres-petit doux" style="margin:6px 0 0">Fait sur l’ordi de la maison. Aperçu : quelques minutes. .3mf : jusqu’à quelques heures. Le PDF reprend le dernier calcul (et le rendu 3D s’il y en a un). Pour la carte, les repères et les couleurs une à une : Georama Production sur l’ordi.</p>
     ${vieux}
   </div>`;
+}
+
+// Georama Production intégré au hub (v1.6, ordinateur seulement) : l'interface du programme local
+// (http://127.0.0.1:8765, sur l'ordi où l'on se trouve) dans un cadre qui reste ouvert pendant qu'on
+// navigue dans le hub. Le programme démarre avec le bouton « Démarrer » (lien georama-production:).
+const PROD_URL = 'http://127.0.0.1:8765/';
+let cadre = null, cadreSrc = '';
+function cadreProduction() {
+  if (!cadre) {
+    cadre = document.createElement('iframe');
+    cadre.id = 'cadre-production';
+    cadre.title = 'Georama Production';
+    cadre.setAttribute('allow', 'clipboard-read; clipboard-write; fullscreen; local-network-access');
+    cadre.style.cssText = 'position:fixed;border:1px solid var(--bordure);z-index:15;display:none;background:#2A2F2B;border-radius:8px';
+    document.body.appendChild(cadre);
+    window.addEventListener('resize', placerCadre);
+    window.addEventListener('scroll', placerCadre, true);
+  }
+  return cadre;
+}
+export function placerCadre() {
+  if (!cadre) return;
+  const z = document.getElementById('zone-production');
+  if (!z || !z.dataset.pret || document.getElementById('modal').open) { cadre.style.display = 'none'; return; }
+  const r = z.getBoundingClientRect();
+  Object.assign(cadre.style, { display: 'block', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+}
+async function serveurPret() {
+  try { await fetch(PROD_URL + 'api/infos', { mode: 'no-cors', cache: 'no-store' }); return true; } catch (e) { return false; }
+}
+function vueGeorama(ctx) {
+  const c = ctx.route.id ? ctx.m.get('commandes', ctx.route.id) : null;
+  const cmds = ctx.m.liste('commandes').filter(x => ACTIVES.includes(x.statut) && x.lien).sort((a, b) => String(a.promise || '9').localeCompare(String(b.promise || '9')));
+  return `<div class="filtres seulement-ordi" style="align-items:center">
+      <label for="gp-commande" class="petit">Commande</label>
+      <select id="gp-commande" data-chg="gp-commande"><option value="">Aucune (nouvelle zone)</option>${cmds.map(x => `<option value="${esc(x.id)}"${c && c.id === x.id ? ' selected' : ''}>${esc(x.numero)} · ${esc(x.client)}</option>`).join('')}</select>
+      ${c ? `<a class="btn-lien petit" href="#/production/fiche/${esc(c.id)}">Fiche de ${esc(c.numero)}</a>` : ''}
+      <span class="tres-petit doux grow" style="text-align:right">Ce qui est produit ici arrive tout seul dans la fiche de la commande (même numéro).</span>
+    </div>
+    <div id="zone-production" style="height:calc(100vh - 230px);min-height:560px;border:1px dashed var(--bordure);border-radius:8px;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px">
+      <div id="gp-etat" class="petit doux">Recherche de Georama Production sur cet ordi…</div>
+    </div>
+    <p class="tres-petit doux seulement-mobile" style="margin:0">Georama Production s’utilise sur un ordinateur. Sur le cellulaire : boutons « Aperçu rapide », « Produire le .3mf » et « PDF client » dans la fiche de la commande.</p>`;
+}
+async function monterGeorama(ctx) {
+  const z = document.getElementById('zone-production');
+  if (!z) return;
+  const etat = document.getElementById('gp-etat');
+  const c = ctx.route.id ? ctx.m.get('commandes', ctx.route.id) : null;
+  const src = PROD_URL + (c && c.lien ? '?lien=' + encodeURIComponent(c.lien) + '&numero=' + encodeURIComponent(c.numero || '') : '');
+  const ok = await serveurPret();
+  if (!z.isConnected) return;
+  if (ok) {
+    const f = cadreProduction();
+    if (cadreSrc !== src) { f.src = src; cadreSrc = src; }
+    z.dataset.pret = '1';
+    if (etat) etat.textContent = '';
+    placerCadre();
+    return;
+  }
+  const e = etatVue(ctx);
+  const attend = e.demarrage && Date.now() - e.demarrage < 90000;
+  etat.innerHTML = attend
+    ? 'Démarrage de Georama Production… (jusqu’à une minute la première fois)'
+    : `<p style="margin:0 0 12px"><strong>Georama Production n’est pas ouvert sur cet ordi.</strong></p>
+       <button type="button" class="btn" data-act="gp-demarrer">Démarrer Georama Production</button>
+       <p class="tres-petit doux" style="margin:12px 0 0">La première fois sur un ordi : double-clique sur « Installer le bouton du hub.cmd »<br>dans OneDrive › 04_Operations… › 05_Georama-production › georama-production.<br>Chrome peut aussi demander d’autoriser l’accès aux applis de cet appareil : accepte.</p>`;
+  if (attend) { clearTimeout(e.minuterieGp); e.minuterieGp = setTimeout(() => { if (ctx.route.sous === 'georama') monterGeorama(ctx); }, 3000); }
 }
 
 export default {
@@ -550,13 +618,13 @@ export default {
   render(ctx) {
     const sous = ctx.route.sous;
     const ong = (id, nom) => `<a href="#/production${id ? '/' + id : ''}"${sous === id ? ' aria-current="page"' : ''}>${nom}</a>`;
-    const titres = { '': 'File d’impression', fiche: 'Fiche de production', planification: 'Planification', filament: 'Filament et AMS' };
-    const corps = sous === 'fiche' ? vueFiche(ctx) : sous === 'planification' ? vuePlanif(ctx) : sous === 'filament' ? vueFilament(ctx) : vueFile(ctx);
+    const titres = { '': 'File d’impression', fiche: 'Fiche de production', planification: 'Planification', filament: 'Filament et AMS', georama: 'Georama Production' };
+    const corps = sous === 'fiche' ? vueFiche(ctx) : sous === 'planification' ? vuePlanif(ctx) : sous === 'filament' ? vueFilament(ctx) : sous === 'georama' ? vueGeorama(ctx) : vueFile(ctx);
     return `<header class="entete">
         <div><p class="surtitre">Production</p><h1 class="titre-1">${titres[sous] || titres['']}</h1></div>
-        <div class="actions"><button type="button" class="btn-2 seulement-ordi" data-act="ouvrir-production">Ouvrir Georama Production sur cet ordi</button></div>
+        <div class="actions">${sous !== 'georama' ? '<a class="btn-2 seulement-ordi" href="#/production/georama">Georama Production</a>' : ''}</div>
       </header>
-      <nav class="onglets" aria-label="Sections de la production">${ong('', 'File d’impression')}${ong('fiche', 'Fiche de production')}${ong('planification', 'Planification')}${ong('filament', 'Filament et AMS')}</nav>
+      <nav class="onglets" aria-label="Sections de la production">${ong('', 'File d’impression')}${ong('fiche', 'Fiche de production')}${ong('planification', 'Planification')}${ong('filament', 'Filament et AMS')}<a class="seulement-ordi" href="#/production/georama"${sous === 'georama' ? ' aria-current="page"' : ''}>Georama Production</a></nav>
       ${corps}`;
   },
   actions: {
@@ -584,13 +652,10 @@ export default {
       ctx.m.mettre('temps', { id: uid('h'), qui: ctx.moi, date: aujourdhui(), minutes: 15, categorie: 'Production', commande: c.id, note: c.numero }, true);
       ctx.m.modifier('commandes', c.id, { tempsMin: (Number(c.tempsMin) || 0) + 15 });
     },
-    'ouvrir-production': async ctx => {
-      // Lance Georama Production sur l'ordi où l'on se trouve (bouton installé une fois par ordi), lien de la commande copié.
-      const c = ctx.route.sous === 'fiche' ? ficheCourante(ctx) : null;
-      let copie = false;
-      if (c && c.lien) { try { await navigator.clipboard.writeText(c.lien); copie = true; } catch (e) { /* rien */ } }
+    'gp-demarrer': ctx => {
+      etatVue(ctx).demarrage = Date.now();
       location.href = 'georama-production:ouvrir';
-      toast((copie ? 'Lien de ' + c.numero + ' copié : colle-le dans Georama Production. ' : '') + 'Rien ne s’ouvre ? Sur cet ordi, lance une fois « Installer le bouton du hub » dans le dossier georama-production.');
+      setTimeout(() => monterGeorama(ctx), 1500);
     },
     travail: (ctx, el) => {
       const c = ficheCourante(ctx);
@@ -625,6 +690,7 @@ export default {
     charger: (ctx, el) => chargerCouleur(ctx, el.getAttribute('data-c')),
   },
   changes: {
+    'gp-commande': (ctx, el) => { location.hash = '#/production/georama' + (el.value ? '/' + el.value : ''); },
     'choix-prod': (ctx, el) => {
       const c = ficheCourante(ctx);
       if (!c) return;
@@ -652,6 +718,7 @@ export default {
   },
   apres(ctx) {
     if (ctx.route.sous === 'fiche') { const c = ficheCourante(ctx); if (c) chargerFichiers(ctx, c); }
+    if (ctx.route.sous === 'georama') monterGeorama(ctx);
     clearInterval(ctx.etat.minuterieProd);
     if (ctx.route.vue === 'production' && (ctx.route.sous === '' || ctx.route.sous === 'fiche')) {
       ctx.etat.minuterieProd = setInterval(() => {

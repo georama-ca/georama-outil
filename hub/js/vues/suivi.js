@@ -74,7 +74,18 @@ export function vueSuivi(ctx) {
   const alertes = [];
   if (!w) alertes.push('Les statistiques arrivent de l’ordi de la maison (agent 1.3) une fois l’heure. Rien de reçu pour l’instant.');
   if (w && w.erreurs) Object.values(w.erreurs).forEach(t => alertes.push(t));
-  if (w && w.entonnoir && w.entonnoir.plein) alertes.push(`Le compteur « Entonnoir » du site est plein (${nombre(w.entonnoir.total)} entrées) : plus aucune étape de visiteur n’est enregistrée depuis le ${esc(dateCourte(w.entonnoir.derniere_entree))} À vider avec Claude : archive dans OneDrive, puis suppression des vieilles entrées.`);
+  const vidage = m.liste('travaux').filter(t => t.type === 'vider-entonnoir').sort((a, b) => String(b.demandeLe).localeCompare(String(a.demandeLe)))[0];
+  const resVidage = vidage && (m.externes.resultats || []).find(r => r.id === vidage.id);
+  let blocCompteur = '';
+  if (w && w.entonnoir && (w.entonnoir.plein || w.entonnoir.total > 3000 || vidage)) {
+    const etatV = !vidage ? '' : !resVidage ? 'Demande envoyée à l’ordi de la maison…' : resVidage.statut === 'en_cours' ? 'L’ordi de la maison archive et vide le compteur…' : resVidage.message || '';
+    blocCompteur = `<div class="bandeau" style="flex-direction:column;align-items:flex-start;gap:8px">
+      <span>${w.entonnoir.plein ? `<strong>Le compteur « Entonnoir » du site est plein</strong> (${nombre(w.entonnoir.total)} entrées) : plus aucune étape de visiteur n’est enregistrée depuis le ${esc(dateCourte(w.entonnoir.derniere_entree))}` : `Compteur « Entonnoir » du site : ${nombre(w.entonnoir.total)} entrées sur 4 000.`}</span>
+      <span class="petit">Tout l’historique est déjà copié dans OneDrive › Hub-Georama › entonnoir (rien ne se perd). Vider le compteur retire du site les entrées de plus de 7 jours ; les zones restent visibles ici.</span>
+      ${etatV ? `<span class="petit"><strong>${esc(etatV)}</strong></span>` : ''}
+      ${!vidage || (resVidage && resVidage.statut !== 'en_cours') ? '<button type="button" class="btn" data-act="vider-entonnoir">Vider le compteur (archive gardée)</button>' : ''}
+    </div>`;
+  }
   if (me && me.erreurs) Object.values(me.erreurs).forEach(t => alertes.push('Meta : ' + t));
 
   const ach = (w && w.achalandage) || {};
@@ -112,9 +123,31 @@ export function vueSuivi(ctx) {
       <p class="tres-petit doux" style="margin:6px 0 0">30 derniers jours. Lu ${esc(ilYa(me.lu))}.</p>`;
   }
 
+  // Google (Search Console), infolettres, abonnés, codes promo
+  const rech = w && w.recherche;
+  let rechHtml = '<p class="petit doux" style="margin:0">Pas encore lu.</p>';
+  if (rech && rech.jours) {
+    const cl = rech.jours.reduce((s, j) => s + j.clics, 0), im = rech.jours.reduce((s, j) => s + j.impressions, 0);
+    rechHtml = `<div class="g4" style="margin-bottom:10px"><div><p class="surtitre">Clics</p><p class="valeur" style="font-size:24px">${nombre(cl)}</p></div><div><p class="surtitre">Apparitions</p><p class="valeur" style="font-size:24px">${nombre(im)}</p></div></div>
+      ${barres(rech.jours.map(j => ({ date: j.cle, valeur: j.impressions })), 'apparitions dans Google')}
+      <h3 class="petit" style="margin:14px 0 6px">Ce que les gens cherchent</h3>
+      ${(rech.requetes || []).map(q => `<div class="ligne"><span class="grow petit">${esc(q.cle)}</span><span class="tres-petit doux num">${nombre(q.clics)} clic${q.clics > 1 ? 's' : ''} · ${nombre(q.impressions)} vues · rang ${nombre(q.position, 1)}</span></div>`).join('')}
+      <p class="tres-petit doux" style="margin:6px 0 0">Du ${esc(dateCourte(rech.debut))} au ${esc(dateCourte(rech.fin))} (Google a 2 ou 3 jours de retard).</p>`;
+  }
+  const lettres = ((w && w.infolettres) || []).map(c => {
+    const s = c.stats || {}, env = s.delivered || 0;
+    return `<div class="ligne"><span class="grow petit"><strong>${esc(c.titre || c.sujet)}</strong><br><span class="doux">${esc(dateCourte((c.date || '').slice(0, 10)))} · ${nombre(env)} reçus</span></span>
+      <span class="tres-petit num">${env ? Math.round((s.opened || 0) / env * 100) : 0} % ouverts · ${env ? Math.round((s.clicked || 0) / env * 100) : 0} % clics</span></div>`;
+  }).join('');
+  const il30 = new Date(Date.now() - 30 * 86400000).toISOString();
+  const abonnes = ((w && w.formulaires) || []).filter(f => f.infolettre && (f.date || '') >= il30 && (f.champs || []).some(c => c.valeur === 'oui')).length;
+  const codes = ((w && w.coupons) || []).map(c => `<div class="ligne"><span class="grow petit"><strong>${esc(c.code)}</strong> · ${esc(c.rabais)}<br><span class="doux">${esc(c.nom || '')}${c.fin ? ' · jusqu’au ' + esc(dateCourte(c.fin)) : ''}</span></span>
+    <span class="tres-petit num">${nombre(c.utilisations)}${c.limite ? ' / ' + nombre(c.limite) : ''} utilisé${c.utilisations > 1 ? 's' : ''}</span>${c.actif ? '<span class="etiquette vert">Actif</span>' : '<span class="etiquette gris">Inactif</span>'}</div>`).join('');
+
   const paniers = ((w && w.paniers) || []).slice(0, 15).map(p => `<div class="ligne"><span class="grow petit"><strong>${p.montant ? argent(p.montant, 2) : '—'}</strong> · ${esc((p.articles || []).join(', ') || 'Maquette')}${p.prenom ? ' · ' + esc(p.prenom) : ''}<br><span class="doux">${esc(ilYa(p.date))}</span></span>${p.recupere || p.statut === 'RECOVERED' ? '<span class="etiquette vert">Récupéré</span>' : '<span class="etiquette orange">Abandonné</span>'}</div>`).join('');
 
   return `
+    ${blocCompteur}
     ${alertes.map(t => `<div class="bandeau"><span>${esc(t)}</span></div>`).join('')}
     <section class="g4" aria-label="30 derniers jours">
       <div class="carte kpi"><p class="surtitre">Visites du site</p><p class="valeur">${nombre(sess.total || 0)}</p><p class="detail">${nombre(vis.total || 0)} visiteurs · 30 j</p></div>
@@ -135,6 +168,11 @@ export function vueSuivi(ctx) {
       ${zones.length > 60 ? `<p class="tres-petit doux">Les 60 plus récentes sont listées ; toutes sont sur la carte.</p>` : ''}
     </section>
     <section class="carte"><div class="carte-tete"><h2>Pubs Meta</h2></div>${metaHtml}</section>
+    <section class="carte"><div class="carte-tete"><h2>Recherche Google</h2></div>${rechHtml}</section>
+    <div class="cote">
+      <section class="carte principal"><div class="carte-tete"><h2>Infolettres</h2><span class="tres-petit doux">${nombre(abonnes)} nouvel${abonnes > 1 ? 's' : ''} abonné${abonnes > 1 ? 's' : ''} · 30 j</span></div>${lettres || '<p class="petit doux">Aucune infolettre envoyée.</p>'}</section>
+      <section class="carte lateral"><div class="carte-tete"><h2>Codes promo</h2></div>${codes || '<p class="petit doux">Aucun code promo.</p>'}</section>
+    </div>
     <section class="carte"><div class="carte-tete"><h2>Paniers abandonnés</h2></div>${paniers || '<p class="petit doux">Aucun panier abandonné.</p>'}</section>`;
 }
 

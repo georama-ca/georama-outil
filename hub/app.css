@@ -275,3 +275,5 @@ dialog#modal::backdrop { background: rgba(13,17,16,.72); }
 .facture-apercu img { width: 100%; height: 100%; object-fit: cover; }
 #carte-zones .leaflet-popup-content { color: #1b1f1c; font-family: Montserrat, system-ui, sans-serif; }
 @media (max-width: 900px) { .seulement-ordi { display: none !important; } }
+.seulement-mobile { display: none; }
+@media (max-width: 900px) { .seulement-mobile { display: block; } }

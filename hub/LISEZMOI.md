@@ -48,6 +48,13 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.6 (8 novembre 2026)
+- **Georama Production dans le hub** (ordinateur) : Production › Georama Production. L'interface du programme s'affiche dans le hub et reste ouverte pendant qu'on navigue ailleurs. Choisir une commande charge son lien et son numéro tout seuls (Georama Production v4.13). Bouton « Démarrer » s'il n'est pas ouvert (une fois par ordi : « Installer le bouton du hub.cmd »). Ce qui est produit dans Georama Production arrive tout seul dans la fiche de la commande (agent 1.4).
+- **Demandes reçues par le site** (Prospection) : les formulaires Wix (Prévisualisation gratuite, Évaluation Premium, Contact) arrivent dans le hub ; « Ajouter aux prospects » en un clic, ou « Ignorer ».
+- **Site et pubs** : recherche Google (clics, apparitions, ce que les gens cherchent), infolettres (reçus, ouverts, clics), nouveaux abonnés, codes promo et leurs utilisations.
+- **Compteur Entonnoir** : tout l'historique est copié chaque heure dans OneDrive › Hub-Georama › entonnoir (un fichier par mois). Bouton « Vider le compteur (archive gardée) » : retire du site les entrées de plus de 7 jours, après vérification de la copie. Les zones des visiteurs restent visibles (historique complet).
+- **Agent 1.4** : synchro Georama Production → fiche, archive Entonnoir, formulaires, infolettres, codes promo, Search Console.
+
 ### v1.5 (8 novembre 2026)
 - **Marketing › Site et pubs** : achalandage du site Wix (visites et visiteurs par jour), zones choisies par les visiteurs sur une carte (segment, provenance, appareil, étape la plus loin, lien pour revoir la zone), pubs Meta par campagne (dépensé, vues, clics, visites, conversions), paniers abandonnés. Alerte quand le compteur « Entonnoir » du site est plein. Le tableau de bord prend les visites (Wix) et le dépensé (Meta) automatiquement quand ils sont branchés.
 - **Dépenses** : photo ou PDF de la facture (appareil photo du cellulaire), réduite et gardée dans OneDrive › Hub-Georama › factures › AAAA-MM. Étiquette « Facture » dans la liste.
