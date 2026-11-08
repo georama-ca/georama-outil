@@ -285,14 +285,15 @@ export function jourPaiement(p) { const d = new Date(p.date); return isNaN(d) ? 
 export function ventes(m, periode) {
   const R = reglages(m);
   const wix = paiementsWix(m);
-  const payeesParWix = new Set(wix.map(p => p.commandeWix).filter(Boolean));
-  const idsPaiements = new Set(wix.map(p => p.id));
-  // Une commande payée par Wix (boutique : wixId ; facture Wix : paiementsWix = ids des paiements) n'est comptée qu'une fois, par son paiement.
-  const parWix = c => (c.wixId && payeesParWix.has(c.wixId)) || (Array.isArray(c.paiementsWix) && c.paiementsWix.some(id => idsPaiements.has(id)));
-  const cmds = m.liste('commandes').filter(c => estVendue(c) && dansPeriode(c.recue, periode) && !parWix(c)).map(c => {
-    const ht = totalHT(c);
-    return Object.assign({ ht }, taxesDe(ht, R.taxes), { c });
-  });
+  // Une commande payée par Wix (boutique : wixId ; facture Wix : paiementsWix = ids des paiements) n'est comptée qu'une fois :
+  // la partie payée par Wix vient des paiements, seul le reste (ex. virement Interac, comptant) vient de la commande.
+  const recuWix = c => wix.filter(p => (c.wixId && p.commandeWix === c.wixId) || (Array.isArray(c.paiementsWix) && c.paiementsWix.includes(p.id)))
+    .reduce((t, p) => t + Math.max(0, Number(p.montant) - (Number(p.rembourse) || 0)), 0);
+  const cmds = m.liste('commandes').filter(c => estVendue(c) && dansPeriode(c.recue, periode)).map(c => {
+    const dejaWix = recuWix(c);
+    const ht = Math.round((totalHT(c) - dejaWix) * 100) / 100;
+    return ht > 0.5 ? Object.assign({ ht }, taxesDe(ht, R.taxes), { c: dejaWix ? Object.assign({}, c, { horsWix: true }) : c }) : null;
+  }).filter(Boolean);
   const recus = wix.filter(p => dansPeriode(jourPaiement(p), periode)).map(p => {
     const net = Math.max(0, Number(p.montant) - (Number(p.rembourse) || 0));
     const taxe = Math.min(Number(p.taxes) || 0, net);

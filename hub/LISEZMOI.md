@@ -48,6 +48,10 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.11.2 (8 novembre 2026)
+- Ventes : une commande reliée à des paiements Wix compte seulement la partie NON payée par Wix (ex. contrat de 1 250 $ dont 500 $ inscrits dans Wix et le reste par virement Interac). Avant, elle disparaissait au complet dès qu'un paiement Wix y était relié.
+- 8 commandes passées entrées dans commandes.json (Clients), champ `importe: true`.
+
 ### v1.11.1 (8 novembre 2026)
 - Chrono : arrêt automatique après 20 minutes sans activité dans le hub (souris, clavier, toucher, ou travail dans le cadre Georama Production). Le temps est enregistré jusqu'à la dernière activité, avec une note ; un message l'explique au retour. Vérifié aussi à l'ouverture du hub (ordi en veille, onglet fermé).
 - Nouvelle version publiée : le hub la détecte (toutes les 3 minutes et au retour sur l'onglet). Il se recharge tout seul si rien n'est en attente d'envoi et que personne ne s'en sert ; sinon un bandeau « Recharger » s'affiche.
