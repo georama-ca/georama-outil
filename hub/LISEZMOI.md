@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.8.2 (8 novembre 2026)
+- **Georama Production prend toute la page** (ordinateur) : plus rien en haut. Les 3 outils (choisir une commande, recharger, agrandir) sont dans la colonne d'icônes à gauche ; « Agrandir » ne garde qu'une colonne mince avec ces 3 boutons. Choisir une commande ouvre une petite liste. Va de pair avec Georama Production v4.14 (en-tête compact quand il est dans le hub).
+
 ### v1.8.1 (8 novembre 2026)
 - **Cellulaire** : Tâches est maintenant dans Accueil (onglets « Aperçu » et « Tâches » en haut de l'accueil). La barre du bas revient à 5 boutons. À l'ordinateur, rien ne change (Tâches reste dans le menu).
 

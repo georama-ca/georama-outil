@@ -60,7 +60,7 @@ kbd { display: inline-block; padding: 1px 6px; border-radius: 4px; border: 1px s
 .contenu { flex: 1 1 auto; min-width: 0; padding: 32px 40px 64px; display: flex; flex-direction: column; gap: 20px; max-width: 1480px; }
 
 /* Cellulaire et tablette : barre du haut simple + onglets en bas (v1.4) */
-.barre-mobile, .onglets-bas { display: none; }
+.barre-mobile, .onglets-bas, .outils-prod { display: none; }
 .icone-barre { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; height: 44px; padding: 0 10px;
                border-radius: 22px; border: 1px solid var(--bordure); background: var(--surface-2); color: var(--texte);
                font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; cursor: pointer; }
@@ -104,19 +104,20 @@ kbd { display: inline-block; padding: 1px 6px; border-radius: 4px; border: 1px s
   body.mode-prod .barre-mobile { display: flex; flex-direction: column; align-items: center; gap: 8px; }
   body.mode-prod .barre-mobile .icone-barre { min-width: 48px; padding: 0 6px; }
   body.mode-prod .barre-mobile .chrono-actif { flex-direction: column; gap: 0; height: auto; min-height: 48px; padding: 4px; border-radius: 14px; font-size: 11px; }
-  /* Une seule ligne en haut : onglets de la production à gauche, commande et boutons à droite. */
-  body.mode-prod .contenu { height: 100vh; padding: 8px 12px 10px; max-width: none; overflow: hidden;
-                            display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr); gap: 8px 12px; }
-  body.mode-prod .contenu > .entete, body.mode-prod .contenu > .seulement-mobile { display: none; }
-  body.mode-prod .contenu > .onglets { grid-column: 1; grid-row: 1; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; align-self: end; }
-  body.mode-prod .contenu > .onglets a { min-height: 36px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
-  body.mode-prod .barre-prod { grid-column: 2; grid-row: 1; flex-wrap: nowrap; gap: 6px; }
-  body.mode-prod .barre-prod select { max-width: 260px; min-height: 36px; padding-top: 4px; padding-bottom: 4px; }
-  body.mode-prod .barre-prod .btn-ico svg { width: 18px; height: 18px; }
-  body.mode-prod .zone-production { grid-column: 1 / -1; grid-row: 2; height: auto; min-height: 0; }
-  body.mode-prod.mode-prod-max .menu, body.mode-prod.mode-prod-max .contenu > .onglets { display: none; }
-  body.mode-prod.mode-prod-max .contenu { padding: 6px 8px; grid-template-columns: minmax(0, 1fr); }
-  body.mode-prod.mode-prod-max .barre-prod { grid-column: 1; justify-content: flex-end; }
+  /* v1.8.2 : plus rien en haut. Le programme prend toute la page ; commande, recharger et agrandir
+     sont dans la colonne d'icônes. « Agrandir » ne garde que ces 3 boutons dans une colonne mince. */
+  body.mode-prod .menu { gap: 2px; padding-top: 10px; padding-bottom: 10px; }
+  body.mode-prod .menu a.nav { min-height: 40px; }
+  body.mode-prod .outils-prod { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--bordure); }
+  body.mode-prod .outils-prod .icone-barre { min-width: 44px; width: 44px; height: 40px; padding: 0; border-radius: 10px; }
+  body.mode-prod .outils-prod .icone-barre.actif { background: var(--accent); color: var(--sur-accent); border-color: var(--accent); }
+  body.mode-prod .contenu { height: 100vh; padding: 4px 4px 4px 0; max-width: none; overflow: hidden; display: flex; flex-direction: column; gap: 0; }
+  body.mode-prod .contenu > .entete, body.mode-prod .contenu > .onglets, body.mode-prod .contenu > .seulement-mobile,
+  body.mode-prod .barre-prod { display: none; }
+  body.mode-prod .zone-production { flex: 1 1 auto; height: auto; min-height: 0; border: 0; padding: 12px; }
+  body.mode-prod.mode-prod-max .menu { width: 54px; padding: 8px 5px; }
+  body.mode-prod.mode-prod-max .menu > :not(.outils-prod) { display: none; }
+  body.mode-prod.mode-prod-max .outils-prod { margin-top: 0; padding-top: 0; border-top: 0; }
 }
 
 /* En-tête de page */

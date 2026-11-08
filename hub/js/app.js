@@ -9,7 +9,7 @@ import { esc, ico, toast, initiales, prenom, ouvrirFenetre, fermerFenetre, optio
 import { ouvrirCommande } from './vues/commandes.js';
 import tableau from './vues/tableau.js';
 import commandes from './vues/commandes.js';
-import production, { placerCadre, modeProdMax } from './vues/production.js';
+import production, { placerCadre, modeProdMax, outilsProd } from './vues/production.js';
 import marketing from './vues/marketing.js';
 import finances from './vues/finances.js';
 import parametres from './vues/parametres.js';
@@ -76,6 +76,7 @@ function coquille(corps) {
         ${choixMoi}
       </div>
       <p class="sync" id="sync">${etatSync()}</p>
+      ${r.vue === 'production' && r.sous === 'georama' ? outilsProd(ctx) : ''}
       <div class="barre-mobile" aria-label="Raccourcis">
         <span id="chrono-m">${chronoMobile()}</span>
         <button type="button" class="icone-barre" data-act="recherche" aria-label="Rechercher">${ico('loupe')}</button>

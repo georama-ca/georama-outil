@@ -560,8 +560,42 @@ function cadreProduction() {
     document.body.appendChild(cadre);
     window.addEventListener('resize', placerCadre);
     window.addEventListener('scroll', placerCadre, true);
+    // Une fenêtre du hub (ex. choisir une commande) cache le cadre ; il revient quand elle se ferme.
+    const modal = document.getElementById('modal');
+    if (modal) modal.addEventListener('close', () => setTimeout(placerCadre, 0));
   }
   return cadre;
+}
+// v1.8.2 : les outils de Georama Production vont dans la colonne d'icônes du hub (rien en haut de la page).
+export function outilsProd(ctx) {
+  const c = ctx.route.id ? ctx.m.get('commandes', ctx.route.id) : null;
+  const max = modeProdMax();
+  return `<div class="outils-prod" role="group" aria-label="Georama Production">
+      <button type="button" class="icone-barre${c ? ' actif' : ''}" data-act="gp-choisir" title="${c ? 'Commande ' + esc(c.numero) + ' · ' + esc(c.client) + ' (changer)' : 'Choisir une commande'}" aria-label="Choisir une commande">${ico('dossier')}</button>
+      <button type="button" class="icone-barre" data-act="gp-recharger" title="Recharger Georama Production" aria-label="Recharger Georama Production">${ico('recharger')}</button>
+      <button type="button" class="icone-barre" data-act="gp-agrandir" aria-pressed="${max}" title="${max ? 'Réduire : revoir le menu du hub' : 'Agrandir : cacher le menu du hub'}" aria-label="${max ? 'Réduire' : 'Agrandir'}">${ico(max ? 'reduire' : 'agrandir')}</button>
+    </div>`;
+}
+function choisirCommande(ctx) {
+  const actuelle = ctx.route.id || '';
+  const cmds = ctx.m.liste('commandes').filter(x => ACTIVES.includes(x.statut) && x.lien).sort((a, b) => String(a.promise || '9').localeCompare(String(b.promise || '9')));
+  const ligne = (id, titre, sous) => `<button type="button" class="ligne ligne-btn" data-gp-cmd="${esc(id)}" style="border-radius:6px;padding:10px 12px${id === actuelle ? ';background:var(--fond)' : ''}">
+      <span class="grow"><strong>${esc(titre)}</strong>${sous ? `<br><span class="petit doux">${esc(sous)}</span>` : ''}</span>${id === actuelle ? '<span class="etiquette vert">Ouverte</span>' : ''}</button>`;
+  const { form } = ouvrirFenetre({
+    titre: 'Ouvrir une commande dans Georama Production', pied: false,
+    corps: `<p class="petit doux" style="margin:0 0 10px">Son lien et son numéro se chargent tout seuls. Ce qui est produit arrive dans sa fiche.</p>
+      <div style="display:flex;flex-direction:column;gap:2px;max-height:60vh;overflow:auto">
+        ${ligne('', 'Aucune commande', 'Nouvelle zone, ou coller un lien à la main')}
+        ${cmds.map(c => ligne(c.id, c.numero + ' · ' + c.client, [c.lieu, promiseTexte(c).replace(/<[^>]+>/g, '')].filter(Boolean).join(' · '))).join('')}
+      </div>
+      ${cmds.length ? '' : '<p class="petit doux" style="margin:10px 0 0">Aucune commande en cours n’a de lien de visualisation.</p>'}`,
+  });
+  form.addEventListener('click', ev => {
+    const b = ev.target.closest('[data-gp-cmd]');
+    if (!b) return;
+    document.getElementById('modal').close();
+    location.hash = '#/production/georama' + (b.dataset.gpCmd ? '/' + b.dataset.gpCmd : '');
+  });
 }
 // « Agrandir » : cache aussi le menu et les onglets du hub (retenu sur cet ordi).
 const CLE_MAX = 'georama-hub-prod-max';
@@ -570,13 +604,12 @@ function basculerMax() {
   const v = !modeProdMax();
   try { localStorage.setItem(CLE_MAX, v ? '1' : '0'); } catch (e) { /* navigation privée */ }
   document.body.classList.toggle('mode-prod-max', v);
-  const b = document.querySelector('[data-act="gp-agrandir"]');
-  if (b) {
+  document.querySelectorAll('[data-act="gp-agrandir"]').forEach(b => {
     b.innerHTML = ico(v ? 'reduire' : 'agrandir');
     b.title = v ? 'Réduire : revoir le menu du hub' : 'Agrandir : cacher le menu du hub';
     b.setAttribute('aria-label', v ? 'Réduire' : 'Agrandir');
     b.setAttribute('aria-pressed', String(v));
-  }
+  });
   placerCadre();
 }
 export function placerCadre() {
@@ -677,6 +710,7 @@ export default {
       ctx.m.modifier('commandes', c.id, { tempsMin: (Number(c.tempsMin) || 0) + 15 });
     },
     'gp-agrandir': () => basculerMax(),
+    'gp-choisir': ctx => choisirCommande(ctx),
     'gp-recharger': ctx => {
       if (cadre && cadreSrc) { const src = cadreSrc; cadre.src = 'about:blank'; setTimeout(() => { cadre.src = src; }, 50); }
       else monterGeorama(ctx);
