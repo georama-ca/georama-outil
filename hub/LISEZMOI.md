@@ -48,6 +48,12 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.10 (8 novembre 2026)
+- **Campagnes › Conversions Meta et zones choisies** : par jour, les conversions comptées par Meta à côté des zones vraiment choisies dans l'outil par les visiteurs des pubs (avec le degré de lien entre les deux). Par campagne : dépensé, clics, conversions Meta, zones choisies, jusqu'à l'étape 5, coût par zone. Par publicité (utm_content) : zones et visiteurs allés jusqu'à l'étape 5. Les groupes Facebook (gratuits) à part. Les jours où le compteur du site était plein ne comptent pas.
+- **Marketing › Contenu** : calendrier de contenu (mois), publications prévues à la main (page Facebook, groupes, Instagram, Reel, blogue, infolettre, presse ; statut idée / à préparer / prêt / publié ; segment ; texte prêt à copier) + automatique : articles du blogue Wix, infolettres envoyées, publications de la page Facebook (si le jeton le permet), début et fin des pubs Meta, tâches marketing avec échéance. Rythme du mois par canal, 3 prochaines semaines, idées sans date. Au cellulaire : liste du mois. Plan proposé par Claude jusqu'à la mi-décembre (à adapter).
+- **Dépenses automatiques** (Finances › Dépenses) : les pubs Meta du mois (lues dans Meta) et les abonnements (Wix, Microsoft 365, Meshy… montant et fréquence entrés une fois). Une dépense « Auto » s'efface dès que la vraie facture du même fournisseur est entrée pour ce mois-là.
+- Agent : stats.py lit aussi les articles du blogue Wix, les dépenses Meta par mois (13 mois) et, si le jeton le permet, les publications de la page Facebook.
+
 ### v1.9.2 (8 novembre 2026)
 - **Marketing › Campagnes** montre maintenant les campagnes Meta lues automatiquement (dépensé, vues, clics, visites, conversions, 30 jours), et les totaux en haut les incluent. Les campagnes hors Meta restent dans « Autres campagnes (suivies à la main) ».
 

@@ -1,6 +1,6 @@
 // Module Finances : ventes, dépenses, taxes, objectif.
 import { esc, argent, pct, dateCourte, options, ouvrirFenetre, aujourdhui, uid, toast, telecharger, csv, ilYa } from '../ui.js';
-import { reglages, resume, ventes, depenses, CATEGORIES_DEPENSE, nomSegment, taxesDe, moisCourant, TPS, TVQ, journaliser } from '../donnees.js';
+import { reglages, resume, ventes, depenses, CATEGORIES_DEPENSE, nomSegment, taxesDe, moisCourant, TPS, TVQ, journaliser, abonnements } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
 
 function etatVue(ctx) {
@@ -23,9 +23,9 @@ function periodes() {
 }
 const nomPeriode = id => (periodes().find(p => p.id === id) || { nom: id }).nom;
 
-function ouvrirDepense(ctx, id) {
+function ouvrirDepense(ctx, id, prerempli) {
   const m = ctx.m;
-  const d = (id && m.get('depenses', id)) || { date: aujourdhui(), categorie: 'Filament', taxesAuto: true };
+  const d = (id && m.get('depenses', id)) || Object.assign({ date: aujourdhui(), categorie: 'Filament', taxesAuto: true }, prerempli || {});
   const fact = d.facture;
   const corps = `<div class="champ plein" style="margin-bottom:14px">
       <label for="d-photo">Photo ou PDF de la facture</label>
@@ -197,6 +197,60 @@ function vueResume(ctx) {
     </section>`;
 }
 
+// Dépenses automatiques : pubs Meta (lues chaque heure) et abonnements (Wix, Microsoft 365, Meshy…).
+const SUGGESTIONS = [
+  { fournisseur: 'Wix (forfait Premium du site)', frequence: 'annuel', categorie: 'Logiciels et abonnements' },
+  { fournisseur: 'Microsoft 365 (courriel et OneDrive)', frequence: 'mensuel', categorie: 'Logiciels et abonnements' },
+  { fournisseur: 'Meshy', frequence: 'mensuel', montant: 28, depuis: '2026-10-17', categorie: 'Logiciels et abonnements', taxes: false },
+];
+function carteAuto(ctx) {
+  const m = ctx.m;
+  const meta = ((m.externes.statsMeta || [])[0]) || null;
+  const abs = reglages(m).abonnements || [];
+  const sugg = SUGGESTIONS.filter(s => !abs.some(a => (a.fournisseur || '').split(' ')[0].toLowerCase() === s.fournisseur.split(' ')[0].toLowerCase()));
+  return `<h2 style="margin-top:20px">Dépenses automatiques</h2>
+    <div class="ligne"><span class="grow petit"><strong>Meta (pubs)</strong><br><span class="doux">${meta && meta.mois ? 'Lu dans Meta chaque heure, un montant par mois.' : meta ? 'Arrive à la prochaine lecture de l’ordi de la maison.' : 'Meta pas branché.'}</span></span></div>
+    ${abs.map(a => `<button type="button" class="ligne ligne-btn" data-act="abonnement" data-id="${esc(a.id)}" style="border-radius:6px">
+      <span class="grow petit"><strong>${esc(a.fournisseur)}</strong><br><span class="doux">${Number(a.montant) > 0 ? argent(a.montant, 2) + (a.frequence === 'annuel' ? ' par année' : ' par mois') + (a.depuis ? ' · depuis le ' + esc(dateCourte(a.depuis)) : '') : 'Montant à entrer'}</span></span></button>`).join('')}
+    <button type="button" class="btn-lien petit" data-act="abonnement" style="margin-top:6px">+ Ajouter un abonnement</button>
+    ${sugg.length ? `<p class="tres-petit doux" style="margin:10px 0 4px">Suggestions :</p>${sugg.map((s, i) => `<button type="button" class="btn-2" data-act="abonnement-sugg" data-i="${SUGGESTIONS.indexOf(s)}" style="margin:0 6px 6px 0;min-height:32px;font-size:13px">${esc(s.fournisseur.split(' (')[0])}</button>`).join('')}` : ''}
+    <p class="tres-petit doux" style="margin:8px 0 0">Une dépense « Auto » disparaît dès que tu entres la vraie facture du même fournisseur ce mois-là (clique sur la ligne pour le faire).</p>`;
+}
+function ouvrirAbonnement(ctx, id, prerempli) {
+  const m = ctx.m;
+  const R = reglages(m);
+  const liste = (R.abonnements || []).slice();
+  const a = (id && liste.find(x => x.id === id)) || Object.assign({ frequence: 'mensuel', depuis: aujourdhui(), categorie: 'Logiciels et abonnements', taxes: true }, prerempli || {});
+  ouvrirFenetre({
+    titre: id ? 'Abonnement · ' + a.fournisseur : 'Nouvel abonnement',
+    corps: `<div class="champs">
+      <div class="champ plein"><label for="ab-f">Fournisseur</label><input id="ab-f" name="fournisseur" type="text" required value="${esc(a.fournisseur || '')}" placeholder="Ex. : Wix (forfait Premium)"></div>
+      <div class="champ"><label for="ab-m">Montant avant taxes ($)</label><input id="ab-m" name="montant" type="number" min="0" step="0.01" required value="${esc(a.montant ?? '')}"></div>
+      <div class="champ"><label for="ab-fr">Fréquence</label><select id="ab-fr" name="frequence">${options([{ id: 'mensuel', nom: 'Chaque mois' }, { id: 'annuel', nom: 'Chaque année' }], a.frequence)}</select></div>
+      <div class="champ"><label for="ab-d">Premier paiement (ou prochain)</label><input id="ab-d" name="depuis" type="date" required value="${esc(a.depuis || '')}"></div>
+      <div class="champ"><label for="ab-j">Fin (si annulé)</label><input id="ab-j" name="jusqua" type="date" value="${esc(a.jusqua || '')}"></div>
+      <div class="champ"><label for="ab-c">Catégorie</label><select id="ab-c" name="categorie">${options(CATEGORIES_DEPENSE, a.categorie)}</select></div>
+      <div class="champ plein"><label class="case"><input type="checkbox" name="taxes"${a.taxes !== false ? ' checked' : ''}> Ajouter TPS et TVQ (décoche pour un fournisseur hors Canada sans taxes)</label></div>
+    </div>
+    <p class="tres-petit doux" style="margin:10px 0 0">Le montant est sur la facture (Wix : Paramètres › Facturation et paiements ; Microsoft 365 : admin.microsoft.com › Facturation).</p>`,
+    pied: id ? '<div class="actions"><button type="button" class="btn-2 btn-danger" data-modal-act="supprimer">Retirer</button></div>' : '',
+    onAction(act) {
+      if (act === 'supprimer' && confirm('Retirer cet abonnement ? Les dépenses déjà entrées à la main restent.')) {
+        m.mettre('reglages', Object.assign({}, R, { id: 'general', abonnements: liste.filter(x => x.id !== id) }));
+        return 'fermer';
+      }
+      return null;
+    },
+    onSubmit(v) {
+      const fiche = { id: a.id || uid('ab'), fournisseur: v.fournisseur, montant: Number(v.montant) || 0, frequence: v.frequence, depuis: v.depuis, jusqua: v.jusqua || '', categorie: v.categorie, taxes: !!v.taxes };
+      const l = liste.filter(x => x.id !== fiche.id).concat([fiche]);
+      m.mettre('reglages', Object.assign({}, R, { id: 'general', abonnements: l }));
+      toast('Abonnement enregistré : il apparaît dans les dépenses de chaque ' + (fiche.frequence === 'annuel' ? 'année' : 'mois') + '.');
+      return true;
+    },
+  });
+}
+
 function vueDepenses(ctx) {
   const m = ctx.m;
   const e = etatVue(ctx);
@@ -209,8 +263,8 @@ function vueDepenses(ctx) {
       <section class="carte principal table-boite">
         <div class="carte-tete"><h2>Dépenses · ${esc(nomPeriode(e.periode))}</h2><button type="button" class="btn-2" data-act="export-depenses">Exporter (CSV)</button></div>
         <table class="liste"><thead><tr><th>Date</th><th>Fournisseur</th><th>Catégorie</th><th class="droite">Avant taxes</th><th class="droite">TPS</th><th class="droite">TVQ</th></tr></thead>
-        <tbody>${d.map(x => `<tr class="cliquable" data-act="ouvrir-d" data-id="${esc(x.d.id)}" tabindex="0">
-          <td class="petit num">${esc(dateCourte(x.d.date))}</td><td>${esc(x.d.fournisseur)}${x.d.facture ? ' <span class="etiquette plein" title="Facture jointe">Facture</span>' : ''}${x.d.note ? `<br><span class="petit doux">${esc(x.d.note)}</span>` : ''}</td>
+        <tbody>${d.map(x => `<tr class="cliquable" data-act="${x.d.auto ? 'auto-d' : 'ouvrir-d'}" data-id="${esc(x.d.id)}" tabindex="0"${x.d.auto ? ' title="Dépense automatique : clique pour l’enregistrer avec la vraie facture"' : ''}>
+          <td class="petit num">${esc(dateCourte(x.d.date))}</td><td>${esc(x.d.fournisseur)}${x.d.auto ? ` <span class="etiquette bleu" title="${x.d.auto === 'meta' ? 'Lu dans Meta' : 'Abonnement'}">Auto</span>` : ''}${x.d.facture ? ' <span class="etiquette plein" title="Facture jointe">Facture</span>' : ''}${x.d.note ? `<br><span class="petit doux">${esc(x.d.note)}</span>` : ''}</td>
           <td class="petit">${esc(x.d.categorie)}</td><td class="droite num">${argent(x.ht, 2)}</td><td class="droite num">${argent(x.tps, 2)}</td><td class="droite num">${argent(x.tvq, 2)}</td></tr>`).join('') || '<tr><td colspan="6" class="vide">Aucune dépense pour cette période. <button type="button" class="btn-lien" data-act="nouvelle-d">Ajouter une dépense</button></td></tr>'}</tbody></table>
       </section>
       <aside class="carte lateral">
@@ -218,6 +272,7 @@ function vueDepenses(ctx) {
         ${Object.entries(parCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<div class="ligne"><span class="grow petit">${esc(c)}</span><span class="num petit">${argent(v, 2)}</span></div>
           <div class="barre" style="height:6px;margin:-4px 0 6px"><span style="width:${total ? v / total * 100 : 0}%"></span></div>`).join('') || '<p class="vide">—</p>'}
         <div class="ligne"><strong class="grow">Total</strong><strong class="num">${argent(total, 2)}</strong></div>
+        ${carteAuto(ctx)}
       </aside>
     </div>`;
 }
@@ -244,6 +299,13 @@ export default {
   actions: {
     'nouvelle-d': ctx => ouvrirDepense(ctx, null),
     'ouvrir-d': (ctx, el) => ouvrirDepense(ctx, el.getAttribute('data-id')),
+    'auto-d': (ctx, el) => {
+      const x = depenses(ctx.m, el.getAttribute('data-id').match(/(\d{4}-\d{2})/) ? el.getAttribute('data-id').match(/(\d{4}-\d{2})/)[1] : etatVue(ctx).periode).find(y => y.d.id === el.getAttribute('data-id'));
+      if (!x) return;
+      ouvrirDepense(ctx, null, { date: x.d.date, fournisseur: x.d.fournisseur, categorie: x.d.categorie, montant: x.d.montant, note: x.d.auto === 'meta' ? 'Reçu Meta du mois' : '' });
+    },
+    abonnement: (ctx, el) => ouvrirAbonnement(ctx, el.getAttribute('data-id')),
+    'abonnement-sugg': (ctx, el) => ouvrirAbonnement(ctx, null, SUGGESTIONS[Number(el.getAttribute('data-i'))]),
     'ouvrir-cmd': (ctx, el) => ouvrirCommande(ctx, el.getAttribute('data-id')),
     'export-ventes': ctx => {
       const e = etatVue(ctx);

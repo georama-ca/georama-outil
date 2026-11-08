@@ -6,7 +6,7 @@
 import { jeton } from './auth.js';
 import { CONFIG } from '../config.js';
 
-export const COLLECTIONS = ['commandes', 'plaques', 'taches', 'prospects', 'campagnes', 'depenses', 'filament', 'reglages', 'travaux', 'activite', 'temps'];
+export const COLLECTIONS = ['commandes', 'plaques', 'taches', 'prospects', 'campagnes', 'depenses', 'filament', 'reglages', 'travaux', 'activite', 'temps', 'contenus'];
 // Fichiers écrits par l'agent de l'ordi de la maison (lecture seule pour le hub)
 export const EXTERNES = { agent: 'agent', resultats: 'travaux-resultats', wix: 'boite-wix', statsWix: 'stats-wix', statsMeta: 'stats-meta' };
 const GRAPH = 'https://graph.microsoft.com/v1.0';

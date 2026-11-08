@@ -17,7 +17,7 @@ const ETAPES = {
   panier: 'Panier', paiement: 'Paiement', achat: 'Achat',
 };
 export const nomEtape = e => ETAPES[e] || e;
-const RANG = Object.keys(ETAPES);
+export const RANG = Object.keys(ETAPES);
 
 export function statsWix(m) { return ((m.externes.statsWix || [])[0]) || null; }
 export function statsMeta(m) { return ((m.externes.statsMeta || [])[0]) || null; }

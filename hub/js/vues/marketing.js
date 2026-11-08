@@ -3,6 +3,8 @@ import { esc, argent, nombre, dateCourte, options, ouvrirFenetre, aujourdhui, jo
 import { STATUTS_PROSPECT, statutProspect, TYPES_PROSPECT, CANAUX, SEGMENTS, nomSegment, journaliser, reglages } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
 import { vueSuivi, monterCarte, etatSuivi, totauxMeta, statsWix, tableauMeta } from './suivi.js';
+import { blocCorrelation } from './correlation.js';
+import { vueContenu, actionsContenu, changesContenu } from './contenu.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.mkt) ctx.etat.mkt = { q: '', statut: 'actifs' };
@@ -171,6 +173,10 @@ function vueCampagnes(ctx) {
       <div class="carte-tete"><h2>Campagnes Meta</h2><span class="tres-petit doux">Lues automatiquement par l’ordi de la maison</span></div>
       ${tableauMeta(ctx.m)}
     </section>
+    <section class="carte">
+      <div class="carte-tete"><h2>Conversions Meta et zones choisies</h2><span class="tres-petit doux">Ce que les pubs font vraiment dans l’outil</span></div>
+      ${blocCorrelation(ctx.m)}
+    </section>
     <section class="carte table-boite" style="padding:6px 8px">
       <div class="carte-tete" style="padding:10px 10px 0"><h2>Autres campagnes (suivies à la main)</h2></div>
       <table class="liste"><thead><tr><th>Campagne</th><th>Segment</th><th>Période</th><th>Dépensé / budget</th><th class="droite">Visites</th><th class="droite">Commandes</th><th class="droite">Coût / commande</th></tr></thead>
@@ -183,17 +189,19 @@ export default {
   render(ctx) {
     const sous = ctx.route.sous;
     return `<header class="entete">
-        <div><p class="surtitre">Marketing et prospection</p><h1 class="titre-1">${sous === 'campagnes' ? 'Campagnes' : sous === 'suivi' ? 'Site et pubs' : 'Prospection Entreprise'}</h1></div>
-        <div class="actions">${sous === 'campagnes' ? '<button type="button" class="btn" data-act="nouvelle-k">+ Nouvelle campagne</button>' : sous === 'suivi' ? '' : '<button type="button" class="btn" data-act="nouveau">+ Nouveau prospect</button>'}</div>
+        <div><p class="surtitre">Marketing et prospection</p><h1 class="titre-1">${sous === 'campagnes' ? 'Campagnes' : sous === 'suivi' ? 'Site et pubs' : sous === 'contenu' ? 'Calendrier de contenu' : 'Prospection Entreprise'}</h1></div>
+        <div class="actions">${sous === 'campagnes' ? '<button type="button" class="btn" data-act="nouvelle-k">+ Nouvelle campagne</button>' : sous === 'suivi' || sous === 'contenu' ? '' : '<button type="button" class="btn" data-act="nouveau">+ Nouveau prospect</button>'}</div>
       </header>
       <nav class="onglets" aria-label="Sections">
         <a href="#/marketing/suivi"${sous === 'suivi' ? ' aria-current="page"' : ''}>Site et pubs</a>
         <a href="#/marketing"${!sous ? ' aria-current="page"' : ''}>Prospection</a>
         <a href="#/marketing/campagnes"${sous === 'campagnes' ? ' aria-current="page"' : ''}>Campagnes</a>
+        <a href="#/marketing/contenu"${sous === 'contenu' ? ' aria-current="page"' : ''}>Contenu</a>
       </nav>
-      ${sous === 'campagnes' ? vueCampagnes(ctx) : sous === 'suivi' ? vueSuivi(ctx) : vueProspects(ctx)}`;
+      ${sous === 'campagnes' ? vueCampagnes(ctx) : sous === 'suivi' ? vueSuivi(ctx) : sous === 'contenu' ? vueContenu(ctx) : vueProspects(ctx)}`;
   },
   actions: {
+    ...actionsContenu,
     nouveau: ctx => ouvrirProspect(ctx, null),
     ouvrir: (ctx, el) => ouvrirProspect(ctx, el.getAttribute('data-id')),
     'nouvelle-k': ctx => ouvrirCampagne(ctx, null),
@@ -220,6 +228,7 @@ export default {
     'filtre-statut': (ctx, el) => { const e = etatVue(ctx); const s = el.getAttribute('data-s'); e.statut = e.statut === s ? 'actifs' : s; ctx.rendre(); },
   },
   changes: {
+    ...changesContenu,
     cherche: (ctx, el) => { etatVue(ctx).q = el.value; ctx.rendre(); },
     statut: (ctx, el) => { etatVue(ctx).statut = el.value; ctx.rendre(); },
     suivi: (ctx, el) => { const e = etatSuivi(ctx); e[el.getAttribute('data-cle')] = el.value; e.vue = null; ctx.rendre(); },

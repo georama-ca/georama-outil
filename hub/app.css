@@ -349,3 +349,22 @@ dialog#modal::backdrop { background: rgba(13,17,16,.72); }
   .kcol-corps { overflow: visible; }
   .kcarte { user-select: auto; }
 }
+
+/* Calendrier de contenu (v1.10) */
+.ct-legende { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; margin: 4px 0 12px; align-items: center; }
+.ct-legende > span { display: inline-flex; align-items: center; gap: 6px; }
+.ct-entete-sem { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; font-size: 12px; font-weight: 700; color: var(--texte-doux); margin-bottom: 4px; }
+.ct-entete-sem span { padding: 0 6px; }
+.ct-grille { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.ct-jour { min-height: 104px; border: 1px solid var(--bordure); border-radius: var(--rayon-sm); padding: 4px; display: flex; flex-direction: column; gap: 3px; background: var(--surface-2); cursor: pointer; min-width: 0; }
+.ct-jour:hover { border-color: var(--bordure-controle); }
+.ct-jour.vide { background: transparent; border-color: transparent; cursor: default; }
+.ct-jour.passe { opacity: .75; }
+.ct-jour.auj { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.ct-num { font-size: 12px; font-weight: 700; color: var(--texte-doux); padding: 0 2px; }
+.ct-jour.auj .ct-num { color: var(--accent-texte); }
+.ct-puce { display: block; font-size: 11.5px; line-height: 15px; padding: 2px 6px; border-radius: 4px; background: color-mix(in srgb, var(--ct) 22%, transparent); border-left: 3px solid var(--ct);
+           color: var(--texte); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.ct-puce.prevu { background: transparent; border: 1px dashed var(--ct); border-left: 3px solid var(--ct); }
+.ct-puce.idee { opacity: .8; font-style: italic; }
+.ct-puce:hover { filter: brightness(1.15); }

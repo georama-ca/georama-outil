@@ -302,10 +302,52 @@ export function ventes(m, periode) {
   });
   return recus.concat(cmds);
 }
+// Dépenses = celles entrées à la main + les automatiques (pubs Meta par mois, abonnements).
+// Une dépense automatique disparaît dès qu'une vraie dépense du même fournisseur existe ce mois-là.
 export function depenses(m, periode) {
-  return m.liste('depenses').filter(d => dansPeriode(d.date, periode)).map(d => ({
+  const manuelles = m.liste('depenses').filter(d => dansPeriode(d.date, periode)).map(d => ({
     ht: Number(d.montant) || 0, tps: Number(d.tps) || 0, tvq: Number(d.tvq) || 0, d,
   }));
+  return manuelles.concat(depensesAuto(m, periode));
+}
+const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function dejaEntree(m, fournisseur, mois) {
+  const f = norm(fournisseur).split(/[\s(]/)[0];
+  return m.liste('depenses').some(d => (d.date || '').slice(0, 7) === mois && f && norm(d.fournisseur).includes(f));
+}
+export function abonnements(m) { return (reglages(m).abonnements || []).filter(a => a && a.fournisseur && Number(a.montant) > 0); }
+// Dates des paiements d'un abonnement (mensuel ou annuel) depuis sa date de début, jusqu'à aujourd'hui.
+function occurrences(a, jusqua) {
+  const l = [];
+  if (!a.depuis) return l;
+  let [y, mo, j] = a.depuis.split('-').map(Number);
+  for (let i = 0; i < 400; i++) {
+    const dernier = new Date(y, mo, 0).getDate();
+    const d = y + '-' + String(mo).padStart(2, '0') + '-' + String(Math.min(j, dernier)).padStart(2, '0');
+    if (d > jusqua || (a.jusqua && d > a.jusqua)) break;
+    l.push(d);
+    if (a.frequence === 'annuel') y += 1; else { mo += 1; if (mo > 12) { mo = 1; y += 1; } }
+  }
+  return l;
+}
+export function depensesAuto(m, periode) {
+  const R = reglages(m);
+  const l = [];
+  const meta = ((m.externes.statsMeta || [])[0]) || null;
+  ((meta && meta.mois) || []).forEach(x => {
+    const date = x.mois + '-01';
+    if (!x.depense || !dansPeriode(date, periode) || dejaEntree(m, 'Meta', x.mois)) return;
+    const ht = Math.round(x.depense * 100) / 100;
+    l.push(Object.assign({ ht }, taxesDe(ht, R.taxes), { d: { id: 'auto-meta-' + x.mois, date, fournisseur: 'Meta (pubs Facebook et Instagram)', categorie: 'Publicité', montant: ht,
+      note: 'Dépensé en pubs ce mois-là (lu dans Meta). Taxes estimées : à confirmer avec le reçu Meta.', auto: 'meta' } }));
+  });
+  abonnements(m).forEach(a => occurrences(a, aujourdhui()).forEach(date => {
+    if (!dansPeriode(date, periode) || dejaEntree(m, a.fournisseur, date.slice(0, 7))) return;
+    const ht = Number(a.montant) || 0;
+    l.push(Object.assign({ ht }, taxesDe(ht, a.taxes !== false && R.taxes), { d: { id: 'auto-ab-' + a.id + '-' + date, date, fournisseur: a.fournisseur,
+      categorie: a.categorie || 'Logiciels et abonnements', montant: ht, note: 'Abonnement ' + (a.frequence === 'annuel' ? 'annuel' : 'mensuel') + ' (automatique)', auto: 'abonnement', abonnement: a.id } }));
+  }));
+  return l;
 }
 export function resume(m, periode) {
   const v = ventes(m, periode), d = depenses(m, periode);

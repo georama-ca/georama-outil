@@ -26,6 +26,7 @@ PERMISSIONS = {                     # noms affichés dans manage.wix.com > Clés
     'coupons': 'Boutique Wix',
     'recherche': 'SEO',
     'paiements': 'Wix Paiements (lire les transactions)',
+    'blogue': 'Blogue Wix (lire les articles)',
 }
 FORMULAIRES_INFOLETTRE = ('infolettre', 'subscribe', 'newsletter')
 
@@ -291,11 +292,23 @@ def paiements(cfg, maximum=2000):
     return sortie
 
 
+def blogue(cfg):
+    """Articles publiés du blogue Wix (calendrier de contenu)."""
+    r = wix(cfg, 'GET', '/blog/v3/posts?' + urllib.parse.urlencode({'paging.limit': 100, 'fieldsets': 'URL'}))
+    sortie = []
+    for p in r.get('posts') or []:
+        u = p.get('url') or {}
+        sortie.append({'id': p.get('id'), 'titre': p.get('title', ''), 'date': p.get('firstPublishedDate'),
+                       'maj': p.get('lastPublishedDate'), 'lien': (u.get('base') or '') + (u.get('path') or ''),
+                       'extrait': (p.get('excerpt') or '')[:240], 'minutes': p.get('minutesToRead')})
+    return sortie
+
+
 def stats_wix(cfg, entrees=None):
     sortie, erreurs = {'version': 2}, {}
     for nom, fn in (('achalandage', lambda: achalandage(cfg)), ('paniers', lambda: paniers(cfg)), ('entonnoir', lambda: entonnoir_etat(cfg)),
                     ('formulaires', lambda: formulaires(cfg)), ('infolettres', lambda: infolettres(cfg)),
-                    ('coupons', lambda: coupons(cfg)), ('recherche', lambda: recherche(cfg)), ('paiements', lambda: paiements(cfg))):
+                    ('coupons', lambda: coupons(cfg)), ('recherche', lambda: recherche(cfg)), ('paiements', lambda: paiements(cfg)), ('blogue', lambda: blogue(cfg))):
         try:
             sortie[nom] = fn()
         except Exception as e:  # noqa: BLE001
@@ -381,4 +394,42 @@ def stats_meta(cfg, jours=30):
         sortie['jours'] = jours_l
     except Exception as e:  # noqa: BLE001
         sortie['erreurs']['statistiques'] = str(e)[:300]
+    # Dépenses par mois (13 mois) pour les Finances du hub.
+    try:
+        auj = date.today()
+        a, mo = auj.year, auj.month - 12
+        while mo < 1:
+            a, mo = a - 1, mo + 12
+        lignes = _toutes(cfg, compte + '/insights', level='account', time_increment='monthly', limit=50,
+                         time_range=json.dumps({'since': '%04d-%02d-01' % (a, mo), 'until': auj.isoformat()}),
+                         fields='spend,date_start,date_stop,account_currency')
+        sortie['mois'] = [{'mois': (l.get('date_start') or '')[:7], 'depense': float(l.get('spend') or 0),
+                           'devise': l.get('account_currency', 'CAD')} for l in lignes]
+    except Exception as e:  # noqa: BLE001
+        sortie['erreurs']['mois'] = str(e)[:300]
+    # Publications de la page Facebook (calendrier de contenu). Demande pages_read_engagement dans le jeton.
+    try:
+        sortie['publications'] = publications_page(cfg)
+    except Exception as e:  # noqa: BLE001
+        t = str(e)
+        sortie['erreurs']['publications'] = ('Le jeton Meta n’a pas la permission de lire la page Facebook. '
+                                             'Au prochain jeton, coche aussi pages_show_list et pages_read_engagement.'
+                                             if ('#10' in t or '#200' in t or 'permission' in t.lower() or '(#100)' in t) else t[:300])
+    return sortie
+
+
+def publications_page(cfg, maximum=60):
+    """Publications récentes des pages Facebook reliées au jeton (via le jeton de chaque page)."""
+    sortie = []
+    pages = _toutes(cfg, 'me/accounts', fields='id,name,access_token', limit=25)
+    for pg in pages:
+        jeton = pg.get('access_token')
+        if not jeton:
+            continue
+        r = meta(dict(cfg, meta_jeton=jeton), pg['id'] + '/published_posts',
+                 fields='id,message,created_time,permalink_url,full_picture,shares,status_type', limit=maximum)
+        for x in r.get('data') or []:
+            sortie.append({'id': x.get('id'), 'page': pg.get('name'), 'date': x.get('created_time'),
+                           'texte': (x.get('message') or '')[:400], 'lien': x.get('permalink_url', ''),
+                           'image': x.get('full_picture', ''), 'partages': (x.get('shares') or {}).get('count', 0)})
     return sortie

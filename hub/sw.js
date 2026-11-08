@@ -1,7 +1,7 @@
 // Hub Georama : service worker de l'appli installée (cellulaire, ordinateur).
 // Aucun fichier en cache : l'appli charge toujours la version en ligne du hub,
 // donc elle suit chaque mise à jour toute seule. Sans réseau : petite page d'attente.
-const VERSION = '1.9.2';
+const VERSION = '1.10';
 
 self.addEventListener('install', () => self.skipWaiting());
 
