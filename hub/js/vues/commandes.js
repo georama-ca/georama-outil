@@ -4,6 +4,7 @@ import {
   SEGMENTS, PRODUITS, NOMS_GAMMES, STATUTS, ACTIVES, nomSegment, produit, statut, formatTexte, totalHT,
   prochainNumero, synchroniserPlaques, demandeApprobation, estActive, taxesDe, reglages, plaquesDe, ETAPES, journaliser, icoSegment,
 } from '../donnees.js';
+import { ouvrirCourriel, suggestion, nomModele } from '../courriels.js';
 
 // Petite fête quand une maquette part chez son client
 export function celebrer(ctx, c) {
@@ -66,7 +67,8 @@ export function ouvrirCommande(ctx, id, prerempli = {}) {
     ${histo.length ? `<div style="margin-top:18px"><p class="surtitre" style="margin-bottom:6px">Historique</p>${histo.map(a => `<div class="fil-item"><span class="initiales">${esc(initiales(a.qui))}</span><span class="grow">${esc(a.texte)}<br><span class="tres-petit doux">${esc(prenom(a.qui))} · ${esc(ilYa(a.quand))}</span></span></div>`).join('')}</div>` : ''}`;
   const pied = existante
     ? `<div class="actions"><button type="button" class="btn-2 btn-danger" data-modal-act="supprimer">Supprimer</button>
-       <a class="btn-2" href="#/production/fiche/${esc(existante.id)}" data-modal-act="fiche">Fiche de production</a></div>`
+       <a class="btn-2" href="#/production/fiche/${esc(existante.id)}" data-modal-act="fiche">Fiche de production</a>
+       <button type="button" class="btn-2" data-modal-act="courriel">Courriel au client</button></div>`
     : '';
   const { form } = ouvrirFenetre({
     titre: existante ? 'Commande ' + existante.numero : 'Nouvelle commande',
@@ -80,6 +82,7 @@ export function ouvrirCommande(ctx, id, prerempli = {}) {
         return 'fermer';
       }
       if (act === 'fiche') return 'fermer';
+      if (act === 'courriel') { setTimeout(() => ouvrirCourriel(ctx, existante.id), 60); return 'fermer'; }
       return null;
     },
     onSubmit(d) {
@@ -130,7 +133,7 @@ function filtrer(ctx) {
   const e = etatVue(ctx);
   const q = e.q.toLowerCase();
   return ctx.m.liste('commandes')
-    .filter(c => e.statut === 'toutes' || (e.statut === 'actives' ? ACTIVES.includes(c.statut) : c.statut === e.statut))
+    .filter(c => e.statut === 'toutes' || (e.statut === 'actives' ? ACTIVES.includes(c.statut) : e.statut === 'courriels' ? !!suggestion(c) : c.statut === e.statut))
     .filter(c => !e.segment || c.segment === e.segment)
     .filter(c => !q || [c.numero, c.client, c.courriel, c.lieu, c.notes].some(v => String(v || '').toLowerCase().includes(q)))
     .sort((a, b) => ACTIVES.includes(a.statut) && ACTIVES.includes(b.statut)
@@ -150,7 +153,7 @@ function vueCommandes(ctx) {
       <td>${esc(c.client)}<br><span class="petit doux">${esc(c.lieu)}</span></td>
       <td>${esc(nomSegment(c.segment))}</td>
       <td class="petit">${esc(formatTexte(c))}<br><span class="doux">${esc(c.gamme)}</span></td>
-      <td>${badgeStatut(c.statut)}</td>
+      <td>${badgeStatut(c.statut)}${suggestion(c) ? `<br><button type="button" class="btn-lien tres-petit" data-act="courriel" data-id="${esc(c.id)}" style="min-height:28px;font-size:12px">Courriel : ${esc(nomModele(suggestion(c)))}</button>` : ''}</td>
       <td class="petit num">${esc(dateCourte(c.recue))}</td>
       <td class="petit num">${promiseTexte(c)}</td>
       <td class="droite num">${argent(ht + t.tps + t.tvq, 2)}${c.payee ? '' : '<br><span class="etiquette orange">À encaisser</span>'}</td>
@@ -162,7 +165,7 @@ function vueCommandes(ctx) {
       <label class="sr" for="cherche-cmd">Chercher une commande</label>
       <input id="cherche-cmd" type="search" placeholder="Client, numéro, lieu" value="${esc(e.q)}" data-input="cherche">
       <label class="sr" for="filtre-statut">Statut</label>
-      <select id="filtre-statut" data-chg="statut">${options([{ id: 'actives', nom: 'En cours' }, { id: 'toutes', nom: 'Toutes' }].concat(STATUTS), e.statut)}</select>
+      <select id="filtre-statut" data-chg="statut">${options([{ id: 'actives', nom: 'En cours' }, { id: 'toutes', nom: 'Toutes' }, { id: 'courriels', nom: 'Courriel à envoyer' }].concat(STATUTS), e.statut)}</select>
       <label class="sr" for="filtre-seg">Segment</label>
       <select id="filtre-seg" data-chg="segment">${options(SEGMENTS, e.segment, 'Tous les segments')}</select>
       <span class="petit doux">${liste.length} commande${liste.length > 1 ? 's' : ''}</span>
@@ -200,6 +203,7 @@ export default {
   titre: 'Commandes',
   render(ctx) {
     const sous = ctx.route.sous;
+    if (ctx.route.q && ctx.route.q.has('courriels')) { etatVue(ctx).statut = 'courriels'; history.replaceState(null, '', '#/commandes'); }
     const actives = ctx.m.liste('commandes').filter(estActive).length;
     return `<header class="entete">
         <div><p class="surtitre">Commandes et clients</p><h1 class="titre-1">${sous === 'clients' ? 'Clients' : 'Commandes'}</h1></div>
@@ -213,7 +217,8 @@ export default {
   },
   actions: {
     nouvelle: ctx => ouvrirCommande(ctx, null),
-    ouvrir: (ctx, el) => ouvrirCommande(ctx, el.getAttribute('data-id')),
+    ouvrir: (ctx, el, ev) => { if (ev && ev.target.closest('[data-act="courriel"]')) return; ouvrirCommande(ctx, el.getAttribute('data-id')); },
+    courriel: (ctx, el, ev) => { if (ev) ev.stopPropagation(); ouvrirCourriel(ctx, el.getAttribute('data-id')); },
     'voir-client': (ctx, el) => { const e = etatVue(ctx); e.q = el.getAttribute('data-q'); e.statut = 'toutes'; ctx.aller('#/commandes'); },
   },
   changes: {

@@ -23,6 +23,8 @@ echo  Python trouvé : %PY%
 if not exist "%DEST%" mkdir "%DEST%"
 copy /Y "%~dp0agent_georama.py" "%DEST%\" >nul
 copy /Y "%~dp0rendu3mf.py" "%DEST%\" >nul
+copy /Y "%~dp0configurer.py" "%DEST%\" >nul
+copy /Y "%~dp0Configurer.bat" "%DEST%\" >nul
 copy /Y "%~dp0Demarrer agent.bat" "%DEST%\" >nul
 copy /Y "%~dp0Arreter agent.bat" "%DEST%\" >nul
 copy /Y "%~dp0Voir le journal.bat" "%DEST%\" >nul
@@ -44,6 +46,9 @@ if errorlevel 1 (
   echo  Tâche planifiée refusée : ajout d'un raccourci dans le dossier Démarrage à la place.
   powershell -NoProfile -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Startup')+'\Agent Georama.lnk');$s.TargetPath='%DEST%\Demarrer agent.bat';$s.WindowStyle=7;$s.Save()"
 )
+echo.
+choice /C ON /M " Brancher maintenant Wix et l'imprimante (O = oui, N = plus tard)"
+if not errorlevel 2 "%DEST%\.venv\Scripts\python.exe" "%DEST%\configurer.py"
 echo  Test rapide...
 "%DEST%\.venv\Scripts\python.exe" "%DEST%\agent_georama.py" --une-fois
 call "%DEST%\Demarrer agent.bat"

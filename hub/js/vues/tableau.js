@@ -5,6 +5,7 @@ import {
   activiteRecente, minutesSemaine, debutSemaine, agent, icoSegment, statutProspect,
 } from '../donnees.js';
 import { badgeStatut, promiseTexte, ouvrirCommande } from './commandes.js';
+import { suggestion, nomModele } from '../courriels.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.tableau) ctx.etat.tableau = { voirFaites: false };
@@ -26,6 +27,9 @@ function sept(ctx) {
     .forEach(p => ajout(p.prochaine, 'prospect', `${esc(p.action || statutProspect(p.statut).nom)} · ${esc(p.organisation)}`, '#/marketing', 'var(--balise)'));
   m.liste('campagnes').filter(k => k.fin && k.fin >= auj && k.fin <= fin)
     .forEach(k => ajout(k.fin, 'pub', `Fin de la campagne ${esc(k.nom)}`, '#/marketing/campagnes', 'var(--bordure-controle)'));
+  const aEcrire = m.liste('commandes').filter(c => suggestion(c));
+  aEcrire.slice(0, 3).forEach(c => ajout(auj, 'courriel', `Courriel « ${esc(nomModele(suggestion(c)))} » à ${esc(c.client)}`, '#/production/fiche/' + c.id, 'var(--accent-texte)'));
+  if (aEcrire.length > 3) ajout(auj, 'courriel', `Et ${aEcrire.length - 3} autre${aEcrire.length - 3 > 1 ? 's' : ''} courriel${aEcrire.length - 3 > 1 ? 's' : ''} client${aEcrire.length - 3 > 1 ? 's' : ''} à envoyer`, '#/commandes?courriels', 'var(--accent-texte)');
   [[R.dateLimiteNoel, 'Dernières commandes de Noël'], [R.dernierEnvoi, 'Dernier envoi avant Noël']].forEach(([d, t]) => { if (d >= auj && d <= fin) ajout(d, 'noel', `<strong>${t}</strong>`, '#/production/planification', 'var(--balise)'); });
   const jours = ['retard'];
   for (let i = 0; i < 7; i++) jours.push(ajouterJours(auj, i));

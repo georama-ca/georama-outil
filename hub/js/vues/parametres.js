@@ -5,6 +5,7 @@ import { lireLieu, ecrireLieu, COLLECTIONS } from '../store.js';
 import { reglages, agent } from '../donnees.js';
 import { donneesDemo } from '../demo.js';
 import { esc, toast, telecharger, aujourdhui, ilYa, ico } from '../ui.js';
+import { modeles, SIGNATURE_DEFAUT, MODELES } from '../courriels.js';
 
 const GUIDE = 'https://github.com/georama-ca/georama-outil/blob/main/hub/LISEZMOI.md';
 
@@ -105,6 +106,19 @@ export default {
         </section>
         <div><button type="submit" class="btn">Enregistrer les paramètres</button></div>
       </form>
+      <form data-form="courriels" class="carte">
+        <h2>Courriels aux clients</h2>
+        <p class="petit doux" style="margin:0 0 12px">Les modèles proposés dans chaque commande. Variables : {prenom} {client} {numero} {lieu} {format} {gamme} {segment} {date_promise} {suivi} {lien_suivi} {lien_zone} {total} {signature}.</p>
+        <div class="champ" style="margin-bottom:14px"><label for="sig">Signature ({prenom_moi} = prénom de la personne connectée)</label><textarea id="sig" name="signature" rows="3">${esc(reglages(ctx.m).signatureCourriel || SIGNATURE_DEFAUT)}</textarea></div>
+        ${modeles(ctx.m).map(x => `<details style="border-top:1px solid var(--bordure);padding:10px 0">
+          <summary style="cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center">${esc(x.nom)}${(reglages(ctx.m).modelesCourriel || {})[x.id] ? ' <span class="etiquette vert" style="margin-left:8px">modifié</span>' : ''}</summary>
+          <div class="champs" style="margin-top:10px">
+            <div class="champ plein"><label for="mo-${x.id}">Objet</label><input id="mo-${x.id}" name="objet-${x.id}" type="text" value="${esc(x.objet)}"></div>
+            <div class="champ plein"><label for="mc-${x.id}">Message</label><textarea id="mc-${x.id}" name="corps-${x.id}" rows="10">${esc(x.corps)}</textarea></div>
+            <div class="champ plein"><button type="button" class="btn-lien" data-act="reset-modele" data-id="${x.id}" style="align-self:flex-start">Remettre le texte d'origine</button></div>
+          </div></details>`).join('')}
+        <div style="margin-top:12px"><button type="submit" class="btn">Enregistrer les courriels</button></div>
+      </form>
       <section class="carte">
         <h2>Sauvegarde</h2>
         <p class="petit doux" style="margin:0 0 12px">Une copie complète des données en un fichier. Utile avant un gros changement ou pour passer du mode démo à Microsoft 365.</p>
@@ -118,6 +132,13 @@ export default {
       <p class="tres-petit doux">Hub Georama v${esc(CONFIG.version)} (${esc(CONFIG.versionDate)}). <a href="${GUIDE}" target="_blank" rel="noopener">Guide et journal des versions</a>.</p>`;
   },
   actions: {
+    'reset-modele': (ctx, el) => {
+      const R = reglages(ctx.m);
+      const perso = Object.assign({}, R.modelesCourriel || {});
+      delete perso[el.getAttribute('data-id')];
+      ctx.m.mettre('reglages', Object.assign({}, R, { id: 'general', modelesCourriel: perso }));
+      toast('Texte d\u2019origine remis.');
+    },
     deconnexion: ctx => ctx.global.deconnexion(),
     'changer-dossier': () => { if (confirm('Choisir un autre dossier de données sur cet appareil ?')) { ecrireLieu(null); location.reload(); } },
     'vers-demo': () => { try { localStorage.setItem('georama-hub-mode', 'demo'); } catch (e) { /* rien */ } location.reload(); },
@@ -151,6 +172,17 @@ export default {
     },
   },
   formulaires: {
+    courriels: (ctx, d) => {
+      const R = reglages(ctx.m);
+      const perso = {};
+      MODELES.forEach(x => {
+        const objet = d['objet-' + x.id], corps = String(d['corps-' + x.id] || '').replace(/\r\n/g, '\n');
+        if (objet !== x.objet || corps !== x.corps) perso[x.id] = { objet, corps };
+      });
+      const sig = String(d.signature || '').replace(/\r\n/g, '\n');
+      ctx.m.mettre('reglages', Object.assign({}, R, { id: 'general', modelesCourriel: perso, signatureCourriel: sig === SIGNATURE_DEFAUT ? '' : sig }));
+      toast('Courriels enregistrés.');
+    },
     ids: (ctx, d) => {
       if (!/^[0-9a-f-]{36}$/i.test(d.clientId) || !/^[0-9a-f-]{36}$/i.test(d.tenantId)) { toast('Les deux identifiants ont la forme 00000000-0000-0000-0000-000000000000.', true); return; }
       auth.enregistrerIds(d.clientId, d.tenantId);

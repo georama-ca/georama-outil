@@ -48,6 +48,11 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.1 (7 novembre 2026)
+- **Courriels aux clients en un clic** : 6 modèles (commande reçue, aperçu à approuver, en production, prête à récupérer, expédiée avec suivi Postes Canada, merci et avis). Le hub suggère le bon courriel au bon moment (fiche de production, liste des commandes, « Les 7 prochains jours »), l'ouvre prérempli dans la messagerie ou le copie, et garde l'historique. Modèles et signature modifiables dans Paramètres.
+- Filtre « Courriel à envoyer » dans les commandes.
+- **Ordi de la maison v1.1** : assistant `Configurer.bat` pour brancher Wix (clé tapée sur le PC seulement, ID du site Georama déjà rempli, test de connexion) et l'imprimante Bambu.
+
 ### v1.0 (6 novembre 2026)
 - **Ordi de la maison** : agent Windows (`agent/agent-georama.zip`). Rendu 3D automatique de tout .3mf déposé dans le dossier d'une commande, travaux demandés depuis le hub (« Produire le .3mf », « Refaire le rendu 3D »), état en direct de l'imprimante Bambu (optionnel), commandes du site Wix importées toutes seules (optionnel).
 - **Fiche de production** : galerie des rendus 3D, fichiers de la commande, lien vers le dossier OneDrive, suivi des travaux demandés.

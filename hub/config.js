@@ -3,8 +3,8 @@
 // (voir LISEZMOI.md). Ce ne sont pas des secrets : ils peuvent être publics.
 // Tant qu'ils sont vides, le hub fonctionne en mode démo (données dans ce navigateur seulement).
 export const CONFIG = {
-  version: '1.0',
-  versionDate: '2026-11-06',
+  version: '1.1',
+  versionDate: '2026-11-07',
   // « ID d'application (client) » de l'application « Hub Georama »
   clientId: '',
   // « ID de l'annuaire (locataire) » de Georama

@@ -6,6 +6,7 @@ import {
   journaliser, agent, etatImprimanteDirect, travauxDe, dossierCommande, icoSegment,
 } from '../donnees.js';
 import { ouvrirCommande, badgeStatut, promiseTexte, celebrer } from './commandes.js';
+import { carteCourriels, ouvrirCourriel } from '../courriels.js';
 
 const UNITES = { A: 'AMS 2 Pro · A', B: 'AMS 2 Pro · B', HT: 'AMS HT' };
 
@@ -268,6 +269,7 @@ function vueFiche(ctx) {
           <div class="barre"><span style="width:${Math.round(nFait / ETAPES.length * 100)}%"></span></div>
           <p class="petit" style="margin:10px 0 0">${prochaine ? 'Prochaine étape : <strong>' + esc(prochaine.titre) + '</strong>' : '<strong class="vert-t">Maquette livrée. Bravo.</strong>'}</p>
         </section>
+        ${carteCourriels(ctx, c)}
         <section class="carte">
           <p class="surtitre">Temps de travail</p>
           <p class="num" style="margin:6px 0;font-size:28px;font-weight:700" id="chrono-val">${heures(minutes / 60)}</p>
@@ -537,6 +539,7 @@ export default {
     monter: (ctx, el) => deplacer(ctx, el.getAttribute('data-id'), -1),
     descendre: (ctx, el) => deplacer(ctx, el.getAttribute('data-id'), 1),
     modifier: (ctx, el) => ouvrirCommande(ctx, el.getAttribute('data-id')),
+    courriel: (ctx, el) => ouvrirCourriel(ctx, el.getAttribute('data-id'), el.getAttribute('data-modele') || undefined),
     chrono: ctx => {
       const c = ficheCourante(ctx);
       const ch = lireChrono();

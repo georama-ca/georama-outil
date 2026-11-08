@@ -32,7 +32,7 @@ import traceback
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.0'
+VERSION = '1.1'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 

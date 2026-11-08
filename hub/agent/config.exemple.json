@@ -18,9 +18,9 @@
     { "id": "h2c", "ip": "", "serie": "", "code_acces": "" }
   ],
 
-  "_wix": "Optionnel. Clé API Wix (gardée sur ce PC seulement) et ID du site. Les nouvelles commandes du site arrivent toutes seules dans le hub.",
+  "_wix": "Optionnel. Le plus simple : double-cliquer sur Configurer.bat. Clé API Wix gardée sur ce PC seulement.",
   "wix_cle_api": "",
-  "wix_site_id": "",
+  "wix_site_id": "6cc4ffd6-5a4b-4c0b-a31c-da167dc6820a",
   "wix_depuis": "2026-11-01",
   "wix_minutes": 10
 }

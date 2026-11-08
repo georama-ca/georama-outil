@@ -31,6 +31,12 @@ GARDER LE PC DISPONIBLE
   (sur secteur). L'écran peut s'éteindre, ça ne dérange pas l'agent.
   La session Windows doit rester ouverte (verrouillée, c'est correct).
 
+BRANCHER WIX ET L'IMPRIMANTE
+  Double-cliquer sur Configurer.bat (aussi proposé à la fin de l'installation).
+  - Wix : créer une clé API dans manage.wix.com > Paramètres du compte > Clés API,
+    permission « Wix eCommerce : Read Orders ». La clé se tape sur ce PC seulement.
+  - Imprimante : adresse IP, code d'accès LAN (écran de l'imprimante) et numéro de série.
+
 RÉGLAGES
   %LOCALAPPDATA%\Agent-Georama\config.json  (ouvrir avec le Bloc-notes)
   Après un changement : Arreter agent.bat, puis Demarrer agent.bat.
@@ -45,4 +51,4 @@ DÉSINSTALLER
     schtasks /Delete /TN "Agent Georama" /F
   et supprimer le dossier %LOCALAPPDATA%\Agent-Georama.
 
-Version 1.0 - novembre 2026
+Version 1.1 - novembre 2026
