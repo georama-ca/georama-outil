@@ -119,6 +119,68 @@ function majChrono() {
   const el = document.getElementById('chrono-g'); if (el) el.innerHTML = chronoHtml();
   const em = document.getElementById('chrono-m'); if (em) em.innerHTML = chronoMobile();
 }
+// Arrêt automatique : sans activité dans le hub pendant INACTIF_MIN minutes, le chrono s'arrête
+// et le temps est enregistré jusqu'à la dernière activité (pas jusqu'au retour).
+// Activité = souris, clavier, défilement, toucher, ou travail dans Georama Production (cadre actif).
+const CLE_ACTIVITE = 'georama-hub-activite';
+const INACTIF_MIN = 20;
+let derniereEcriture = 0;
+function noterActivite() {
+  const t = Date.now();
+  if (t - derniereEcriture < 15000) return;
+  derniereEcriture = t;
+  try { localStorage.setItem(CLE_ACTIVITE, String(t)); } catch (e) { /* rien */ }
+  const msg = (() => { try { return localStorage.getItem('georama-hub-chrono-auto'); } catch (e) { return null; } })();
+  if (msg) { try { localStorage.removeItem('georama-hub-chrono-auto'); } catch (e) { /* rien */ } toast(msg); }
+}
+function derniereActivite() { try { return Number(localStorage.getItem(CLE_ACTIVITE)) || 0; } catch (e) { return 0; } }
+// Dernière activité AVANT cette ouverture du hub (ordi en veille, onglet fermé…)
+const activiteAvant = derniereActivite();
+function verifierInactivite(depuis) {
+  const c = lireChronoG();
+  if (!c || c.qui !== ctx.moi || !ctx.m) return;
+  const a = document.activeElement;
+  if (document.visibilityState === 'visible' && document.hasFocus() && a && a.tagName === 'IFRAME') { noterActivite(); return; }
+  const der = Math.max(depuis || derniereActivite(), c.debut);
+  if (Date.now() - der < INACTIF_MIN * 60000) return;
+  const minutes = Math.round((der - c.debut) / 60000);
+  try { localStorage.removeItem(CLE_CHRONO_G); } catch (e) { /* rien */ }
+  const fin = new Date(der);
+  const hhmm = fin.getHours() + ' h ' + String(fin.getMinutes()).padStart(2, '0');
+  if (minutes >= 1) {
+    ctx.m.mettre('temps', { id: uid('h'), qui: ctx.moi, date: aujourdhui(), minutes, categorie: c.categorie || 'Autre', commande: '', note: 'Chrono arrêté automatiquement (aucune activité dans le hub après ' + hhmm + ')' }, true);
+    ctx.m.avertir('local');
+  }
+  const msg = 'Ton chrono s’est arrêté tout seul à ' + hhmm + ' (' + INACTIF_MIN + ' min sans activité dans le hub). ' + (minutes >= 1 ? heures(minutes / 60) + ' enregistrées.' : 'Rien à enregistrer.');
+  try { localStorage.setItem('georama-hub-chrono-auto', msg); } catch (e) { /* rien */ }
+  majChrono();
+}
+['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach(ev => window.addEventListener(ev, noterActivite, { passive: true, capture: true }));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') verifierInactivite(); });
+
+// Nouvelle version publiée : le hub se recharge tout seul au bon moment (rien en attente d'envoi).
+let versionEnLigne = '';
+async function verifierVersion() {
+  try {
+    const t = await fetch('config.js?v=' + Date.now(), { cache: 'no-store' }).then(r => r.text());
+    const v = (t.match(/version:\s*'([^']+)'/) || [])[1];
+    if (!v || v === CONFIG.version) return;
+    versionEnLigne = v;
+    const enAttente = ctx.m && ctx.m.enAttente && ctx.m.enAttente();
+    const modal = document.getElementById('modal');
+    if (!enAttente && !(modal && modal.open) && (document.visibilityState !== 'visible' || Date.now() - derniereActivite() > 2 * 60000)) { location.reload(); return; }
+    let b = document.getElementById('maj-dispo');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'maj-dispo';
+      b.className = 'bandeau info';
+      b.style.cssText = 'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:50;max-width:calc(100vw - 32px);box-shadow:0 6px 24px rgba(0,0,0,.35)';
+      b.innerHTML = '<span><strong>Nouvelle version du hub (v' + esc(v) + ').</strong> Recharge pour l’avoir.</span><button type="button" class="btn" onclick="location.reload()">Recharger</button>';
+      document.body.appendChild(b);
+    }
+  } catch (e) { /* hors ligne : on réessaie plus tard */ }
+}
+
 function arreterChrono() {
   const c = lireChronoG();
   if (!c) return;
@@ -416,6 +478,11 @@ async function demarrer() {
   verifierWix();
   if (ctx.mode === 'demo') demarrerAgentDemo(ctx.m);
   setInterval(majChrono, 20000);
+  if (activiteAvant) verifierInactivite(activiteAvant);
+  noterActivite();
+  setInterval(() => verifierInactivite(), 60000);
+  setInterval(verifierVersion, 3 * 60000);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') verifierVersion(); });
   window.addEventListener('hashchange', rendre);
   if (ctx.mode !== 'demo') {
     setInterval(() => { if (document.visibilityState === 'visible') ctx.m.rafraichir(); }, 30000);

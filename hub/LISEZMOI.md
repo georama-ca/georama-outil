@@ -48,6 +48,10 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.11.1 (8 novembre 2026)
+- Chrono : arrêt automatique après 20 minutes sans activité dans le hub (souris, clavier, toucher, ou travail dans le cadre Georama Production). Le temps est enregistré jusqu'à la dernière activité, avec une note ; un message l'explique au retour. Vérifié aussi à l'ouverture du hub (ordi en veille, onglet fermé).
+- Nouvelle version publiée : le hub la détecte (toutes les 3 minutes et au retour sur l'onglet). Il se recharge tout seul si rien n'est en attente d'envoi et que personne ne s'en sert ; sinon un bandeau « Recharger » s'affiche.
+
 ### v1.11 (8 novembre 2026)
 - Suivi automatique des courriels de prospection (js/suivi-courriels.js). Le hub lit seulement les en-têtes des courriels de la personne connectée (autorisation Microsoft « Mail.ReadBasic », demandée une fois par le bouton « Activer » de Prospection ; jamais le contenu), toutes les 15 minutes au plus.
 - Les échanges sont reliés aux prospects par adresse, ou par domaine quand un seul prospect l'utilise (jamais Gmail, Hotmail, Sogetel, regionmekinac.com partagé, etc.). Historique dans la nouvelle collection « courriels » et sur la fiche du prospect.
