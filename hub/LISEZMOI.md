@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.11.3 (8 novembre 2026)
+- Tâches fusionnées dans le Tableau de bord, sur ordi comme au cellulaire : onglets « Aperçu · Tâches » en haut de la page, plus d'entrée Tâches séparée dans le menu (#/taches marche toujours). Raccourcis 1 à 5 de nouveau alignés sur le menu.
+
 ### v1.11.2 (8 novembre 2026)
 - Ventes : une commande reliée à des paiements Wix compte seulement la partie NON payée par Wix (ex. contrat de 1 250 $ dont 500 $ inscrits dans Wix et le reste par virement Interac). Avant, elle disparaissait au complet dès qu'un paiement Wix y était relié.
 - 8 commandes passées entrées dans commandes.json (Clients), champ `importe: true`.

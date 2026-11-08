@@ -264,7 +264,7 @@ function brancherGlisser(ctx) {
 /* ---------- Pour le tableau de bord ---------- */
 // Au cellulaire, Tâches est dans Accueil : deux onglets en haut (pas de 6e bouton en bas).
 export function ongletsAccueil(actif) {
-  return `<nav class="onglets onglets-accueil seulement-mobile" aria-label="Accueil">
+  return `<nav class="onglets onglets-accueil" aria-label="Tableau de bord">
       <a href="#/"${actif === '' ? ' aria-current="page"' : ''}>Aperçu</a>
       <a href="#/taches"${actif === 'taches' ? ' aria-current="page"' : ''}>Tâches</a>
     </nav>`;

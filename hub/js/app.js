@@ -19,7 +19,6 @@ import taches, { colonneDe, COLONNES } from './vues/taches.js';
 const VUES = { '': tableau, taches, commandes, production, marketing, finances, parametres };
 const MENU = [
   { id: '', nom: 'Tableau de bord', court: 'Accueil', ico: 'accueil' },
-  { id: 'taches', nom: 'Tâches', court: 'Tâches', ico: 'taches', pasEnBas: true }, // au cellulaire : dans Accueil
   { id: 'commandes', nom: 'Commandes et clients', court: 'Commandes', ico: 'commandes' },
   { id: 'production', nom: 'Production', court: 'Production', ico: 'production' },
   { id: 'marketing', nom: 'Marketing et prospection', court: 'Marketing', ico: 'marketing' },
@@ -58,7 +57,8 @@ function etatSync() {
 
 function coquille(corps) {
   const r = ctx.route;
-  const nav = MENU.map(i => `<a class="nav" href="#/${i.id}" title="${esc(i.nom)}"${r.vue === i.id ? ' aria-current="page"' : ''}>${ico(i.ico)}<span>${esc(i.nom)}</span></a>`).join('');
+  // Les tâches font partie du tableau de bord (onglets Aperçu · Tâches), sur ordi comme au cellulaire.
+  const nav = MENU.map(i => `<a class="nav" href="#/${i.id}" title="${esc(i.nom)}"${r.vue === i.id || (i.id === '' && r.vue === 'taches') ? ' aria-current="page"' : ''}>${ico(i.ico)}<span>${esc(i.nom)}</span></a>`).join('');
   const choixMoi = ctx.mode === 'demo'
     ? `<label class="tres-petit doux" for="moi-demo">Je suis</label>
        <select id="moi-demo" data-chg="moi-demo">${ctx.membres.map(n => `<option${n === ctx.moi ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>`
