@@ -50,6 +50,27 @@ export function totauxMeta(m, jours = 30) {
   }), { depense: 0, clics: 0, vues: 0, impressions: 0, conversions: 0 });
 }
 
+// Tableau des campagnes Meta (30 jours), lu par l'ordi de la maison : dans Site et pubs et dans Campagnes.
+export function tableauMeta(m) {
+  const me = statsMeta(m);
+  let metaHtml = '<p class="petit doux" style="margin:0">Pas branché. Le jeton Meta (permission ads_read) se colle avec « Brancher Meta.bat » sur l’ordi de la maison.</p>';
+  if (me && me.jours) {
+    const parK = {};
+    me.jours.forEach(j => { const k = parK[j.campagne] = parK[j.campagne] || { nom: j.nom, depense: 0, impressions: 0, clics: 0, vues: 0, conv: 0, dernier: '' }; k.depense += j.depense; k.impressions += j.impressions; k.clics += j.clics_lien; k.vues += j.vues_page; k.conv += j.conversions; if (j.date > k.dernier) k.dernier = j.date; });
+    const statut = Object.fromEntries((me.campagnes || []).map(c => [c.id, c.statut]));
+    const lignes = Object.entries(parK).sort((a, b) => b[1].dernier.localeCompare(a[1].dernier)).map(([id, k]) => `<tr>
+        <td><strong>${esc(k.nom)}</strong><br>${statut[id] === 'ACTIVE' ? '<span class="etiquette vert">Active</span>' : '<span class="etiquette gris">' + esc(statut[id] || 'Terminée') + '</span>'}</td>
+        <td class="droite num">${argent(k.depense, 2)}</td><td class="droite num">${nombre(k.impressions)}</td>
+        <td class="droite num">${nombre(k.clics)}</td><td class="droite num">${nombre(k.vues)}</td><td class="droite num">${nombre(k.conv)}</td>
+        <td class="droite num">${k.clics ? argent(k.depense / k.clics, 2) : '—'}</td></tr>`).join('');
+    metaHtml = `<div class="table-boite"><table class="liste"><thead><tr><th>Campagne</th><th class="droite">Dépensé</th><th class="droite">Vues de la pub</th><th class="droite">Clics</th><th class="droite">Visites</th><th class="droite">Conversions</th><th class="droite">$ / clic</th></tr></thead>
+      <tbody>${lignes || '<tr><td colspan="7" class="vide">Aucune dépense sur 30 jours.</td></tr>'}</tbody></table></div>
+      <p class="tres-petit doux" style="margin:6px 0 0">30 derniers jours. Lu ${esc(ilYa(me.lu))}.</p>`;
+  }
+
+  return metaHtml;
+}
+
 function barres(jours, unite) {
   if (!jours || !jours.length) return '<p class="petit doux">Pas encore de données.</p>';
   const max = Math.max(1, ...jours.map(j => j.valeur || 0));
@@ -108,20 +129,7 @@ export function vueSuivi(ctx) {
     </div>`).join('');
 
   // pubs Meta par campagne (30 jours)
-  let metaHtml = '<p class="petit doux" style="margin:0">Pas branché. Le jeton Meta (permission ads_read) se colle avec « Brancher Meta.bat » sur l’ordi de la maison.</p>';
-  if (me && me.jours) {
-    const parK = {};
-    me.jours.forEach(j => { const k = parK[j.campagne] = parK[j.campagne] || { nom: j.nom, depense: 0, impressions: 0, clics: 0, vues: 0, conv: 0, dernier: '' }; k.depense += j.depense; k.impressions += j.impressions; k.clics += j.clics_lien; k.vues += j.vues_page; k.conv += j.conversions; if (j.date > k.dernier) k.dernier = j.date; });
-    const statut = Object.fromEntries((me.campagnes || []).map(c => [c.id, c.statut]));
-    const lignes = Object.entries(parK).sort((a, b) => b[1].dernier.localeCompare(a[1].dernier)).map(([id, k]) => `<tr>
-        <td><strong>${esc(k.nom)}</strong><br>${statut[id] === 'ACTIVE' ? '<span class="etiquette vert">Active</span>' : '<span class="etiquette gris">' + esc(statut[id] || 'Terminée') + '</span>'}</td>
-        <td class="droite num">${argent(k.depense, 2)}</td><td class="droite num">${nombre(k.impressions)}</td>
-        <td class="droite num">${nombre(k.clics)}</td><td class="droite num">${nombre(k.vues)}</td><td class="droite num">${nombre(k.conv)}</td>
-        <td class="droite num">${k.clics ? argent(k.depense / k.clics, 2) : '—'}</td></tr>`).join('');
-    metaHtml = `<div class="table-boite"><table class="liste"><thead><tr><th>Campagne</th><th class="droite">Dépensé</th><th class="droite">Vues de la pub</th><th class="droite">Clics</th><th class="droite">Visites</th><th class="droite">Conversions</th><th class="droite">$ / clic</th></tr></thead>
-      <tbody>${lignes || '<tr><td colspan="7" class="vide">Aucune dépense sur 30 jours.</td></tr>'}</tbody></table></div>
-      <p class="tres-petit doux" style="margin:6px 0 0">30 derniers jours. Lu ${esc(ilYa(me.lu))}.</p>`;
-  }
+  const metaHtml = tableauMeta(m);
 
   // Google (Search Console), infolettres, abonnés, codes promo
   const rech = w && w.recherche;

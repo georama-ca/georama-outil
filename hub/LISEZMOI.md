@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.9.2 (8 novembre 2026)
+- **Marketing › Campagnes** montre maintenant les campagnes Meta lues automatiquement (dépensé, vues, clics, visites, conversions, 30 jours), et les totaux en haut les incluent. Les campagnes hors Meta restent dans « Autres campagnes (suivies à la main) ».
+
 ### v1.9.1 (8 novembre 2026)
 - **Pubs Meta branchées** : l'ordi de la maison lit les campagnes et les dépenses Meta (API v27.0). Jeton collé avec « Brancher Meta.bat » (une seule question, jeton invisible).
 

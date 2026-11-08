@@ -2,7 +2,7 @@
 import { esc, argent, nombre, dateCourte, options, ouvrirFenetre, aujourdhui, joursEntre, uid, toast, initiales } from '../ui.js';
 import { STATUTS_PROSPECT, statutProspect, TYPES_PROSPECT, CANAUX, SEGMENTS, nomSegment, journaliser, reglages } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
-import { vueSuivi, monterCarte, etatSuivi, totauxMeta, statsWix } from './suivi.js';
+import { vueSuivi, monterCarte, etatSuivi, totauxMeta, statsWix, tableauMeta } from './suivi.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.mkt) ctx.etat.mkt = { q: '', statut: 'actifs' };
@@ -158,18 +158,24 @@ function vueCampagnes(ctx) {
       <td class="droite num">${k.commandes ? argent((Number(k.depense) || 0) / k.commandes, 2) : '—'}</td>
     </tr>`;
   }).join('');
+  const meta = totauxMeta(ctx.m, 30);
+  const dep = tot.dep + (meta ? meta.depense : 0), vis = tot.vis + (meta ? meta.vues : 0);
   return `
     <section class="g4" aria-label="Totaux">
-      <div class="carte kpi"><p class="surtitre">Dépensé</p><p class="valeur">${argent(tot.dep, 2)}</p></div>
-      <div class="carte kpi"><p class="surtitre">Visites</p><p class="valeur">${nombre(tot.vis)}</p></div>
-      <div class="carte kpi"><p class="surtitre">Commandes</p><p class="valeur">${nombre(tot.cmd)}</p></div>
-      <div class="carte kpi"><p class="surtitre">Coût par commande</p><p class="valeur">${tot.cmd ? argent(tot.dep / tot.cmd, 2) : '—'}</p></div>
+      <div class="carte kpi"><p class="surtitre">Dépensé</p><p class="valeur">${argent(dep, 2)}</p>${meta ? `<p class="detail">dont Meta ${argent(meta.depense, 2)} · 30 j</p>` : ''}</div>
+      <div class="carte kpi"><p class="surtitre">Visites</p><p class="valeur">${nombre(vis)}</p>${meta ? `<p class="detail">dont Meta ${nombre(meta.vues)} · 30 j</p>` : ''}</div>
+      <div class="carte kpi"><p class="surtitre">Commandes</p><p class="valeur">${nombre(tot.cmd)}</p>${meta ? `<p class="detail">${nombre(meta.conversions)} conversions Meta · 30 j</p>` : ''}</div>
+      <div class="carte kpi"><p class="surtitre">Coût par commande</p><p class="valeur">${tot.cmd ? argent(dep / tot.cmd, 2) : '—'}</p></div>
     </section>
-    <div class="carte table-boite" style="padding:6px 8px">
+    <section class="carte">
+      <div class="carte-tete"><h2>Campagnes Meta</h2><span class="tres-petit doux">Lues automatiquement par l’ordi de la maison</span></div>
+      ${tableauMeta(ctx.m)}
+    </section>
+    <section class="carte table-boite" style="padding:6px 8px">
+      <div class="carte-tete" style="padding:10px 10px 0"><h2>Autres campagnes (suivies à la main)</h2></div>
       <table class="liste"><thead><tr><th>Campagne</th><th>Segment</th><th>Période</th><th>Dépensé / budget</th><th class="droite">Visites</th><th class="droite">Commandes</th><th class="droite">Coût / commande</th></tr></thead>
-      <tbody>${lignes || '<tr><td colspan="7" class="vide">Aucune campagne. <button type="button" class="btn-lien" data-act="nouvelle-k">Ajouter une campagne</button></td></tr>'}</tbody></table>
-    </div>
-    <p class="tres-petit doux" style="margin:0">${totauxMeta(ctx.m, 30) ? 'Les chiffres Meta lus automatiquement sont dans <a href="#/marketing/suivi">Site et pubs</a>. Ici : le suivi de tes campagnes, à la main.' : 'Les visites et les zones des visiteurs sont dans <a href="#/marketing/suivi">Site et pubs</a> (lu par l’ordi de la maison).'}</p>`;
+      <tbody>${lignes || '<tr><td colspan="7" class="vide">Aucune. Pour une campagne hors Meta (journal, salon, Google…) : <button type="button" class="btn-lien" data-act="nouvelle-k">Ajouter une campagne</button></td></tr>'}</tbody></table>
+    </section>`;
 }
 
 export default {
