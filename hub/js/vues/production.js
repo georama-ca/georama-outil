@@ -555,7 +555,7 @@ function cadreProduction() {
     cadre = document.createElement('iframe');
     cadre.id = 'cadre-production';
     cadre.title = 'Georama Production';
-    cadre.setAttribute('allow', 'clipboard-read; clipboard-write; fullscreen; local-network-access');
+    cadre.setAttribute('allow', 'clipboard-read; clipboard-write; fullscreen; local-network-access; local-network; loopback-network');
     cadre.style.cssText = 'position:fixed;border:1px solid var(--bordure);z-index:15;display:none;background:#2A2F2B;border-radius:8px';
     document.body.appendChild(cadre);
     window.addEventListener('resize', placerCadre);
@@ -593,7 +593,8 @@ async function monterGeorama(ctx) {
   const etat = document.getElementById('gp-etat');
   const c = ctx.route.id ? ctx.m.get('commandes', ctx.route.id) : null;
   const src = PROD_URL + (c && c.lien ? '?lien=' + encodeURIComponent(c.lien) + '&numero=' + encodeURIComponent(c.numero || '') : '');
-  const ok = await serveurPret();
+  const e0 = etatVue(ctx);
+  const ok = e0.forcerCadre || await serveurPret();
   if (!z.isConnected) return;
   if (ok) {
     const f = cadreProduction();
@@ -607,9 +608,14 @@ async function monterGeorama(ctx) {
   const attend = e.demarrage && Date.now() - e.demarrage < 90000;
   etat.innerHTML = attend
     ? 'Démarrage de Georama Production… (jusqu’à une minute la première fois)'
-    : `<p style="margin:0 0 12px"><strong>Georama Production n’est pas ouvert sur cet ordi.</strong></p>
-       <button type="button" class="btn" data-act="gp-demarrer">Démarrer Georama Production</button>
-       <p class="tres-petit doux" style="margin:12px 0 0">La première fois sur un ordi : double-clique sur « Installer le bouton du hub.cmd »<br>dans OneDrive › 04_Operations… › 05_Georama-production › georama-production.<br>Chrome peut aussi demander d’autoriser l’accès aux applis de cet appareil : accepte.</p>`;
+    : `<p style="margin:0 0 12px"><strong>Georama Production n’est pas ouvert sur cet ordi</strong><br><span class="petit doux">(ou Chrome n’a pas encore permis au hub de le voir).</span></p>
+       <div class="actions" style="justify-content:center">
+         <button type="button" class="btn" data-act="gp-demarrer">Démarrer Georama Production</button>
+         <button type="button" class="btn-2" data-act="gp-forcer">Afficher ici quand même</button>
+         <a class="btn-2" href="${esc(src)}" target="_blank" rel="noopener">Ouvrir dans un onglet</a>
+       </div>
+       <p class="tres-petit doux" style="margin:12px 0 0">Si Chrome demande d’autoriser l’accès aux « applis et services de cet appareil » ou au « réseau local » : clique <strong>Autoriser</strong>.<br>
+       La première fois sur un ordi : double-clique sur « Installer le bouton du hub.cmd »<br>dans OneDrive › 04_Operations… › 05_Georama-production › georama-production.</p>`;
   if (attend) { clearTimeout(e.minuterieGp); e.minuterieGp = setTimeout(() => { if (ctx.route.sous === 'georama') monterGeorama(ctx); }, 3000); }
 }
 
@@ -652,6 +658,7 @@ export default {
       ctx.m.mettre('temps', { id: uid('h'), qui: ctx.moi, date: aujourdhui(), minutes: 15, categorie: 'Production', commande: c.id, note: c.numero }, true);
       ctx.m.modifier('commandes', c.id, { tempsMin: (Number(c.tempsMin) || 0) + 15 });
     },
+    'gp-forcer': ctx => { etatVue(ctx).forcerCadre = true; monterGeorama(ctx); },
     'gp-demarrer': ctx => {
       etatVue(ctx).demarrage = Date.now();
       location.href = 'georama-production:ouvrir';
