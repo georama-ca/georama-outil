@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.3 (8 novembre 2026)
+- **Appli sur le cellulaire** : le hub s'installe comme une appli (icône Georama, plein écran) sur Android, iPhone et ordinateur. Paramètres > « Appli sur le cellulaire » : bouton Installer (Android, Chrome) ou marche à suivre (iPhone, Safari). Rien n'est gardé en cache : l'appli charge toujours la dernière version du hub.
+
 ### v1.2 (8 novembre 2026)
 - **Qui est connecté** : Paramètres > Équipe > « Comptes Microsoft » associe chaque compte à une personne (ex. info@georama.ca = Maryse Perron Chartier). Le nom sert partout : « Bonjour », chrono, tâches, historique et signature des courriels. Gardé dans OneDrive (reglages.json), rien dans le code public.
 

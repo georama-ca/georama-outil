@@ -66,6 +66,18 @@ function blocConnexion(ctx) {
   </section>`;
 }
 
+// Carte « Appli sur le cellulaire » : installer le hub comme une appli (suit toutes les versions).
+function carteAppli() {
+  const installe = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  const corps = installe
+    ? '<p class="petit" style="margin:0">C’est fait : tu utilises l’appli Hub Georama. Elle se met à jour toute seule à chaque nouvelle version.</p>'
+    : ios
+      ? '<ol class="petit" style="margin:0;padding-left:20px"><li>Ouvre ce hub dans <b>Safari</b>.</li><li>Touche le bouton <b>Partager</b> (carré avec une flèche).</li><li>Choisis <b>Sur l’écran d’accueil</b>, puis <b>Ajouter</b>.</li></ol>'
+      : '<p class="petit doux" style="margin:0 0 12px">Une icône Georama sur l’écran d’accueil, qui ouvre le hub en plein écran. Elle suit chaque nouvelle version toute seule, rien à mettre à jour.</p><div class="actions"><button type="button" class="btn" data-act="installer-appli">Installer l’appli</button></div><p class="tres-petit doux" style="margin:10px 0 0">Si le bouton ne fait rien : menu ⋮ de Chrome → « Installer l’application » (ou « Ajouter à l’écran d’accueil »).</p>';
+  return `<section class="carte"><h2>Appli sur le cellulaire</h2>${corps}</section>`;
+}
+
 export default {
   titre: 'Paramètres',
   render(ctx) {
@@ -121,6 +133,7 @@ export default {
           </div></details>`).join('')}
         <div style="margin-top:12px"><button type="submit" class="btn">Enregistrer les courriels</button></div>
       </form>
+      ${carteAppli()}
       <section class="carte">
         <h2>Sauvegarde</h2>
         <p class="petit doux" style="margin:0 0 12px">Une copie complète des données en un fichier. Utile avant un gros changement ou pour passer du mode démo à Microsoft 365.</p>
@@ -134,6 +147,13 @@ export default {
       <p class="tres-petit doux">Hub Georama v${esc(CONFIG.version)} (${esc(CONFIG.versionDate)}). <a href="${GUIDE}" target="_blank" rel="noopener">Guide et journal des versions</a>.</p>`;
   },
   actions: {
+    'installer-appli': async () => {
+      const offre = window.__offreInstallation;
+      if (!offre) { toast('Utilise le menu du navigateur : « Installer l’application » ou « Ajouter à l’écran d’accueil ».'); return; }
+      offre.prompt();
+      try { const r = await offre.userChoice; if (r && r.outcome === 'accepted') toast('Hub Georama installé.'); } catch (e) { /* rien */ }
+      window.__offreInstallation = null;
+    },
     'reset-modele': (ctx, el) => {
       const R = reglages(ctx.m);
       const perso = Object.assign({}, R.modelesCourriel || {});
