@@ -108,7 +108,7 @@ export function vueSuivi(ctx) {
     </div>`).join('');
 
   // pubs Meta par campagne (30 jours)
-  let metaHtml = '<p class="petit doux" style="margin:0">Pas branché. Le jeton Meta (permission ads_read) se colle dans Configurer.bat sur l’ordi de la maison.</p>';
+  let metaHtml = '<p class="petit doux" style="margin:0">Pas branché. Le jeton Meta (permission ads_read) se colle avec « Brancher Meta.bat » sur l’ordi de la maison.</p>';
   if (me && me.jours) {
     const parK = {};
     me.jours.forEach(j => { const k = parK[j.campagne] = parK[j.campagne] || { nom: j.nom, depense: 0, impressions: 0, clics: 0, vues: 0, conv: 0, dernier: '' }; k.depense += j.depense; k.impressions += j.impressions; k.clics += j.clics_lien; k.vues += j.vues_page; k.conv += j.conversions; if (j.date > k.dernier) k.dernier = j.date; });

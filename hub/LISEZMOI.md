@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.9.1 (8 novembre 2026)
+- **Pubs Meta branchées** : l'ordi de la maison lit les campagnes et les dépenses Meta (API v27.0). Jeton collé avec « Brancher Meta.bat » (une seule question, jeton invisible).
+
 ### v1.9 (8 novembre 2026)
 - **Finances lues dans Wix** : les ventes viennent maintenant des paiements reçus par Wix (Finances > Paiements du site : factures Wix, boutique, paiement en personne). Chaque paiement apparaît dans la liste des ventes avec l'étiquette « Wix », sa méthode (carte, Apple Pay, en personne…) et un lien vers le paiement dans Wix. Les commandes du hub payées autrement (comptant) restent comptées ; celles déjà payées par la boutique Wix ne sont pas comptées deux fois. Agent 1.4 : stats.py lit les transactions chaque heure (permission « Wix Paiements » de la clé API).
 
