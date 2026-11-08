@@ -3,7 +3,7 @@
 // Automatique (lu par l'ordi de la maison) : articles du blogue Wix, infolettres envoyées, publications de la page
 // Facebook (si le jeton Meta le permet), début et fin des pubs Meta, et les tâches marketing qui ont une échéance.
 import { esc, ico, toast, ouvrirFenetre, options, uid, aujourdhui, ajouterJours, dateCourte, nombre, prenom } from '../ui.js';
-import { SEGMENTS, nomSegment } from '../donnees.js';
+import { SEGMENTS, nomSegment, estPerso } from '../donnees.js';
 import { statsWix, statsMeta } from './suivi.js';
 import { colonneDe } from './taches.js';
 
@@ -42,7 +42,7 @@ export function elements(m) {
   ((w && w.infolettres) || []).filter(c => c.date).forEach(c => l.push({ id: 'lettre-' + c.id, date: jourLocal(c.date), canal: 'infolettre', titre: c.titre || c.sujet, statut: 'publie', auto: 'Infolettre Wix',
     detail: c.stats && c.stats.delivered ? nombre(c.stats.delivered) + ' reçus · ' + nombre(c.stats.opened || 0) + ' ouverts' : '' }));
   ((me && me.publications) || []).forEach(p => l.push({ id: 'fb-' + p.id, date: jourLocal(p.date), canal: 'facebook', titre: (p.texte || 'Publication').split('\n')[0].slice(0, 90), statut: 'publie', lien: p.lien, auto: 'Page Facebook' }));
-  ((me && me.campagnes) || []).filter(k => k.statut === 'ACTIVE' || (k.fin && k.fin.slice(0, 10) >= ajouterJours(aujourdhui(), -60))).forEach(k => {
+  ((me && me.campagnes) || []).filter(k => !estPerso(k.nom)).filter(k => k.statut === 'ACTIVE' || (k.fin && k.fin.slice(0, 10) >= ajouterJours(aujourdhui(), -60))).forEach(k => {
     if (k.debut) l.push({ id: 'pubd-' + k.id, date: jourLocal(k.debut), canal: 'pub', titre: 'Début de la pub : ' + k.nom, statut: 'publie', auto: 'Pubs Meta' });
     if (k.fin) l.push({ id: 'pubf-' + k.id, date: jourLocal(k.fin), canal: 'pub', titre: 'Fin de la pub : ' + k.nom, statut: 'publie', auto: 'Pubs Meta' });
   });

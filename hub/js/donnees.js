@@ -315,6 +315,7 @@ function dejaEntree(m, fournisseur, mois) {
   const f = norm(fournisseur).split(/[\s(]/)[0];
   return m.liste('depenses').some(d => (d.date || '').slice(0, 7) === mois && f && norm(d.fournisseur).includes(f));
 }
+export const estPerso = nom => /^\s*\[.*\].*(marketplace listing boosted|annonce marketplace boost)/i.test(String(nom || ''));
 export function abonnements(m) { return (reglages(m).abonnements || []).filter(a => a && a.fournisseur && Number(a.montant) > 0); }
 // Dates des paiements d'un abonnement (mensuel ou annuel) depuis sa date de début, jusqu'à aujourd'hui.
 function occurrences(a, jusqua) {
@@ -334,11 +335,14 @@ export function depensesAuto(m, periode) {
   const R = reglages(m);
   const l = [];
   const meta = ((m.externes.statsMeta || [])[0]) || null;
-  ((meta && meta.mois) || []).forEach(x => {
-    const date = x.mois + '-01';
-    if (!x.depense || !dansPeriode(date, periode) || dejaEntree(m, 'Meta', x.mois)) return;
-    const ht = Math.round(x.depense * 100) / 100;
-    l.push(Object.assign({ ht }, taxesDe(ht, R.taxes), { d: { id: 'auto-meta-' + x.mois, date, fournisseur: 'Meta (pubs Facebook et Instagram)', categorie: 'Publicité', montant: ht,
+  // Total par mois des campagnes de Georama (les annonces Marketplace personnelles « [Objet] Marketplace listing boosted » sont exclues).
+  const parMois = {};
+  ((meta && meta.mois) || []).filter(x => !estPerso(x.nom)).forEach(x => { parMois[x.mois] = (parMois[x.mois] || 0) + (x.depense || 0); });
+  Object.entries(parMois).forEach(([mois, depense]) => {
+    const date = mois + '-01';
+    if (!depense || !dansPeriode(date, periode) || dejaEntree(m, 'Meta', mois)) return;
+    const ht = Math.round(depense * 100) / 100;
+    l.push(Object.assign({ ht }, taxesDe(ht, R.taxes), { d: { id: 'auto-meta-' + mois, date, fournisseur: 'Meta (pubs Facebook et Instagram)', categorie: 'Publicité', montant: ht,
       note: 'Dépensé en pubs ce mois-là (lu dans Meta). Taxes estimées : à confirmer avec le reçu Meta.', auto: 'meta' } }));
   });
   abonnements(m).forEach(a => occurrences(a, aujourdhui()).forEach(date => {

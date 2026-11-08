@@ -400,11 +400,12 @@ def stats_meta(cfg, jours=30):
         a, mo = auj.year, auj.month - 12
         while mo < 1:
             a, mo = a - 1, mo + 12
-        lignes = _toutes(cfg, compte + '/insights', level='account', time_increment='monthly', limit=50,
+        # Par campagne : le compte contient aussi des annonces Marketplace personnelles, que le hub met de côté.
+        lignes = _toutes(cfg, compte + '/insights', level='campaign', time_increment='monthly', limit=200,
                          time_range=json.dumps({'since': '%04d-%02d-01' % (a, mo), 'until': auj.isoformat()}),
-                         fields='spend,date_start,date_stop,account_currency')
-        sortie['mois'] = [{'mois': (l.get('date_start') or '')[:7], 'depense': float(l.get('spend') or 0),
-                           'devise': l.get('account_currency', 'CAD')} for l in lignes]
+                         fields='campaign_id,campaign_name,spend,date_start,account_currency')
+        sortie['mois'] = [{'mois': (l.get('date_start') or '')[:7], 'campagne': l.get('campaign_id'), 'nom': l.get('campaign_name', ''),
+                           'depense': float(l.get('spend') or 0), 'devise': l.get('account_currency', 'CAD')} for l in lignes]
     except Exception as e:  # noqa: BLE001
         sortie['erreurs']['mois'] = str(e)[:300]
     # Publications de la page Facebook (calendrier de contenu). Demande pages_read_engagement dans le jeton.
