@@ -286,7 +286,10 @@ export function ventes(m, periode) {
   const R = reglages(m);
   const wix = paiementsWix(m);
   const payeesParWix = new Set(wix.map(p => p.commandeWix).filter(Boolean));
-  const cmds = m.liste('commandes').filter(c => estVendue(c) && dansPeriode(c.recue, periode) && !(c.wixId && payeesParWix.has(c.wixId))).map(c => {
+  const idsPaiements = new Set(wix.map(p => p.id));
+  // Une commande payée par Wix (boutique : wixId ; facture Wix : paiementsWix = ids des paiements) n'est comptée qu'une fois, par son paiement.
+  const parWix = c => (c.wixId && payeesParWix.has(c.wixId)) || (Array.isArray(c.paiementsWix) && c.paiementsWix.some(id => idsPaiements.has(id)));
+  const cmds = m.liste('commandes').filter(c => estVendue(c) && dansPeriode(c.recue, periode) && !parWix(c)).map(c => {
     const ht = totalHT(c);
     return Object.assign({ ht }, taxesDe(ht, R.taxes), { c });
   });
