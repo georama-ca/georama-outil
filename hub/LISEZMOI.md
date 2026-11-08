@@ -51,6 +51,7 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 ### v1.1 (7 novembre 2026)
 - **Courriels aux clients en un clic** : 6 modèles (commande reçue, aperçu à approuver, en production, prête à récupérer, expédiée avec suivi Postes Canada, merci et avis). Le hub suggère le bon courriel au bon moment (fiche de production, liste des commandes, « Les 7 prochains jours »), l'ouvre prérempli dans la messagerie ou le copie, et garde l'historique. Modèles et signature modifiables dans Paramètres.
 - Filtre « Courriel à envoyer » dans les commandes.
+- **Microsoft 365 activé** : application « Hub Georama » inscrite dans Entra (locataire Georama seulement, Files.ReadWrite.All déléguée). Fin du mode démo par défaut.
 - **Ordi de la maison v1.1** : assistant `Configurer.bat` pour brancher Wix (clé tapée sur le PC seulement, ID du site Georama déjà rempli, test de connexion) et l'imprimante Bambu.
 
 ### v1.0 (6 novembre 2026)

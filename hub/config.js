@@ -6,9 +6,9 @@ export const CONFIG = {
   version: '1.1',
   versionDate: '2026-11-07',
   // « ID d'application (client) » de l'application « Hub Georama »
-  clientId: '',
+  clientId: '0eb2728a-feed-4887-b94e-b001bf64d465',
   // « ID de l'annuaire (locataire) » de Georama
-  tenantId: '',
+  tenantId: '37ce75ab-7920-4aa7-a41a-97d2fc98c981',
   // Dossier des données dans le OneDrive Georama de la personne qui crée le hub
   dossier: '01_Direction_et_Administration/Hub-Georama',
 };
