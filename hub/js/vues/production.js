@@ -238,7 +238,7 @@ function vueFiche(ctx) {
     const extra = s.id === 'filament' ? `<div style="margin-top:4px">${pastilles(c.gamme, 18)}</div>`
       : auto ? `<div class="actions" style="margin-top:6px"><span class="etiquette ${impr === pl.length && pl.length ? 'vert' : ''}">${impr}/${pl.length} plaque${pl.length > 1 ? 's' : ''} imprimée${impr > 1 ? 's' : ''}</span>${pl.filter(p => p.statut !== 'fini').map(p => `<span class="etiquette ${STATUTS_PLAQUE[p.statut].classe}">${p.n} · ${esc(STATUTS_PLAQUE[p.statut].nom)}</span>`).join('')}<a href="#/production" class="btn-lien">File d'impression</a></div>`
         : s.id === '3mf' && c.lien ? `<div style="margin-top:4px"><a href="${esc(c.lien)}" target="_blank" rel="noopener">Ouvrir la zone du client</a></div>`
-          : s.id === 'envoi' && c.suivi ? `<div class="tres-petit doux" style="margin-top:4px">Suivi : ${esc(c.suivi)}</div>` : '';
+          : s.id === 'envoi' ? blocSuivi(ctx, c) : '';
     return `<div class="etape${f ? ' faite' : ''}">
       <input type="checkbox" id="et-${s.id}" data-chg="etape" data-etape="${s.id}"${f ? ' checked' : ''}${auto ? ' disabled' : ''} style="width:24px;height:24px;margin-top:2px">
       <div style="flex:1 1 auto;min-width:0">
@@ -518,7 +518,32 @@ function changerStock(m, couleur, delta) {
 
 /* ---------- Vue ---------- */
 // Georama Production depuis le hub (v1.4) : aperçu rapide, .3mf et PDF client, gamme et format au choix.
-const NOMS_TRAVAUX = { apercu: 'Aperçu rapide', '3mf': 'Production du .3mf', pdf: 'PDF client', rendu: 'Rendu 3D' };
+
+// 1.12 : numéro de suivi envoyé à Wix (expédition) ; Wix envoie le courriel au client avec le lien de suivi.
+function demanderSuiviWix(ctx, c) {
+  if (!c.wixId || !c.suivi) { toast('Il faut le numéro de suivi et une commande venue du site.', true); return; }
+  ctx.m.mettre('travaux', { id: uid('w'), type: 'suivi-wix', commande: c.id, numero: c.numero, lien: '', options: { suivi: c.suivi, transporteur: 'canadaPost', wixId: c.wixId }, demandePar: ctx.moi, demandeLe: new Date().toISOString() }, true);
+  journaliser(ctx.m, 'Suivi ' + c.suivi + ' envoyé à Wix pour ' + c.numero, '#/production/fiche/' + c.id, 'envoi');
+  ctx.m.avertir('local');
+  const a = agent(ctx.m);
+  toast(a.enLigne ? 'Le suivi part vers Wix par l\u2019ordi de la maison.' : 'Suivi enregistré ; il partira vers Wix dès que l\u2019ordi de la maison sera en ligne.', !a.enLigne);
+}
+
+function blocSuivi(ctx, c) {
+  if (c.livraison === 'recuperation') return '';
+  const t = travauxDe(ctx.m, c.id).find(x => x.type === 'suivi-wix');
+  const r = t && t.resultat;
+  const etat = !t ? '' : !r || r.statut === 'en_cours' ? '<span class="etiquette">Envoi à Wix en cours…</span>'
+    : r.statut === 'fait' ? `<span class="etiquette vert">Suivi envoyé à Wix</span>${r.lienSuivi ? ` <a href="${esc(r.lienSuivi)}" target="_blank" rel="noopener" class="tres-petit">Suivre le colis</a>` : ''}`
+      : `<span class="etiquette retard" title="${esc(r.message || '')}">Wix : ${esc((r.message || 'erreur').slice(0, 90))}</span>`;
+  return `<div class="actions" style="margin-top:6px;align-items:center;gap:8px">
+    <input type="text" id="suivi-colis" value="${esc(c.suivi || '')}" placeholder="N° de suivi Postes Canada" data-chg="suivi" style="max-width:220px">
+    ${c.wixId ? `<button type="button" class="btn-2" data-act="suivi-wix"${c.suivi ? '' : ' disabled title="Entre d’abord le numéro de suivi"'}>Envoyer le suivi à Wix</button>` : '<span class="tres-petit doux">Commande hors site : suivi à envoyer par courriel.</span>'}
+    ${etat}
+  </div>`;
+}
+
+const NOMS_TRAVAUX = { apercu: 'Aperçu rapide', '3mf': 'Production du .3mf', pdf: 'PDF client', rendu: 'Rendu 3D', 'suivi-wix': 'Suivi envoyé à Wix' };
 const FORMATS_PROD = { base: '10 × 12 po', gf4: '20 × 24 po', gf6: '24 × 30 po' };
 const GAMMES_PROD = { boreal: 'Boréal', sapiniere: 'Sapinière', arctique: 'Arctique', terre: 'Terre', unie: 'Monochrome' };
 function blocProduction(ctx, c, a, petiteIco) {
@@ -737,6 +762,7 @@ export default {
       const a = agent(ctx.m);
       toast(a.enLigne ? 'Demande envoyée à l\u2019ordi de la maison.' : 'Demande enregistrée. L\u2019ordi de la maison s\u2019en occupera dès qu\u2019il sera en ligne.', !a.enLigne);
     },
+    'suivi-wix': (ctx) => { const c = ficheCourante(ctx); if (c) { demanderSuiviWix(ctx, c); ctx.rendre(); } },
     'rafraichir-fichiers': ctx => { const c = ficheCourante(ctx); if (c) chargerFichiers(ctx, c, true); },
     'voir-image': (ctx, el) => ouvrirFenetre({ titre: el.getAttribute('data-nom'), pied: false, large: true, corps: `<div class="visionneuse"><img src="${esc(el.getAttribute('data-url'))}" alt="Rendu 3D"></div><p class="tres-petit doux" style="margin:10px 0 0">Rendu d'aperçu fait par l'ordi de la maison à partir du .3mf. Les couleurs suivent les filaments du fichier.</p>` }),
     'sim-h3c': ctx => { const e = etatVue(ctx); e.simH3C = !e.simH3C; ctx.rendre(); },
@@ -755,6 +781,7 @@ export default {
   },
   changes: {
     'gp-commande': (ctx, el) => { location.hash = '#/production/georama' + (el.value ? '/' + el.value : ''); },
+    suivi: (ctx, el) => { const c = ficheCourante(ctx); if (c) { ctx.m.modifier('commandes', c.id, { suivi: el.value.trim() }, true); ctx.m.avertir('local'); ctx.rendre(); } },
     'choix-prod': (ctx, el) => {
       const c = ficheCourante(ctx);
       if (!c) return;
@@ -770,6 +797,7 @@ export default {
         if (el.checked) {
           n = ctx.m.modifier('commandes', c.id, { statut: c.livraison === 'recuperation' ? 'livree' : 'expediee', expedieeLe: aujourdhui() }, true);
           journaliser(ctx.m, n.numero + (n.statut === 'livree' ? ' récupérée par ' : ' expédiée à ') + n.client, '#/production/fiche/' + n.id, 'envoi');
+          if (n.statut === 'expediee' && n.wixId && n.suivi && !travauxDe(ctx.m, c.id).some(x => x.type === 'suivi-wix')) demanderSuiviWix(ctx, n);
           setTimeout(() => celebrer(ctx, n), 500);
         }
         else if (['expediee', 'livree'].includes(c.statut)) n = ctx.m.modifier('commandes', c.id, { statut: 'finition' }, true);

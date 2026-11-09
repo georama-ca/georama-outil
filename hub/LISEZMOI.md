@@ -48,6 +48,11 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.12.0 (9 novembre 2026)
+- Fiche de production › étape « Envoi » : champ du numéro de suivi et bouton « Envoyer le suivi à Wix » (commande venue du site, livraison par la poste). Cocher « Envoi » avec un numéro de suivi l'envoie aussi tout seul. Wix crée l'expédition (Postes Canada) et envoie au client son courriel avec le lien de suivi. Travail `suivi-wix`, traité par l'agent ; résultat (lien de suivi, erreur) affiché dans la fiche.
+- Agent 1.6 : travail `suivi-wix` (GET /ecom/v1/orders/{id} puis POST create-fulfillment, transporteur canadaPost). Demande la permission « Gérer les commandes » de la clé API (message clair si Wix répond 403). Mise à jour : télécharger l'agent (Paramètres) ou ouvrir `05_Georama-production\agent-1.6\` et double-cliquer sur Installer.bat.
+- Pont produire_hub.py : le message du travail « 3mf » inclut le contrôle qualité de Georama Production 4.21 (filaments, étanchéité, triangles, hauteur, fichiers, purges).
+
 ### v1.11.4 (9 novembre 2026)
 - Commande du site importée : le hub lance tout de suite la première version de Georama Production (aperçu rapide, .3mf, PDF client) pour l'ordi de la maison (réglage `productionAuto`, activé par défaut).
 - Une commande en cours sans plaques (ex. entrée par import) reçoit ses plaques dans la file automatiquement.

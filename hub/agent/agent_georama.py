@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.5'
+VERSION = '1.6'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -368,6 +368,9 @@ class Agent:
             if t.get('type') == 'vider-entonnoir':
                 self.vider_entonnoir(t)
                 return
+            if t.get('type') == 'suivi-wix':
+                self.suivi_wix(t, par_id.get(t.get('commande')) or {})
+                return
             c = par_id.get(t.get('commande')) or {}
             dossier = self.chemin('commandes', nom_dossier(c.get('numero') or t.get('numero')))
             os.makedirs(dossier, exist_ok=True)
@@ -537,6 +540,46 @@ class Agent:
             self.dernier_stats = 0
         except Exception as e:  # noqa: BLE001
             self.resultat(t['id'], statut='erreur', fin=maintenant(), message='Compteur non vidé : %s' % e)
+
+    def suivi_wix(self, t, c):
+        """Agent 1.6 : envoie le numéro de suivi à Wix (expédition de la commande) ; Wix avertit le client par courriel.
+        Demande la permission « Gérer les commandes » de la clé API."""
+        o = t.get('options') or {}
+        suivi = (o.get('suivi') or c.get('suivi') or '').strip()
+        wix_id = c.get('wixId') or o.get('wixId')
+        transporteur = o.get('transporteur') or 'canadaPost'
+        self.resultat(t['id'], type='suivi-wix', statut='en_cours', commande=t.get('commande'), debut=maintenant(), message='Envoi du suivi à Wix…')
+        if not wix_id or not suivi:
+            self.resultat(t['id'], statut='erreur', fin=maintenant(), message='Il manque le numéro de suivi ou le lien avec la commande Wix.')
+            return
+        cle = ''.join(ch for ch in str(self.cfg['wix_cle_api']) if ch.isprintable()).strip()
+        entetes = {'Authorization': cle, 'wix-site-id': str(self.cfg['wix_site_id']).strip(), 'Content-Type': 'application/json'}
+        try:
+            req = urllib.request.Request('https://www.wixapis.com/ecom/v1/orders/%s' % wix_id, headers=entetes)
+            with urllib.request.urlopen(req, timeout=60) as r:
+                commande = json.loads(r.read().decode('utf-8')).get('order') or {}
+            lignes = [{'id': li['id']} for li in commande.get('lineItems', []) if li.get('id')]
+            corps = json.dumps({'fulfillment': {'lineItems': lignes, 'trackingInfo': {'trackingNumber': suivi, 'shippingProvider': transporteur}}}).encode()
+            req = urllib.request.Request('https://www.wixapis.com/ecom/v1/fulfillments/orders/%s/create-fulfillment' % wix_id, data=corps, method='POST', headers=entetes)
+            with urllib.request.urlopen(req, timeout=60) as r:
+                rep = json.loads(r.read().decode('utf-8'))
+            lien = ''
+            for f in (rep.get('orderWithFulfillments') or {}).get('fulfillments', []):
+                if (f.get('trackingInfo') or {}).get('trackingNumber') == suivi:
+                    lien = (f.get('trackingInfo') or {}).get('trackingLink') or ''
+            self.resultat(t['id'], statut='fait', fin=maintenant(), lienSuivi=lien,
+                          message='Suivi %s envoyé à Wix (commande n° %s) : le client reçoit le courriel d\u2019expédition de Wix.' % (suivi, c.get('wixNumero') or '?'))
+            log.info('Suivi %s envoyé à Wix pour %s.', suivi, c.get('numero'))
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode('utf-8', 'replace')[:300]
+            if e.code == 409:
+                self.resultat(t['id'], statut='fait', fin=maintenant(), message='Ce suivi était déjà dans Wix pour cette commande.')
+            elif e.code == 403:
+                self.resultat(t['id'], statut='erreur', fin=maintenant(), message='Wix refuse (403) : ajouter la permission « Gérer les commandes » à la clé API du hub, puis redemander.')
+            else:
+                self.resultat(t['id'], statut='erreur', fin=maintenant(), message='Wix répond %s : %s' % (e.code, detail or e.reason))
+        except Exception as e:  # noqa: BLE001
+            self.resultat(t['id'], statut='erreur', fin=maintenant(), message='Suivi non envoyé : %s' % e)
 
     def synchro_production(self, cmds):
         """Ce qui est produit directement dans Georama Production (même numéro de commande) arrive dans la fiche du hub."""
