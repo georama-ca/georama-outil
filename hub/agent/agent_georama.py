@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.4'
+VERSION = '1.5'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -212,6 +212,9 @@ def lire_lien(lien):
     return {'segment': SEGMENTS_LIEN.get(v('p'), ''), 'gamme': GAMMES_LIEN.get(v('g'), ''), 'produit': produit}
 
 
+DIAG_WIX = {}
+
+
 def commandes_wix(cfg):
     corps = json.dumps({'search': {'cursorPaging': {'limit': 50}, 'sort': [{'fieldName': 'createdDate', 'order': 'DESC'}]}}).encode()
     cle = ''.join(ch for ch in str(cfg['wix_cle_api']) if ch.isprintable()).strip()
@@ -224,11 +227,17 @@ def commandes_wix(cfg):
         detail = e.read().decode('utf-8', 'replace')[:300]
         raise RuntimeError('Wix répond %s : %s' % (e.code, detail or e.reason)) from None
     sortie = []
-    for o in donnees.get('orders', []):
+    lues = donnees.get('orders', [])
+    DIAG_WIX.clear()
+    DIAG_WIX.update({'quand': maintenant(), 'lues': len(lues), 'depuis': cfg.get('wix_depuis', ''),
+                     'numeros': [str(o.get('number', '')) for o in lues[:10]], 'ecartees': []})
+    for o in lues:
         cree = o.get('createdDate', '')
         if cree[:10] < cfg.get('wix_depuis', ''):
+            DIAG_WIX['ecartees'].append('%s : avant le %s' % (o.get('number'), cfg.get('wix_depuis', '')))
             continue
         if o.get('status') in ('INITIALIZED',) or o.get('archived'):
+            DIAG_WIX['ecartees'].append('%s : statut %s%s' % (o.get('number'), o.get('status'), ' archivée' if o.get('archived') else ''))
             continue
         contact = (o.get('billingInfo') or {}).get('contactDetails') or {}
         nom = ' '.join(x for x in (contact.get('firstName'), contact.get('lastName')) if x) or (o.get('buyerInfo') or {}).get('email', 'Client Wix')
@@ -303,7 +312,7 @@ class Agent:
         item = {'id': 'maison', 'nom': self.cfg.get('nom'), 'machine': socket.gethostname(), 'systeme': platform.platform(terse=True),
                 'version': VERSION, 'vu': maintenant(), 'demarre': self.demarre, 'capacites': capacites,
                 'travail': self.travail_en_cours, 'imprimantes': [t.instantane() for t in self.imprimantes],
-                'messages': self.messages[-5:]}
+                'messages': self.messages[-5:], 'wix_diag': dict(DIAG_WIX)}
         ecrire_json(self.chemin('agent.json'), [item])
 
     def commandes(self):
@@ -482,7 +491,11 @@ class Agent:
             for n in nouvelles:
                 connus[n['id']] = n
             ecrire_json(self.chemin('boite-wix.json'), sorted(connus.values(), key=lambda x: x.get('date', ''))[-300:])
-            log.info('Wix : %d article(s) de commande lus.', len(nouvelles))
+            log.info('Wix : %d article(s) de commande lus. %s', len(nouvelles), DIAG_WIX)
+            if not DIAG_WIX.get('lues'):
+                txt = 'Wix : la recherche de commandes ne renvoie rien. La clé API a sans doute besoin de la permission « Commandes » (Wix eCommerce : lire les commandes).'
+                if not any(m.get('texte') == txt for m in self.messages):
+                    self.messages.append({'quand': maintenant(), 'texte': txt})
         except Exception as e:  # noqa: BLE001
             self.messages.append({'quand': maintenant(), 'texte': 'Wix : %s' % e})
             log.warning('Wix : %s', e)

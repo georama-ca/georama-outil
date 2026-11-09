@@ -48,6 +48,11 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.11.4 (9 novembre 2026)
+- Commande du site importée : le hub lance tout de suite la première version de Georama Production (aperçu rapide, .3mf, PDF client) pour l'ordi de la maison (réglage `productionAuto`, activé par défaut).
+- Une commande en cours sans plaques (ex. entrée par import) reçoit ses plaques dans la file automatiquement.
+- Agent 1.5 : diagnostic Wix dans agent.json (`wix_diag` : commandes lues, numéros, écartées et pourquoi) et message clair si la recherche de commandes ne renvoie rien (permission « Commandes » de la clé API).
+
 ### v1.11.3 (8 novembre 2026)
 - Tâches fusionnées dans le Tableau de bord, sur ordi comme au cellulaire : onglets « Aperçu · Tâches » en haut de la page, plus d'entrée Tâches séparée dans le menu (#/taches marche toujours). Raccourcis 1 à 5 de nouveau alignés sur le menu.
 

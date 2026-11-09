@@ -2,7 +2,7 @@
 import { CONFIG } from '../config.js';
 import * as auth from './auth.js';
 import { Magasin, AdaptateurLocal, AdaptateurOneDrive, lireLieu, ecrireLieu } from './store.js';
-import { reglages, nomDuCompte, REGLAGES_DEFAUT, importerWix, journaliser, CATEGORIES_TEMPS, minutesSemaine, nomSegment, statut as statutCmd, icoSegment } from './donnees.js';
+import { reglages, nomDuCompte, REGLAGES_DEFAUT, importerWix, reparerPlaques, journaliser, CATEGORIES_TEMPS, minutesSemaine, nomSegment, statut as statutCmd, icoSegment } from './donnees.js';
 import { donneesDemo, amsVides } from './demo.js';
 import { demarrerAgentDemo } from './demo-agent.js';
 import { synchroniserCourriels } from './suivi-courriels.js';
@@ -286,7 +286,8 @@ document.addEventListener('keydown', e => {
 
 function verifierWix() {
   const l = importerWix(ctx.m);
-  if (l.length) toast(l.length === 1 ? 'Nouvelle commande du site : ' + l[0].numero + ' (' + l[0].client + '). Elle est dans la file.' : l.length + ' nouvelles commandes du site ajoutées.');
+  reparerPlaques(ctx.m);
+  if (l.length) toast(l.length === 1 ? 'Nouvelle commande du site : ' + l[0].numero + ' (' + l[0].client + '). Elle est dans la file' + (l[0].lien ? ' et Georama Production prépare la première version.' : '.') : l.length + ' nouvelles commandes du site ajoutées.');
 }
 
 function rendre() {

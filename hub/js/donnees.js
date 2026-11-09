@@ -417,6 +417,12 @@ export function travauxDe(m, idCommande) {
 export function dossierCommande(c) { return 'commandes/' + String(c.numero || 'sans-numero').replace(/[^A-Za-z0-9_-]/g, ''); }
 
 /* ---------- Commandes du site Wix (déposées par l'agent) ---------- */
+// Une commande en cours sans plaques (ex. entrée par import) reçoit ses plaques dans la file.
+export function reparerPlaques(m) {
+  const avec = new Set(m.liste('plaques').map(p => p.commande));
+  m.liste('commandes').filter(c => estActive(c) && !avec.has(c.id)).forEach(c => synchroniserPlaques(m, c));
+}
+
 export function importerWix(m) {
   const R = reglages(m);
   const ignores = new Set(R.wixIgnores || []);
@@ -436,7 +442,12 @@ export function importerWix(m) {
     c.numero = prochainNumero(m, c);
     const sauvee = m.mettre('commandes', c, true);
     synchroniserPlaques(m, sauvee);
-    journaliser(m, 'Commande du site ' + sauvee.numero + ' ajoutée automatiquement (' + sauvee.client + ')', '#/production/fiche/' + sauvee.id, 'wix');
+    // Première version de Georama Production lancée tout de suite (aperçu, .3mf, PDF client) : l'ordi de la maison s'en occupe.
+    if (sauvee.lien && R.productionAuto !== false) {
+      const quand = new Date().toISOString();
+      ['apercu', '3mf', 'pdf'].forEach(type => m.mettre('travaux', { id: uid('w'), type, commande: sauvee.id, numero: sauvee.numero, lien: sauvee.lien, options: {}, demandePar: 'Hub (automatique)', demandeLe: quand }, true));
+    }
+    journaliser(m, 'Commande du site ' + sauvee.numero + ' ajoutée automatiquement (' + sauvee.client + ')' + (sauvee.lien ? ' ; Georama Production lancé (aperçu, .3mf, PDF)' : ''), '#/production/fiche/' + sauvee.id, 'wix');
     ajoutees.push(sauvee);
   });
   if (ajoutees.length) m.avertir('local');
