@@ -170,7 +170,15 @@ def main(argv):
                 fichiers.append(cible)
             fichiers += copier_images(dossier, a.sortie, t0)
             n = len(nouveaux)
-            resultat(statut="fait", fichiers=fichiers, message=f"{n} fichier(s) .3mf produit(s). Le rendu 3D suit.")
+            ctrl = (_r or {}).get("controle") or []                       # v4.21 : contrôle qualité de Production
+            if ctrl:
+                rates = [f"{x['nom']} ({x['detail']})" for x in ctrl if not x.get("ok")]
+                qc = (f"Contrôle qualité {len(ctrl)}/{len(ctrl)} : prêt à trancher." if not rates
+                      else f"Contrôle qualité {len(ctrl) - len(rates)}/{len(ctrl)}, à regarder : " + " ; ".join(rates) + ".")
+            else:
+                qc = ""
+            resultat(statut="fait", fichiers=fichiers, message=f"{n} fichier(s) .3mf produit(s). {qc} Le rendu 3D suit.".replace("  ", " "),
+                     controle=ctrl)
         else:
             par = os.path.join(dossier, "parametres.json")
             if not (a.gamme or a.format) and os.path.exists(par):      # même gamme et format que le dernier calcul
