@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.12.2 (9 novembre 2026)
+- Courriels aux clients envoyés directement depuis le hub (bouton « Envoyer » dans la fenêtre du courriel) : Microsoft Graph /me/sendMail, au nom de la personne connectée, copie dans ses Éléments envoyés. Autorisation « Mail.Send » demandée une seule fois (bouton « Donner l'autorisation » dans la fenêtre). Pièces jointes à cocher parmi les fichiers de la commande (images réduites en JPEG 1800 px, 3 Mo au total) : rendu coché d'office pour « Aperçu à approuver », PDF de confirmation pour « Commande reçue ». « Ouvrir dans ma messagerie » reste offert.
+
 ### v1.12.1 (9 novembre 2026)
 - Agent 1.6.1 : les commandes du site n'entraient plus parce que la date « importer depuis » de config.json contenait autre chose qu'une date (une clé collée au mauvais endroit dans Configurer) : toutes les commandes étaient écartées. Une valeur qui n'est pas une date est maintenant ignorée (2026-11-01 par défaut) et n'est plus recopiée dans agent.json. Configurer redemande la date tant qu'elle n'est pas au format AAAA-MM-JJ.
 - index.html : numéros de version des fichiers remis à jour (ils étaient restés à 1.11.4 en v1.12.0).

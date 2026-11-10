@@ -145,21 +145,27 @@ export async function jeton() {
 
 // Jeton pour lire les en-têtes des courriels. Ne touche pas au jeton principal (fichiers).
 // Erreur code 'consentement' tant que la personne n'a pas donné l'autorisation.
-let jetonMail = null;
-export async function jetonCourriel() {
+const jetonsPlus = {};
+export function jetonCourriel() { return jetonPour(SCOPE_COURRIEL); }
+// Envoi de courriels depuis le hub (au nom de la personne connectée, enregistrés dans ses Éléments envoyés).
+export const SCOPE_ENVOI = 'Mail.Send';
+export function jetonEnvoi() { return jetonPour(SCOPE_ENVOI); }
+export function autoriserEnvoi() { return seConnecter(false, SCOPE_ENVOI + ' ' + SCOPE_COURRIEL); }
+async function jetonPour(scopeDemande) {
+  const jetonMail = jetonsPlus[scopeDemande];
   if (jetonMail && jetonMail.expire > Date.now()) return jetonMail.access_token;
   const j = lireJetons();
   if (!j || !j.refresh_token) throw Object.assign(new Error('Non connecté'), { code: 'non_connecte' });
-  const corps = new URLSearchParams({ client_id: lireIds().clientId, grant_type: 'refresh_token', refresh_token: j.refresh_token, scope: 'https://graph.microsoft.com/' + SCOPE_COURRIEL + ' offline_access' });
+  const corps = new URLSearchParams({ client_id: lireIds().clientId, grant_type: 'refresh_token', refresh_token: j.refresh_token, scope: 'https://graph.microsoft.com/' + scopeDemande + ' offline_access' });
   const r = await fetch(autorite() + '/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: corps.toString() });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) {
     const txt = String(d.error_description || d.error || '');
     const consent = /AADSTS65001|consent/i.test(txt);
-    throw Object.assign(new Error(consent ? 'Autorisation des courriels pas encore donnée.' : txt || ('Erreur ' + r.status)), { code: consent ? 'consentement' : (d.error || 'erreur') });
+    throw Object.assign(new Error(consent ? 'Autorisation Microsoft pas encore donnée.' : txt || ('Erreur ' + r.status)), { code: consent ? 'consentement' : (d.error || 'erreur') });
   }
   if (d.refresh_token) ecrireJetons(Object.assign({}, lireJetons() || {}, { refresh_token: d.refresh_token }));
-  jetonMail = { access_token: d.access_token, expire: Date.now() + (Number(d.expires_in) || 3600) * 1000 - 120000 };
-  return jetonMail.access_token;
+  jetonsPlus[scopeDemande] = { access_token: d.access_token, expire: Date.now() + (Number(d.expires_in) || 3600) * 1000 - 120000 };
+  return jetonsPlus[scopeDemande].access_token;
 }
 export function autoriserCourriel() { return seConnecter(false, SCOPE_COURRIEL); }
