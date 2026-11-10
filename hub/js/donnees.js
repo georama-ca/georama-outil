@@ -21,31 +21,55 @@ export const PRODUITS = [
 ];
 export const produit = id => PRODUITS.find(p => p.id === id) || PRODUITS[0];
 
+// 1.13 : PETG Basic de Bambu Lab seulement (décision d'Anne-Marie, 10 nov. 2026). Les anciennes couleurs
+// (noir doux, crème, bleu pâle) restent connues pour les fiches déjà enregistrées, mais ne sont plus proposées.
 export const COULEURS = {
   noir: { nom: 'Noir', hex: '#000000' },
-  noirdoux: { nom: 'Noir doux', hex: '#2B2B2B' },
   blanc: { nom: 'Blanc', hex: '#FFFFFF' },
-  creme: { nom: 'Crème', hex: '#F1DFCF' },
-  beige: { nom: 'Beige', hex: '#DBC8B6' },
   gris: { nom: 'Gris', hex: '#7F7E83' },
-  brun: { nom: 'Brun', hex: '#4F2C1D' },
+  beige: { nom: 'Beige foncé', hex: '#DBC8B6' },
+  brun: { nom: 'Brun foncé', hex: '#4F2C1D' },
   vert: { nom: 'Vert', hex: '#009639' },
   vertpin: { nom: 'Vert pin', hex: '#034638' },
-  bleupale: { nom: 'Bleu pâle', hex: '#8CC8EC' },
-  bleu: { nom: 'Bleu', hex: '#0086D6' },
-  bleugris: { nom: 'Bleu-gris', hex: '#688197' },
-  bleufonce: { nom: 'Bleu foncé', hex: '#001489' },
+  bleugris: { nom: 'Bleu brumeux', hex: '#688197' },
+  bleu: { nom: 'Bleu vif', hex: '#0086D6' },
+  bleufonce: { nom: 'Bleu marine', hex: '#001489' },
   orange: { nom: 'Orange', hex: '#FF671F' },
   rouge: { nom: 'Rouge', hex: '#D6001C' },
+  jaune: { nom: 'Jaune', hex: '#FCE300' },
+  noirdoux: { nom: 'Noir doux (ancien)', hex: '#2B2B2B', ancien: true },
+  creme: { nom: 'Crème (ancien)', hex: '#F1DFCF', ancien: true },
+  bleupale: { nom: 'Bleu pâle (ancien)', hex: '#8CC8EC', ancien: true },
 };
+export const COULEURS_BASIC = Object.keys(COULEURS).filter(k => !COULEURS[k].ancien);
 // Gammes : socle, terrain, forêt, eau, lot et tracés
 export const GAMMES = {
-  'Boréal': ['noir', 'beige', 'vert', 'bleupale', 'orange'],
+  'Boréal': ['noir', 'beige', 'vert', 'bleugris', 'orange'],
   'Sapinière': ['brun', 'beige', 'vertpin', 'bleu', 'orange'],
   'Arctique': ['gris', 'blanc', 'bleu', 'bleufonce'],
   'Terre': ['brun', 'beige', 'bleugris', 'orange'],
   'Monochrome': ['blanc'],
 };
+/* 1.13 : AMS lu en direct par l'agent (1.7). Une couleur de bobine -> clé PETG Basic la plus proche. */
+function rgb(h) { const x = String(h || '').replace('#', ''); return [0, 2, 4].map(i => parseInt(x.slice(i, i + 2), 16) || 0); }
+function lab(h) {   // CIE Lab : distance proche de ce que voit l'œil
+  const c = rgb(h).map(v => { v /= 255; return v > 0.04045 ? ((v + 0.055) / 1.055) ** 2.4 : v / 12.92; });
+  const x = (0.4124 * c[0] + 0.3576 * c[1] + 0.1805 * c[2]) / 0.9505, y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2],
+    z = (0.0193 * c[0] + 0.1192 * c[1] + 0.9505 * c[2]) / 1.089;
+  const f = t => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  return [116 * f(y) - 16, 500 * (f(x) - f(y)), 200 * (f(y) - f(z))];
+}
+export function couleurProche(hex, max = 30) {
+  if (!hex) return null;
+  const a = lab(hex);
+  let best = null, d = 1e9;
+  COULEURS_BASIC.forEach(k => {
+    const b = lab(COULEURS[k].hex);
+    const e = Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+    if (e < d) { d = e; best = k; }
+  });
+  return d <= max ? best : null;
+}
 export const NOMS_GAMMES = Object.keys(GAMMES);
 
 export const STATUTS = [
@@ -407,6 +431,34 @@ export function etatImprimanteDirect(m, idImp) {
   const e = (a.imprimantes || []).find(i => i.id === idImp);
   if (!e || !e.vu || (Date.now() - new Date(e.vu).getTime()) > 10 * 60000) return null;
   return e;
+}
+// AMS en direct (agent 1.7) : [{fente, couleur, cle PETG Basic, type, reste}] ou null si inconnu
+export function amsDirect(m, idImp) {
+  const a = agent(m);
+  if (!a.enLigne) return null;
+  const e = (a.imprimantes || []).find(i => i.id === idImp) || (a.imprimantes || [])[0];
+  if (!e || !Array.isArray(e.ams) || !e.ams.length) return null;
+  return e.ams.map(f => Object.assign({}, f, { cleCouleur: f.vide ? null : couleurProche(f.couleur) }));
+}
+// Couleurs du dernier .3mf de la commande (rapport de Georama Production, relayé par l'agent 1.7)
+export function besoinsCommande(m, c) {
+  const a = agent(m);
+  const b = c && a.besoins && a.besoins[String(c.numero || '').trim()];
+  if (!b || !Array.isArray(b.couleurs)) return null;
+  return b;
+}
+// Avant de lancer : couleurs du .3mf absentes de l'AMS, et fentes dont la commande n'a pas besoin
+export function controleAms(m, c, idImp) {
+  const ams = amsDirect(m, idImp);
+  const b = besoinsCommande(m, c);
+  if (!ams || !b) return { connu: false, ams, besoins: b };
+  const charge = new Set(ams.map(f => f.cleCouleur).filter(Boolean));
+  const voulues = b.couleurs.map(h => ({ hex: h, cle: couleurProche(h), pieces: (b.pieces || {})[h] || [] }));
+  const manque = voulues.filter(v => !v.cle || !charge.has(v.cle));
+  const utiles = new Set(voulues.map(v => v.cle));
+  const inutiles = ams.filter(f => !f.vide && !utiles.has(f.cleCouleur));
+  const vides = ams.filter(f => f.vide);
+  return { connu: true, ams, besoins: b, voulues, manque, inutiles, vides, ok: !manque.length };
 }
 export function travauxDe(m, idCommande) {
   const res = new Map((m.externes.resultats || []).map(r => [r.id, r]));

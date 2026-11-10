@@ -33,9 +33,18 @@ function signal(m) {
     imprimantes: [imp ? {
       id: 'h2c', connecte: true, etat: 'RUNNING', pct: Math.round(avancement(imp) * 100), resteMin: Math.round(heuresRestantes(imp) * 60),
       couche: Math.round(avancement(imp) * 312), couches: 312, fichier: 'plaque-' + imp.n + '.3mf', buse: 250, plateau: 70, vu: new Date().toISOString(),
-    } : { id: 'h2c', connecte: true, etat: 'IDLE', pct: 0, vu: new Date().toISOString() }],
+    } : { id: 'h2c', connecte: true, etat: 'IDLE', pct: 0, vu: new Date().toISOString() }].map(x => Object.assign(x, { ams: AMS_DEMO })),
+    // 1.13 : couleurs du .3mf de chaque commande (agent 1.7) ; la démo ajoute du jaune (champs) pour montrer l'avis
+    besoins: Object.fromEntries(m.liste('commandes').filter(c => c.numero).map((c, i) => [c.numero, {
+      couleurs: ['#000000', '#DBC8B6', '#009639', '#688197', '#FF671F'].concat(i % 2 ? ['#FCE300'] : []),
+      pieces: { '#FCE300': ['Cereales'], '#688197': ['Eau', 'Peu profond'] }, fait: new Date().toISOString(),
+    }])),
   }]);
 }
+
+const AMS_DEMO = [['0-0', 'AMS 1 A', '#000000'], ['0-1', 'AMS 1 B', '#DBC8B6'], ['0-2', 'AMS 1 C', '#009639'], ['0-3', 'AMS 1 D', '#034638'],
+  ['1-0', 'AMS 2 A', '#688197'], ['1-1', 'AMS 2 B', '#0086D6'], ['1-2', 'AMS 2 C', '#001489'], ['1-3', 'AMS 2 D', null],
+  ['128-0', 'AMS HT 1', '#FF671F']].map(([cle, fente, couleur]) => ({ cle, fente, couleur, vide: !couleur, type: couleur ? 'PETG' : '', marque: couleur ? 'PETG Basic' : '', reste: couleur ? 70 : undefined }));
 
 function travailler(m) {
   const res = (lire('travaux-resultats') || {}).items || [];

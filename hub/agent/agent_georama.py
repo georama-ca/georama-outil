@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.6.1'
+VERSION = '1.7'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -128,6 +128,42 @@ class Imprimante(threading.Thread):
         with self.verrou:
             return dict(self.etat)
 
+    def lire_ams(self, p):
+        """1.7 : contenu des fentes de l'AMS (bobines Bambu lues par leur puce) -> etat['ams'].
+        AMS 2 Pro : unités 0 à 3 (fentes A à D) ; AMS HT : unités 128 et plus (une fente)."""
+        ams = p.get('ams')
+        if not isinstance(ams, dict) or not isinstance(ams.get('ams'), list):
+            return
+        fentes = {f['cle']: f for f in self.etat.get('ams') or []}
+        for u in ams['ams']:
+            try:
+                uid = int(u.get('id', 0))
+            except (TypeError, ValueError):
+                continue
+            ht = uid >= 128
+            nom_u = ('AMS HT %d' % (uid - 127)) if ht else ('AMS %d' % (uid + 1))
+            for t in u.get('tray') or []:
+                try:
+                    tid = int(t.get('id', 0))
+                except (TypeError, ValueError):
+                    continue
+                cle = '%d-%d' % (uid, tid)
+                f = fentes.get(cle) or {'cle': cle, 'fente': nom_u if ht else '%s %s' % (nom_u, 'ABCD'[tid % 4])}
+                if 'tray_type' in t or 'tray_color' in t:
+                    typ = (t.get('tray_type') or '').strip()
+                    col = (t.get('tray_color') or '')[:6].upper()
+                    f['vide'] = not typ
+                    f['type'] = typ
+                    f['couleur'] = ('#' + col) if (typ and len(col) == 6) else None
+                    f['marque'] = (t.get('tray_sub_brands') or '').strip()
+                    if t.get('remain') not in (None, -1):
+                        f['reste'] = t.get('remain')
+                elif len(t) <= 1 and 'vide' not in f:        # fente sans bobine (rapport complet)
+                    f['vide'] = True
+                fentes[cle] = f
+        self.etat['ams'] = sorted(fentes.values(), key=lambda f: [int(x) for x in f['cle'].split('-')])
+        self.etat['amsVu'] = maintenant()
+
     def run(self):
         try:
             import ssl
@@ -155,6 +191,7 @@ class Imprimante(threading.Thread):
                                  ('nozzle_temper', 'buse'), ('bed_temper', 'plateau')):
                     if cle in p:
                         self.etat[nom] = p[cle]
+                self.lire_ams(p)
                 self.etat['vu'] = maintenant()
 
         def sur_deconnexion(*_args):
@@ -291,6 +328,7 @@ class Agent:
         self.dernier_wix = 0
         self.messages = []
         self.travail_en_cours = None
+        self.besoins = {}               # 1.7 : couleurs de filament de chaque commande (rapport.json de Production)
 
     def chemin(self, *p):
         return os.path.join(self.hub, *p)
@@ -315,14 +353,15 @@ class Agent:
     def signal(self):
         pont = bool(self.pont())
         capacites = {'rendu': True, '3mf': pont or bool(self.cfg.get('commande_3mf')), 'apercu': pont, 'pdf': pont,
-                     'imprimantes': bool(self.imprimantes),
+                     'imprimantes': bool(self.imprimantes), 'ams': bool(self.imprimantes),
                      'wix': bool(self.cfg.get('wix_cle_api') and self.cfg.get('wix_site_id')),
                      'stats_wix': bool(self.cfg.get('wix_cle_api') and self.cfg.get('wix_site_id')),
                      'meta': bool(self.cfg.get('meta_jeton') and self.cfg.get('meta_compte'))}
         item = {'id': 'maison', 'nom': self.cfg.get('nom'), 'machine': socket.gethostname(), 'systeme': platform.platform(terse=True),
                 'version': VERSION, 'vu': maintenant(), 'demarre': self.demarre, 'capacites': capacites,
                 'travail': self.travail_en_cours, 'imprimantes': [t.instantane() for t in self.imprimantes],
-                'messages': self.messages[-5:], 'wix_diag': dict(DIAG_WIX)}
+                'messages': self.messages[-5:], 'wix_diag': dict(DIAG_WIX),
+                'besoins': {k: {kk: vv for kk, vv in v.items() if kk != 't'} for k, v in self.besoins.items()}}
         ecrire_json(self.chemin('agent.json'), [item])
 
     def commandes(self):
@@ -608,6 +647,7 @@ class Agent:
             if not os.path.isdir(src):
                 continue
             dest = self.chemin('commandes', nom_dossier(num))
+            self.lire_besoins(num, src)
             try:
                 os.makedirs(dest, exist_ok=True)
                 deja = [os.path.getmtime(f) for f in glob.glob(os.path.join(dest, '*.3mf'))]
@@ -626,6 +666,31 @@ class Agent:
                         shutil.copy2(f, d)
             except OSError as e:
                 log.warning('Synchro Production (%s) : %s', num, e)
+
+    def lire_besoins(self, num, src):
+        """1.7 : couleurs de filament du dernier .3mf de Georama Production (rapport.json) pour le hub,
+        qui les compare au contenu de l'AMS avant de lancer une plaque."""
+        f = os.path.join(src, 'rapport.json')
+        try:
+            if not os.path.isfile(f):
+                return
+            t = os.path.getmtime(f)
+            deja = self.besoins.get(num)
+            if deja and deja.get('t') == t:
+                return
+            with open(f, encoding='utf-8') as fh:
+                r = json.load(fh)
+            fil = r.get('filaments') or {}
+            cols = sorted({str(v).upper() for v in fil.values() if v})
+            noms = {}
+            for piece, info in (r.get('pieces') or {}).items():
+                col = str((info or {}).get('couleur') or '').upper()
+                if col:
+                    noms.setdefault(col, []).append(piece)
+            self.besoins[num] = {'t': t, 'couleurs': cols, 'pieces': {k: v[:4] for k, v in noms.items()},
+                                 'fait': dt.datetime.fromtimestamp(t).isoformat(timespec='seconds')}
+        except (OSError, ValueError) as e:
+            log.warning('Couleurs de %s illisibles : %s', num, e)
 
     def stats(self):
         """Achalandage Wix, paniers abandonnés, zones des visiteurs et pubs Meta, une fois l'heure (stats-wix.json, stats-meta.json)."""

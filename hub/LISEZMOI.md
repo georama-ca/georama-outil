@@ -48,6 +48,11 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.13.0 (10 novembre 2026)
+- AMS en direct : l'agent 1.7 lit les 9 fentes de l'imprimante (2 AMS 2 Pro + AMS HT, bobines Bambu lues par leur puce) : couleur, type, reste en %. Production › File d'impression : pastilles des 9 fentes sous chaque imprimante. Filament et AMS : liste « AMS en direct » ; « Prêt pour quelle gamme ? » se base sur l'AMS réel quand il est connu.
+- Avant de lancer : l'agent relaie les couleurs du dernier .3mf de chaque commande (rapport de Georama Production). Le hub compare avec l'AMS : « AMS prêt » ou « AMS : n couleur(s) à charger », avec la couleur manquante, les pièces qui l'utilisent et la fente à libérer (vide, ou couleur dont la commande n'a pas besoin).
+- Couleurs : PETG Basic de Bambu Lab seulement (13 couleurs, ajout du jaune). Bleu pâle, crème et noir doux ne sont plus proposés (gardés « (ancien) » pour les fiches existantes). Gamme Boréal : eau en bleu brumeux.
+
 ### v1.12.3 (9 novembre 2026)
 - Correctif : le bouton « Donner l'autorisation » de la fenêtre du courriel ne faisait rien (bouton ajouté après l'ouverture de la fenêtre, jamais branché). Il ouvre maintenant la page d'autorisation Microsoft.
 

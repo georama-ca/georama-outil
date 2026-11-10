@@ -368,3 +368,7 @@ dialog#modal::backdrop { background: rgba(13,17,16,.72); }
 .ct-puce.prevu { background: transparent; border: 1px dashed var(--ct); border-left: 3px solid var(--ct); }
 .ct-puce.idee { opacity: .8; font-style: italic; }
 .ct-puce:hover { filter: brightness(1.15); }
+/* 1.13 : AMS en direct (agent 1.7) */
+.ams-direct{display:flex;flex-wrap:wrap;gap:6px 8px;margin:0 0 12px}
+.ams-fente{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:34px}
+.ams-fente .bobine{border-radius:50%}

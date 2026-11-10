@@ -4,6 +4,7 @@ import {
   reglages, fileImpression, plaquesDe, avancement, heuresRestantes, planifier, nomSegment, formatTexte,
   STATUTS_PLAQUE, ETAPES, noteEtape, GAMMES, COULEURS, NOMS_GAMMES, estActive, ACTIVES, demandeApprobation,
   journaliser, agent, etatImprimanteDirect, travauxDe, dossierCommande, icoSegment,
+  COULEURS_BASIC, amsDirect, controleAms,
 } from '../donnees.js';
 import { ouvrirCommande, badgeStatut, promiseTexte, celebrer } from './commandes.js';
 import { carteCourriels, ouvrirCourriel } from '../courriels.js';
@@ -18,6 +19,21 @@ function pastilles(gamme, taille = 14) {
   return `<span class="pastilles" title="Gamme ${esc(gamme)}">${(GAMMES[gamme] || []).map(c => `<span class="pastille" style="width:${taille}px;height:${taille}px;background:${COULEURS[c].hex}"></span>`).join('')}</span>`;
 }
 function commandesMap(m) { return new Map(m.liste('commandes').map(c => [c.id, c])); }
+/* 1.13 : AMS en direct (agent 1.7) */
+function nomCoul(cle, hex) { return cle && COULEURS[cle] ? COULEURS[cle].nom : (hex || 'inconnue'); }
+function bandeAms(ams) {
+  return `<div class="ams-direct">${ams.map(f => `<span class="ams-fente" title="${esc(f.fente)} : ${esc(f.vide ? 'vide' : nomCoul(f.cleCouleur, f.couleur) + (f.type ? ' · ' + f.type : ''))}">
+    <span class="bobine" style="width:22px;height:22px;background:${f.vide ? 'transparent' : esc(f.couleur || '#ccc')};${f.vide ? 'border-style:dashed' : ''}"></span>
+    <span class="tres-petit doux">${esc(f.fente.replace('AMS ', ''))}</span></span>`).join('')}</div>`;
+}
+function avisAms(k, numero) {
+  if (!k || !k.connu) return '';
+  if (k.ok) return `<p class="tres-petit vert-t" style="margin:6px 0 0;font-weight:600">AMS prêt : les ${k.voulues.length} couleurs de ${esc(numero)} sont chargées.</p>`;
+  const manque = k.manque.map(v => `<strong>${esc(nomCoul(v.cle, v.hex))}</strong>${v.pieces.length ? ' (' + esc(v.pieces.join(', ')) + ')' : ''}`).join(', ');
+  const place = k.vides.length ? 'Fente libre : ' + esc(k.vides.map(f => f.fente).join(', ')) + '.'
+    : k.inutiles.length ? 'Pas utilisées par cette commande : ' + k.inutiles.map(f => esc(nomCoul(f.cleCouleur, f.couleur)) + ' (' + esc(f.fente) + ')').join(', ') + '.' : '';
+  return `<div class="bandeau" style="margin-top:8px"><strong class="o">Avant de lancer ${esc(numero)}.</strong><span>Il manque dans l\u2019AMS : ${manque}. ${place}</span></div>`;
+}
 function imprimantesActives(R) { return R.imprimantes.filter(i => i.active); }
 function plaqueSur(m, idImp) { return fileImpression(m).find(p => p.statut === 'imp' && p.imprimante === idImp); }
 
@@ -126,10 +142,13 @@ function vueFile(ctx) {
       }
       const prochaine = aFaire.find(x => x.statut === 'prete');
       const pc = prochaine && cmds.get(prochaine.commande);
+      const amsL = amsDirect(m, i.id);
       return `<section class="carte" style="flex:1 1 340px">
         <div class="carte-tete"><h2 style="display:flex;align-items:center;gap:10px"><span class="pastille-etat attente"></span>${esc(i.nom)}</h2><span class="etiquette bleu">Libre</span></div>
         <p class="doux petit" style="margin:0 0 12px">Plateau vide.</p>
-        ${prochaine ? `<button type="button" class="btn" data-act="lancer" data-id="${esc(prochaine.id)}" data-imp="${esc(i.id)}">Lancer ${esc(pc.numero)} · plaque ${prochaine.n}/${prochaine.total}</button>`
+        ${amsL ? bandeAms(amsL) : ''}
+        ${prochaine ? `<button type="button" class="btn" data-act="lancer" data-id="${esc(prochaine.id)}" data-imp="${esc(i.id)}">Lancer ${esc(pc.numero)} · plaque ${prochaine.n}/${prochaine.total}</button>
+          ${avisAms(controleAms(m, pc, i.id), pc.numero)}`
           : `<p class="petit doux" style="margin:0">Aucune plaque prête. ${nb3mf ? nb3mf + ' .3mf à produire.' : ''}</p>`}
       </section>`;
     }
@@ -158,6 +177,7 @@ function vueFile(ctx) {
         <button type="button" class="btn-2" data-act="statut-plaque" data-statut="prete" data-id="${esc(p.id)}">Annuler l'impression</button>
       </div>
       ${alerte}
+      ${(() => { const a2 = amsDirect(m, i.id); return a2 ? '<div style="margin-top:12px">' + bandeAms(a2) + '</div>' : ''; })()}
       <p class="tres-petit doux" style="margin:10px 0 0">${direct ? '<span class="vert-t">En direct de l\u2019imprimante</span> (par l\u2019ordi de la maison).' : 'Avancement estimé à partir de l\u2019heure de départ (' + esc(dateHeure(p.debut)) + ').'}</p>
     </section>`;
   }).join('');
@@ -169,7 +189,12 @@ function vueFile(ctx) {
     const st = STATUTS_PLAQUE[p.statut];
     let bouton = '';
     if (p.statut === 'a3mf') bouton = `<button type="button" class="btn-2" data-act="statut-plaque" data-statut="prete" data-id="${esc(p.id)}">Le .3mf est fait</button>`;
-    else if (p.statut === 'prete') bouton = libres.length ? `<button type="button" class="btn" data-act="lancer" data-id="${esc(p.id)}">Lancer</button>` : '<span class="tres-petit doux">Imprimante occupée</span>';
+    else if (p.statut === 'prete') {
+      bouton = libres.length ? `<button type="button" class="btn" data-act="lancer" data-id="${esc(p.id)}">Lancer</button>` : '<span class="tres-petit doux">Imprimante occupée</span>';
+      const k = controleAms(m, c, (libres[0] || {}).id || 'h2c');
+      if (k.connu && !k.ok) bouton += `<span class="etiquette orange" style="margin-left:6px" title="Il manque : ${esc(k.manque.map(v => nomCoul(v.cle, v.hex)).join(', '))}">AMS : ${k.manque.length} couleur${k.manque.length > 1 ? 's' : ''} à charger</span>`;
+      else if (k.connu) bouton += '<span class="etiquette vert" style="margin-left:6px">AMS prêt</span>';
+    }
     else if (p.statut === 'imp') bouton = `<button type="button" class="btn" data-act="terminer" data-id="${esc(p.id)}">Terminée</button>`;
     else bouton = `<button type="button" class="btn-lien" data-act="statut-plaque" data-statut="prete" data-id="${esc(p.id)}">Remettre dans la file</button>`;
     const fin = plan.blocs.find(b => b.p.id === p.id);
@@ -452,7 +477,14 @@ function vueFilament(ctx) {
       </button>`;
     }).join('')}</div></section>`;
   }).join('');
+  const amsV = amsDirect(m, (imprimantesActives(reglages(m))[0] || {}).id || 'h2c');
   const besoins = (GAMMES[gamme] || []).map(c => {
+    if (amsV) {                 // 1.13 : l'AMS lu en direct a priorité sur le suivi manuel
+      const fl = amsV.find(x => x.cleCouleur === c);
+      if (!fl) return { c, etat: 'Pas dans l\u2019AMS' + (stock(m, c) ? ' · ' + stock(m, c) + ' sur l\u2019étagère' : ' · aucune bobine'), cls: 'retard' };
+      const bas = fl.reste != null && fl.reste >= 0 && fl.reste < 15;
+      return { c, etat: fl.fente + (fl.reste != null && fl.reste >= 0 ? ' · ' + Math.round(fl.reste) + ' %' : ''), cls: bas ? 'retard' : 'vert-t' };
+    }
     const f = fentes.find(x => x.couleur === c);
     let etat, cls;
     if (!f) { etat = 'Pas chargé' + (stock(m, c) ? ' · ' + stock(m, c) + ' sur l’étagère' : ' · aucune bobine'); cls = 'retard'; }
@@ -461,7 +493,7 @@ function vueFilament(ctx) {
     return { c, etat, cls };
   });
   const manque = besoins.filter(b => b.cls === 'retard').length;
-  const etagere = Object.keys(COULEURS).map(k => {
+  const etagere = COULEURS_BASIC.map(k => {
     const s = stock(m, k);
     return `<div class="ligne" style="padding:4px 0">
       <span class="pastille" style="width:18px;height:18px;background:${COULEURS[k].hex}"></span>
@@ -471,15 +503,31 @@ function vueFilament(ctx) {
       <button type="button" class="btn-ico" data-act="stock" data-c="${k}" data-d="1" aria-label="Ajouter une bobine ${esc(COULEURS[k].nom)}">+</button>
     </div>`;
   }).join('');
-  const achats = Object.keys(COULEURS).filter(k => stock(m, k) === 0).map(k => {
+  const achats = COULEURS_BASIC.filter(k => stock(m, k) === 0).map(k => {
     const b = m.get('filament', 'b-' + k);
     return `<div class="ligne"><span class="pastille" style="width:18px;height:18px;background:${COULEURS[k].hex}"></span><span class="grow petit">${esc(COULEURS[k].nom)}</span>
       <button type="button" class="${b && b.commandee ? 'etiquette vert' : 'btn-2'}" style="${b && b.commandee ? 'cursor:pointer;background:none' : 'min-height:36px;font-size:12px'}" data-act="commandee" data-c="${k}">${b && b.commandee ? 'Commandée' : 'Marquer commandée'}</button></div>`;
   }).join('');
   const coulSel = sel && COULEURS[sel.couleur];
+  // 1.13 : contenu réel des 9 fentes (lu par l'agent 1.7) et contrôle de la prochaine plaque
+  const R2 = reglages(m);
+  const idImp = (imprimantesActives(R2)[0] || {}).id || 'h2c';
+  const amsL = amsDirect(m, idImp);
+  const kP = cmdP ? controleAms(m, cmdP, idImp) : null;
+  const direct = amsL ? `<section class="carte">
+      <div class="carte-tete"><h2>AMS en direct de l\u2019imprimante</h2><span class="tres-petit doux">lu par l\u2019ordi de la maison</span></div>
+      <div class="ams-liste">${amsL.map(f => `<div class="ligne" style="padding:3px 0">
+        <span class="tres-petit doux" style="width:70px">${esc(f.fente)}</span>
+        <span class="pastille" style="width:20px;height:20px;background:${f.vide ? 'transparent' : esc(f.couleur || '#ccc')};${f.vide ? 'border:1px dashed var(--bordure)' : ''}"></span>
+        <span class="grow petit">${f.vide ? 'Vide' : esc(nomCoul(f.cleCouleur, f.couleur))}${f.type ? ' <span class="tres-petit doux">' + esc(f.type) + '</span>' : ''}${!f.vide && !f.cleCouleur ? ' <span class="tres-petit retard">(pas une couleur PETG Basic connue)</span>' : ''}</span>
+        ${f.reste != null && f.reste >= 0 ? `<span class="tres-petit num">${Math.round(f.reste)} %</span>` : ''}
+      </div>`).join('')}</div>
+      ${cmdP ? (kP && kP.connu ? avisAms(kP, cmdP.numero) : `<p class="tres-petit doux" style="margin:8px 0 0">Couleurs de ${esc(cmdP.numero)} : connues après la production de son .3mf.</p>`) : ''}
+    </section>` : `<p class="tres-petit doux" style="margin:0">AMS en direct : l\u2019agent 1.7 sur l\u2019ordi de la maison lit les 9 fentes (imprimante branchée dans Configurer).</p>`;
   return `
     <div class="cote">
       <div class="principal" style="display:flex;flex-direction:column;gap:16px">
+        ${direct}
         ${unites || '<p class="vide">Aucun AMS configuré.</p>'}
         ${sel ? `<section class="carte">
           <div class="carte-tete"><h2>${esc(UNITES[sel.unite])} · emplacement ${sel.n} : ${esc(coulSel ? coulSel.nom : 'vide')}</h2>
@@ -489,7 +537,7 @@ function vueFilament(ctx) {
               <button type="button" class="btn-lien" data-act="vider"${coulSel ? '' : ' disabled'}>Vider</button>
             </div></div>
           <p class="petit doux" style="margin:0 0 8px">Charger une autre couleur (prend une bobine sur l'étagère) :</p>
-          <div class="palette">${Object.keys(COULEURS).map(k => `<button type="button" data-act="charger" data-c="${k}" aria-pressed="${sel.couleur === k}" style="background:${COULEURS[k].hex}" title="${esc(COULEURS[k].nom)} (${stock(m, k)} en stock)" aria-label="${esc(COULEURS[k].nom)}, ${stock(m, k)} en stock"></button>`).join('')}</div>
+          <div class="palette">${COULEURS_BASIC.map(k => `<button type="button" data-act="charger" data-c="${k}" aria-pressed="${sel.couleur === k}" style="background:${COULEURS[k].hex}" title="${esc(COULEURS[k].nom)} (${stock(m, k)} en stock)" aria-label="${esc(COULEURS[k].nom)}, ${stock(m, k)} en stock"></button>`).join('')}</div>
         </section>` : ''}
       </div>
       <aside class="lateral" style="display:flex;flex-direction:column;gap:16px">
