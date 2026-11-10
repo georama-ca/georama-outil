@@ -235,7 +235,9 @@ export function ouvrirCourriel(ctx, idCommande, idModele) {
     const z = form.querySelector('#co-envoi-etat');
     if (!z) return;
     z.innerHTML = `<div class="bandeau info" style="margin-top:12px"><span><strong>Envoyer directement depuis le hub.</strong> Microsoft demande une autorisation, une seule fois : le courriel part de ton adresse et se retrouve dans tes Éléments envoyés. (Le texte modifié ici sera à refaire après l’autorisation.)</span>
-      <button type="button" class="btn" data-modal-act="autoriser-envoi">Donner l’autorisation</button></div>`;
+      <button type="button" class="btn" id="co-autoriser">Donner l’autorisation</button></div>`;
+    // Bouton ajouté après l'ouverture de la fenêtre : on le branche ici (les data-modal-act sont branchés à l'ouverture seulement)
+    z.querySelector('#co-autoriser').addEventListener('click', () => autoriserEnvoi());
   };
   // Envoi direct par Microsoft Graph, avec les pièces jointes cochées
   const envoyer = async (d, form) => {
@@ -295,7 +297,6 @@ export function ouvrirCourriel(ctx, idCommande, idModele) {
           ouvrirMessagerie(d);
           return 'fermer';
         }
-        if (act === 'autoriser-envoi') { autoriserEnvoi(); return null; }
         return null;
       },
       onSubmit(d, f) {

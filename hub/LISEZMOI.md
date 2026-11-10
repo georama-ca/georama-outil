@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.12.3 (9 novembre 2026)
+- Correctif : le bouton « Donner l'autorisation » de la fenêtre du courriel ne faisait rien (bouton ajouté après l'ouverture de la fenêtre, jamais branché). Il ouvre maintenant la page d'autorisation Microsoft.
+
 ### v1.12.2 (9 novembre 2026)
 - Courriels aux clients envoyés directement depuis le hub (bouton « Envoyer » dans la fenêtre du courriel) : Microsoft Graph /me/sendMail, au nom de la personne connectée, copie dans ses Éléments envoyés. Autorisation « Mail.Send » demandée une seule fois (bouton « Donner l'autorisation » dans la fenêtre). Pièces jointes à cocher parmi les fichiers de la commande (images réduites en JPEG 1800 px, 3 Mo au total) : rendu coché d'office pour « Aperçu à approuver », PDF de confirmation pour « Commande reçue ». « Ouvrir dans ma messagerie » reste offert.
 
