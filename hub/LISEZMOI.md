@@ -48,6 +48,10 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.12.1 (9 novembre 2026)
+- Agent 1.6.1 : les commandes du site n'entraient plus parce que la date « importer depuis » de config.json contenait autre chose qu'une date (une clé collée au mauvais endroit dans Configurer) : toutes les commandes étaient écartées. Une valeur qui n'est pas une date est maintenant ignorée (2026-11-01 par défaut) et n'est plus recopiée dans agent.json. Configurer redemande la date tant qu'elle n'est pas au format AAAA-MM-JJ.
+- index.html : numéros de version des fichiers remis à jour (ils étaient restés à 1.11.4 en v1.12.0).
+
 ### v1.12.0 (9 novembre 2026)
 - Fiche de production › étape « Envoi » : champ du numéro de suivi et bouton « Envoyer le suivi à Wix » (commande venue du site, livraison par la poste). Cocher « Envoi » avec un numéro de suivi l'envoie aussi tout seul. Wix crée l'expédition (Postes Canada) et envoie au client son courriel avec le lien de suivi. Travail `suivi-wix`, traité par l'agent ; résultat (lien de suivi, erreur) affiché dans la fiche.
 - Agent 1.6 : travail `suivi-wix` (GET /ecom/v1/orders/{id} puis POST create-fulfillment, transporteur canadaPost). Demande la permission « Gérer les commandes » de la clé API (message clair si Wix répond 403). Mise à jour : télécharger l'agent (Paramètres) ou ouvrir `05_Georama-production\agent-1.6\` et double-cliquer sur Installer.bat.

@@ -2,6 +2,7 @@
 """Assistant de configuration de l'agent Georama (Wix et imprimante).
 Les réponses sont gardées dans config.json, sur ce PC seulement."""
 import json
+import re
 import os
 import sys
 
@@ -49,7 +50,13 @@ def main():
         if cle:
             cfg['wix_cle_api'] = cle
         cfg['wix_site_id'] = demander('    ID du site', cfg.get('wix_site_id') or SITE_GEORAMA)
-        cfg['wix_depuis'] = demander('    Importer les commandes passées depuis (AAAA-MM-JJ)', cfg.get('wix_depuis') or '2026-11-01')
+        defaut = cfg.get('wix_depuis') or ''
+        defaut = defaut if re.match(r'^\d{4}-\d{2}-\d{2}$', defaut) else '2026-11-01'
+        while True:
+            cfg['wix_depuis'] = demander('    Importer les commandes passées depuis (AAAA-MM-JJ)', defaut).strip()
+            if re.match(r'^\d{4}-\d{2}-\d{2}$', cfg['wix_depuis']):
+                break
+            print('    Ce n\'est pas une date. Écris-la comme 2026-11-01, ou fais seulement Entrée.')
         if cfg.get('wix_cle_api'):
             print('    Test de la connexion à Wix...')
             try:

@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.6'
+VERSION = '1.6.1'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -215,6 +215,14 @@ def lire_lien(lien):
 DIAG_WIX = {}
 
 
+def date_depuis(cfg):
+    """Date à partir de laquelle on importe les commandes Wix. Une valeur qui n'est pas une date
+    (ex. une clé collée au mauvais endroit dans Configurer) est ignorée : sinon toutes les commandes
+    seraient écartées. On ne recopie jamais la valeur invalide nulle part (elle peut être secrète)."""
+    v = str(cfg.get('wix_depuis') or '').strip()
+    return v if re.match(r'^\d{4}-\d{2}-\d{2}$', v) else '2026-11-01'
+
+
 def commandes_wix(cfg):
     corps = json.dumps({'search': {'cursorPaging': {'limit': 50}, 'sort': [{'fieldName': 'createdDate', 'order': 'DESC'}]}}).encode()
     cle = ''.join(ch for ch in str(cfg['wix_cle_api']) if ch.isprintable()).strip()
@@ -229,12 +237,14 @@ def commandes_wix(cfg):
     sortie = []
     lues = donnees.get('orders', [])
     DIAG_WIX.clear()
-    DIAG_WIX.update({'quand': maintenant(), 'lues': len(lues), 'depuis': cfg.get('wix_depuis', ''),
+    depuis = date_depuis(cfg)
+    DIAG_WIX.update({'quand': maintenant(), 'lues': len(lues), 'depuis': depuis,
+                     'depuis_corrige': depuis != str(cfg.get('wix_depuis') or '').strip(),
                      'numeros': [str(o.get('number', '')) for o in lues[:10]], 'ecartees': []})
     for o in lues:
         cree = o.get('createdDate', '')
-        if cree[:10] < cfg.get('wix_depuis', ''):
-            DIAG_WIX['ecartees'].append('%s : avant le %s' % (o.get('number'), cfg.get('wix_depuis', '')))
+        if cree[:10] < depuis:
+            DIAG_WIX['ecartees'].append('%s : avant le %s' % (o.get('number'), depuis))
             continue
         if o.get('status') in ('INITIALIZED',) or o.get('archived'):
             DIAG_WIX['ecartees'].append('%s : statut %s%s' % (o.get('number'), o.get('status'), ' archivée' if o.get('archived') else ''))
