@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.7.1'
+VERSION = '1.7.2'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -350,7 +350,32 @@ class Agent:
         self.sauver_resultats()
         return r
 
+    def menage_conflits(self):
+        """v1.7.2 : supprime les copies de conflit OneDrive de agent.json (agent-<ordi>-<n>.json, créées quand deux
+        agents écrivaient en même temps). Seulement ces fichiers-là, et seulement s'ils contiennent un signal d'agent."""
+        if getattr(self, '_menage_fait', 0) > time.time() - 3600:
+            return
+        self._menage_fait = time.time()
+        motif = re.compile(r'^agent-[A-Za-z0-9_.-]+-\d+\.json$')
+        n = 0
+        try:
+            for nom in os.listdir(self.hub):
+                if not motif.match(nom):
+                    continue
+                chemin = os.path.join(self.hub, nom)
+                d = lire_json(chemin, {}) or {}
+                items = d.get('items') if isinstance(d, dict) else None
+                if not (items and isinstance(items[0], dict) and items[0].get('id') == 'maison'):
+                    continue
+                os.remove(chemin)
+                n += 1
+        except OSError as e:
+            log.warning('Ménage des copies de conflit : %s', e)
+        if n:
+            log.info('Ménage : %d copie(s) de conflit de agent.json supprimée(s).', n)
+
     def signal(self):
+        self.menage_conflits()
         pont = bool(self.pont())
         capacites = {'rendu': True, '3mf': pont or bool(self.cfg.get('commande_3mf')), 'apercu': pont, 'pdf': pont,
                      'imprimantes': bool(self.imprimantes), 'ams': bool(self.imprimantes),

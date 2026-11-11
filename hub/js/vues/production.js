@@ -110,7 +110,11 @@ export function carteAgent(ctx) {
   }
   const cap = a.capacites || {};
   const puce = (ok, nom) => `<span class="etiquette ${ok ? 'vert' : 'gris'}">${ok ? '' : 'À brancher · '}${nom}</span>`;
-  return `<section class="carte agent-carte"><span class="ico-maison">${ico('maison')}</span>
+  // v1.13.2 : un autre ordi que celui de la maison fait tourner un agent (ex. vieux raccourci de démarrage)
+  const officiel = String((ctx.m.liste('reglages')[0] || {}).ordiMaison || '');
+  const intrus = officiel && a.machine && a.machine.toLowerCase() !== officiel.toLowerCase();
+  const alerte = intrus ? `<div class="bandeau" style="flex-basis:100%;margin-top:10px"><span><strong>${esc(a.machine)} fait tourner un agent, mais l'ordi de la maison est ${esc(officiel)}.</strong> Sur ${esc(a.machine)} : double-clic sur « Arreter agent.bat » (Téléchargements › Agent-Georama), puis Windows + R, « shell:startup », et supprimer le raccourci de l'agent.</span></div>` : '';
+  return `<section class="carte agent-carte" style="flex-wrap:wrap">${alerte}<span class="ico-maison">${ico('maison')}</span>
     <div style="flex:1 1 300px"><strong>${esc(a.nom || 'Ordi de la maison')}</strong> ${a.enLigne ? '<span class="etiquette vert">En ligne</span>' : '<span class="etiquette orange">Hors ligne</span>'}
       <p class="petit doux" style="margin:4px 0 0">${esc(a.machine || '')} · vu ${esc(ilYa(a.vu))}${a.travail ? ' · <span class="vert-t">' + esc(a.travail) + '</span>' : ' · en attente de travail'}</p></div>
     <div class="actions">${puce(cap.rendu, 'Rendus 3D')}${puce(cap['3mf'], 'Georama Production')}${puce(cap.imprimantes, 'Imprimante en direct')}${puce(cap.wix, 'Commandes du site')}</div>
