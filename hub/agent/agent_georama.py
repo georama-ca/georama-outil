@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.7'
+VERSION = '1.7.1'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -730,14 +730,33 @@ class Agent:
         self.stats()
         self.signal()
 
+    def ordi_officiel(self):
+        """v1.7.1 : nom de l'ordi de la maison choisi dans le hub (reglages.json › ordiMaison).
+        Deux agents qui écrivent agent.json en même temps créent des centaines de copies de conflit
+        OneDrive et se disputent les travaux : un agent sur un autre ordi reste donc en veille."""
+        r = lire_json(os.path.join(self.hub, 'reglages.json'), {}) or {}
+        items = r.get('items') if isinstance(r, dict) else None
+        return str(((items or [{}])[0] or {}).get('ordiMaison') or '').strip()
+
     def boucle(self):
         log.info('Agent Georama %s démarré. Dossier du hub : %s', VERSION, self.hub)
+        en_veille = False
         while True:
             debut = time.time()
             try:
+                officiel = self.ordi_officiel() if os.path.isdir(self.hub) else ''
                 if not os.path.isdir(self.hub):
                     log.warning('Dossier du hub introuvable : %s (OneDrive synchronisé ? hub déjà créé ?)', self.hub)
+                elif officiel and officiel.lower() != socket.gethostname().lower():
+                    if not en_veille:
+                        log.warning("L'ordi de la maison est %s, pas %s : l'agent reste en veille (aucun fichier écrit). "
+                                    "Pour l'arrêter pour de bon : Arreter agent.bat, puis retirer son raccourci du dossier Démarrage.",
+                                    officiel, socket.gethostname())
+                        en_veille = True
+                    time.sleep(60)
+                    continue
                 else:
+                    en_veille = False
                     self.tour()
             except Exception:  # noqa: BLE001
                 log.error('Erreur dans le tour : %s', traceback.format_exc())

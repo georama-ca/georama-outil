@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.13.1 (10 novembre 2026)
+- Agent 1.7.1 : un seul ordi de la maison. Le hub retient son nom (reglages.json › ordiMaison = DESKTOP-9RP64TG). Un agent démarré sur un autre ordi reste en veille et n'écrit plus rien (avant : l'agent 1.1 de l'Asus TUF, relancé par son raccourci de démarrage, écrivait agent.json en même temps que DESKTOP-9RP64TG ; OneDrive a créé plus de 850 copies de conflit agent-ASUSTUF-N.json / agent-DESKTOP-9RP64TG-N.json et le hub affichait l'Asus).
+
 ### v1.13.0 (10 novembre 2026)
 - AMS en direct : l'agent 1.7 lit les 9 fentes de l'imprimante (2 AMS 2 Pro + AMS HT, bobines Bambu lues par leur puce) : couleur, type, reste en %. Production › File d'impression : pastilles des 9 fentes sous chaque imprimante. Filament et AMS : liste « AMS en direct » ; « Prêt pour quelle gamme ? » se base sur l'AMS réel quand il est connu.
 - Avant de lancer : l'agent relaie les couleurs du dernier .3mf de chaque commande (rapport de Georama Production). Le hub compare avec l'AMS : « AMS prêt » ou « AMS : n couleur(s) à charger », avec la couleur manquante, les pièces qui l'utilisent et la fente à libérer (vide, ou couleur dont la commande n'a pas besoin).
