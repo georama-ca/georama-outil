@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.7.2'
+VERSION = '1.7.3'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -356,11 +356,11 @@ class Agent:
         if getattr(self, '_menage_fait', 0) > time.time() - 3600:
             return
         self._menage_fait = time.time()
-        motif = re.compile(r'^agent-[A-Za-z0-9_.-]+-\d+\.json$')
+        motif = re.compile(r'^agent-[A-Za-z0-9_.-]+\.json$')
         n = 0
         try:
             for nom in os.listdir(self.hub):
-                if not motif.match(nom):
+                if not motif.match(nom) or nom == 'agent-maison.json':
                     continue
                 chemin = os.path.join(self.hub, nom)
                 d = lire_json(chemin, {}) or {}
@@ -387,7 +387,9 @@ class Agent:
                 'travail': self.travail_en_cours, 'imprimantes': [t.instantane() for t in self.imprimantes],
                 'messages': self.messages[-5:], 'wix_diag': dict(DIAG_WIX),
                 'besoins': {k: {kk: vv for kk, vv in v.items() if kk != 't'} for k, v in self.besoins.items()}}
-        ecrire_json(self.chemin('agent.json'), [item])
+        # v1.7.3 : signal dans agent-maison.json (seul l'ordi de la maison l'écrit). agent.json n'est plus écrit :
+        # un vieil agent resté sur un autre ordi peut y écrire sans se battre avec celui-ci (copies de conflit).
+        ecrire_json(self.chemin('agent-maison.json'), [item])
 
     def commandes(self):
         d = lire_json(self.chemin('commandes.json'), {'items': []}) or {'items': []}

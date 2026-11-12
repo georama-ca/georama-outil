@@ -25,7 +25,7 @@ function signal(m) {
   if (sig === derniereSignature && Date.now() - derniereEcriture < 60000) return;
   derniereSignature = sig;
   derniereEcriture = Date.now();
-  ecrire('agent', [{
+  ecrire('agent-maison', [{
     id: 'maison', nom: 'Ordi de la maison (démo)', machine: 'PC-GEORAMA', version: '1.0', vu: new Date().toISOString(),
     demarre: new Date(Date.now() - 3 * 86400000).toISOString(),
     capacites: { rendu: true, '3mf': true, apercu: true, pdf: true, imprimantes: true, wix: true },

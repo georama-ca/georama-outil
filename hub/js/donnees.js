@@ -420,7 +420,7 @@ export function minutesSemaine(m, qui) {
 
 /* ---------- Ordi de la maison (agent) ---------- */
 export function agent(m) {
-  const a = (m.externes.agent || [])[0];
+  const a = (m.externes.agent || [])[0] || (m.externes.agentAncien || [])[0];
   if (!a) return { installe: false, enLigne: false };
   const age = (Date.now() - new Date(a.vu).getTime()) / 1000;
   return Object.assign({}, a, { installe: true, enLigne: age < 150, age });

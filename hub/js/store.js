@@ -8,7 +8,9 @@ import { CONFIG } from '../config.js';
 
 export const COLLECTIONS = ['commandes', 'plaques', 'taches', 'prospects', 'campagnes', 'depenses', 'filament', 'reglages', 'travaux', 'activite', 'temps', 'contenus', 'courriels'];
 // Fichiers écrits par l'agent de l'ordi de la maison (lecture seule pour le hub)
-export const EXTERNES = { agent: 'agent', resultats: 'travaux-resultats', wix: 'boite-wix', statsWix: 'stats-wix', statsMeta: 'stats-meta' };
+// v1.13.3 : le signal de l'ordi de la maison est dans agent-maison.json (un seul auteur). agent.json reste lu
+// seulement pour repérer un vieil agent qui tourne encore sur un autre ordi.
+export const EXTERNES = { agent: 'agent-maison', agentAncien: 'agent', resultats: 'travaux-resultats', wix: 'boite-wix', statsWix: 'stats-wix', statsMeta: 'stats-meta' };
 const GRAPH = 'https://graph.microsoft.com/v1.0';
 
 /* ---------- Mode démo ---------- */

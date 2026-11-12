@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.13.3 (11 novembre 2026)
+- Signal de l'ordi de la maison déplacé dans agent-maison.json (agent 1.7.3 ; seul DESKTOP-9RP64TG l'écrit). agent.json n'est plus lu que pour repérer un vieil agent (ex. Asus TUF 1.1 relancé par son raccourci de démarrage) : il ne remplace plus l'ordi de la maison dans le hub et ne crée plus de copies de conflit. Le ménage de l'agent supprime aussi agent-<ordi>.json sans numéro.
+
 ### v1.13.2 (10 novembre 2026)
 - Agent 1.7.2 : supprime une fois par heure les copies de conflit OneDrive de agent.json (agent-<ordi>-<n>.json contenant un signal d'agent, rien d'autre).
 - Production › carte « Ordi de la maison » : bandeau d'alerte si l'agent qui écrit n'est pas l'ordi de la maison choisi (reglages › ordiMaison), avec la marche à suivre pour l'arrêter.
