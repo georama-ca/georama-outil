@@ -10,10 +10,12 @@ function pjParDefaut(choix, f, fichiers) {
     const rendu = fichiers.find(x => /rendu/i.test(x.nom) && x.image) || fichiers.find(x => x.image);
     return rendu && rendu.nom === f.nom;
   }
-  if (choix === 'recue') return /^(Confirmation|Previsualisation)_.*\.pdf$/i.test(f.nom);
-  if (choix === 'confirmation') return /^Confirmation_Georama_[A-Z0-9-]+\.pdf$/i.test(f.nom);
+  if (choix === 'recue') return /^(Maquette|Confirmation|Previsualisation)_.*\.pdf$/i.test(f.nom);
+  if (choix === 'confirmation') return /^(Maquette|Confirmation)_Georama_[A-Z0-9-]+\.pdf$/i.test(f.nom);
   return false;
 }
+// v1.14.2 : le client reçoit « Maquette_Georama_<numéro>.pdf » (le mot « Confirmation » portait à confusion)
+export function nomPourClient(nom) { return String(nom).replace(/^Confirmation_Georama_/i, 'Maquette_Georama_'); }
 // Images réduites en JPEG (1800 px max) pour rester sous la limite d'envoi
 async function alleger(blob, nom) {
   if (!/^image\//.test(blob.type || '') && !/\.(png|jpe?g|webp)$/i.test(nom)) return { blob, nom };
@@ -252,7 +254,7 @@ export async function envoyerGraph(m, c, { a, objet, corps, pieces = [] }) {
       const { blob, nom } = await alleger(brut, nomF);
       total += blob.size;
       if (total > LIMITE_PJ) throw new Error('Pièces jointes trop lourdes (plus de 3 Mo). Décoche-en une.');
-      pj.push({ '@odata.type': '#microsoft.graph.fileAttachment', name: nom, contentType: blob.type || 'application/octet-stream', contentBytes: await versBase64(blob) });
+      pj.push({ '@odata.type': '#microsoft.graph.fileAttachment', name: nomPourClient(nom), contentType: blob.type || 'application/octet-stream', contentBytes: await versBase64(blob) });
     }
   }
   const r = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {

@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.7.3'
+VERSION = '1.7.4'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -685,12 +685,19 @@ class Agent:
                         log.info('Synchro Production : %s -> %s', os.path.basename(f), dest)
                 for f in glob.glob(os.path.join(src, '*')):
                     b = os.path.basename(f)
-                    cible = noms.get(b) or (b if b.lower().endswith('.pdf') and b.split('_')[0] in ('Confirmation', 'Previsualisation', 'Soumission') else None)
+                    cible = noms.get(b) or (b if b.lower().endswith('.pdf') and b.split('_')[0] in ('Maquette', 'Confirmation', 'Previsualisation', 'Soumission') else None)
                     if not cible:
                         continue
+                    # 1.7.4 : le PDF client s'appelle « Maquette_Georama_<numéro>.pdf » dans le hub (un seul PDF, pas « Confirmation »)
+                    cible = re.sub(r'^Confirmation_Georama_', 'Maquette_Georama_', cible)
                     d = os.path.join(dest, cible)
                     if not os.path.exists(d) or os.path.getmtime(f) > os.path.getmtime(d) + 1:
                         shutil.copy2(f, d)
+                    if cible.startswith('Maquette_Georama_'):
+                        vieux = os.path.join(dest, cible.replace('Maquette_Georama_', 'Confirmation_Georama_', 1))
+                        if os.path.exists(vieux):
+                            os.remove(vieux)
+                            log.info('Ancien nom retiré : %s', os.path.basename(vieux))
             except OSError as e:
                 log.warning('Synchro Production (%s) : %s', num, e)
 

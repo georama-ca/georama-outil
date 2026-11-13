@@ -2,7 +2,7 @@
 // Quand le hub est ouvert avec le compte d'envoi (info@georama.ca par défaut), chaque nouvelle commande
 // du site (G-…) reçoit un courriel de confirmation avec le PDF client de Georama Production :
 // ce qui sera imprimé, le délai avant l'entrée en production et la durée d'impression.
-// Le courriel part dès que le PDF « Confirmation_Georama_<numéro>.pdf » est dans le dossier de la commande.
+// Le courriel part dès que le PDF client (« Maquette_Georama_<numéro>.pdf ») est dans le dossier de la commande.
 import { reglages, dossierCommande, journaliser } from './donnees.js';
 import { modeles, remplir, envoyerGraph, estCommandeSite } from './courriels.js';
 
@@ -43,8 +43,11 @@ export async function confirmationsAuto(ctx) {
     for (const c of liste) {
       let fichiers = [];
       try { fichiers = await m.a.lister(dossierCommande(c)); } catch (e) { continue; }
-      const nomPdf = 'Confirmation_Georama_' + String(c.numero || '').replace(/[^\w-]/g, '_') + '.pdf';
-      const pdf = fichiers.find(f => f.nom === nomPdf && String(f.maj || '') >= (c.recue || ''));
+      const num = String(c.numero || '').replace(/[^\w-]/g, '_');
+      // Nom du PDF client : Maquette_Georama_<numéro>.pdf (Production 4.43, agent 1.7.4) ou l'ancien Confirmation_Georama_<numéro>.pdf
+      const pdf = ['Maquette_Georama_' + num + '.pdf', 'Confirmation_Georama_' + num + '.pdf']
+        .map(n => fichiers.find(f => f.nom === n && String(f.maj || '') >= (c.recue || ''))).find(Boolean);
+      const nomPdf = pdf && pdf.nom;
       if (!pdf) continue;                                  // l'ordi de la maison ne l'a pas encore fait
       const actuel = m.get('commandes', c.id);
       if (!actuel || !aConfirmer(m, actuel) || !verrou(c.id)) continue;

@@ -124,7 +124,7 @@ def faire_pdf(lien, numero, dossier, sortie, client):
         rapport = json.load(f)
     commande = dict_lien(lien)
     approbation = commande.get("profil") == "entreprise"
-    nom = ("Previsualisation_Georama_" if approbation else "Confirmation_Georama_") + re.sub(r"[^\w\-]", "_", numero or "commande") + ".pdf"
+    nom = ("Previsualisation_Georama_" if approbation else "Maquette_Georama_") + re.sub(r"[^\w\-]", "_", numero or "commande") + ".pdf"   # 13 nov. : plus « Confirmation_ » (confusion)
     chemin = os.path.join(dossier, nom)
     pdf.creer(chemin, dossier, rapport, commande, derniere_capture(sortie), client=client, numero=numero, perso=[], approbation=approbation)
     shutil.copy2(chemin, os.path.join(sortie, nom))

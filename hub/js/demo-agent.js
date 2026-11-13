@@ -66,8 +66,8 @@ function travailler(m) {
         ajouterFichier(dossier, 'apercu-rapide.png', true);
         Object.assign(r, { statut: 'fait', fin: new Date().toISOString(), fichiers: ['apercu-rapide.png'], message: 'Aperçu rapide prêt (démo).' });
       } else if (t.type === 'pdf') {
-        ajouterFichier(dossier, 'Confirmation_Georama_' + (c.numero || 'demo') + '.pdf', false);
-        Object.assign(r, { statut: 'fait', fin: new Date().toISOString(), fichiers: ['Confirmation_Georama.pdf'], message: 'PDF client prêt (démo).' });
+        ajouterFichier(dossier, 'Maquette_Georama_' + (c.numero || 'demo') + '.pdf', false);
+        Object.assign(r, { statut: 'fait', fin: new Date().toISOString(), fichiers: ['Maquette_Georama.pdf'], message: 'PDF client prêt (démo).' });
       } else {
         ajouterFichier(dossier, 'plaque-1-rendu.png', true);
         Object.assign(r, { statut: 'fait', fin: new Date().toISOString(), fichiers: ['plaque-1-rendu.png'], message: 'plaque-1.3mf : 5 pièces, 114 412 triangles, 7 s (démo)' });

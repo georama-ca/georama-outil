@@ -48,6 +48,11 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.14.2 (13 novembre 2026), agent 1.7.4
+- Le PDF client s'appelle maintenant « Maquette_Georama_<numéro>.pdf » (le mot « Confirmation » portait à confusion). Le hub l'envoie déjà sous ce nom en pièce jointe, même si le fichier d'origine porte l'ancien nom.
+- Agent 1.7.4 et pont produire_hub.py : le PDF est produit et copié dans le hub sous le nouveau nom ; l'ancien « Confirmation_Georama_<numéro>.pdf » est retiré du dossier de la commande pour qu'il n'en reste qu'un.
+- Confirmation automatique : accepte les deux noms (nouveau d'abord).
+
 ### v1.14.1 (13 novembre 2026)
 - Un seul PDF par commande : les copies de conflit OneDrive (ex. Confirmation_Georama_G-2026-005-DESKTOP-9RP64TG.pdf, quand Confirmation_Georama_G-2026-005.pdf existe) ne sont plus montrées ni proposées en pièce jointe, et le hub les met à la corbeille OneDrive (récupérables) dès qu'il liste le dossier de la commande.
 - Courriel « Confirmation (site) » : « montre ce qui sera imprimé » (sans « exactement ») ; la date de livraison ou de récupération annoncée = date promise + 7 jours (réglage « Jours ajoutés à la date de livraison annoncée », Paramètres › Courriels aux clients). La date promise du hub ne change pas.
