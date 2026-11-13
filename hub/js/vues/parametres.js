@@ -66,7 +66,7 @@ function blocConnexion(ctx) {
   </section>`;
 }
 
-// v1.14.3 : taille de l'interface, par appareil (80 % par défaut sur ordinateur, 100 % au cellulaire)
+// v1.14.4 : taille de l'interface, par appareil (80 % par défaut sur ordinateur, 100 % au cellulaire)
 export const CLE_TAILLE = 'georama-hub-taille';
 export function tailleInterface() {
   try { const v = Number(localStorage.getItem(CLE_TAILLE)); if (v >= 0.5 && v <= 1.5) return v; } catch (e) { /* rien */ }
@@ -126,7 +126,7 @@ export default {
               <div class="champ"><label for="r-liv">Livraison Postes Canada ($)</label><input id="r-liv" name="livraison" type="number" min="0" step="0.01" value="${esc(R.livraison)}"></div>
               <div class="champ"><label for="r-noel">Date limite des commandes de Noël</label><input id="r-noel" name="dateLimiteNoel" type="date" value="${esc(R.dateLimiteNoel)}"></div>
               <div class="champ"><label for="r-envoi">Dernier envoi avant Noël</label><input id="r-envoi" name="dernierEnvoi" type="date" value="${esc(R.dernierEnvoi)}"></div>
-              <div class="champ plein"><label class="case"><input type="checkbox" name="taxes"${R.taxes ? ' checked' : ''}> Facturer la TPS et la TVQ sur les ventes</label></div>
+              <div class="champ plein"><label class="case"><input type="checkbox" name="taxes"${R.taxes ? ' checked' : ''}> Georama est inscrite à la TPS et à la TVQ (ajouter les taxes aux ventes)</label><p class="tres-petit doux" style="margin:4px 0 0">Décoché : aucune taxe sur les ventes, et les taxes payées sur les dépenses comptent dans le coût. Inscription obligatoire à 30 000 $ de ventes taxables (avertissement dans Finances dès 25 000 $).</p></div>
             </div>
           </section>
         </div>

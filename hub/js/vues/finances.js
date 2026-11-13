@@ -1,6 +1,6 @@
 // Module Finances : ventes, dépenses, taxes, objectif.
 import { esc, argent, pct, dateCourte, options, ouvrirFenetre, aujourdhui, uid, toast, telecharger, csv, ilYa } from '../ui.js';
-import { reglages, resume, ventes, depenses, CATEGORIES_DEPENSE, nomSegment, taxesDe, moisCourant, TPS, TVQ, journaliser, abonnements } from '../donnees.js';
+import { ventesTaxables, reglages, resume, ventes, depenses, CATEGORIES_DEPENSE, nomSegment, taxesDe, moisCourant, TPS, TVQ, journaliser, abonnements } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
 
 function etatVue(ctx) {
@@ -147,7 +147,7 @@ function vueResume(ctx) {
   const rythme = ra.benefice / Math.max(1, moisEcoules - premier + 1);
   const lignesMois = parMois.filter(p => Number(p.id.slice(5)) >= premier).map(p => {
     const nom = new Date(Number(annee), Number(p.id.slice(5)) - 1, 1).toLocaleDateString('fr-CA', { month: 'long' });
-    return `<tr${p.id === e.periode ? ' class="choisi"' : ''}><td>${esc(nom.charAt(0).toUpperCase() + nom.slice(1))}</td><td class="droite num">${argent(p.x.ventesHT, 2)}</td><td class="droite num">${argent(p.x.depensesHT, 2)}</td><td class="droite num ${p.x.benefice < 0 ? 'retard' : ''}">${argent(p.x.benefice, 2)}</td></tr>`;
+    return `<tr${p.id === e.periode ? ' class="choisi"' : ''}><td>${esc(nom.charAt(0).toUpperCase() + nom.slice(1))}</td><td class="droite num">${argent(p.x.ventesHT, 2)}</td><td class="droite num">${argent(p.x.depensesCout, 2)}</td><td class="droite num ${p.x.benefice < 0 ? 'retard' : ''}">${argent(p.x.benefice, 2)}</td></tr>`;
   }).join('');
   const bandeauWix = errWix ? `<div class="bandeau"><span><strong>Paiements Wix pas lus :</strong> ${esc(errWix)}</span></div>`
     : !sw || !sw.paiements ? `<div class="bandeau info"><span>Les paiements reçus par Wix (factures et boutique) apparaîtront ici dès que l’ordi de la maison les aura lus (chaque heure).</span></div>`
@@ -156,7 +156,7 @@ function vueResume(ctx) {
     ${bandeauWix}
     <section class="g4" aria-label="Indicateurs">
       <div class="carte kpi"><p class="surtitre">Ventes · avant taxes</p><p class="valeur">${argent(r.ventesHT, 2)}</p><p class="detail">${nbWix ? `${nbWix} paiement${nbWix > 1 ? 's' : ''} Wix${r.nbVentes - nbWix ? ' + ' + (r.nbVentes - nbWix) + ' autre' + (r.nbVentes - nbWix > 1 ? 's' : '') : ''}` : `${r.nbVentes} commande${r.nbVentes > 1 ? 's' : ''}`} · ${esc(nomPeriode(e.periode))}</p></div>
-      <div class="carte kpi"><p class="surtitre">Dépenses · avant taxes</p><p class="valeur">${argent(r.depensesHT, 2)}</p><p class="detail">${r.nbDepenses} dépense${r.nbDepenses > 1 ? 's' : ''}</p></div>
+      <div class="carte kpi"><p class="surtitre">Dépenses · ${r.inscrite ? 'avant taxes' : 'taxes incluses'}</p><p class="valeur">${argent(r.depensesCout, 2)}</p><p class="detail">${r.nbDepenses} dépense${r.nbDepenses > 1 ? 's' : ''}</p></div>
       <div class="carte kpi"><p class="surtitre">Bénéfice</p><p class="valeur${r.benefice < 0 ? ' retard' : ''}">${argent(r.benefice, 2)}</p><p class="detail">Ventes moins dépenses</p></div>
       <div class="carte kpi"><p class="surtitre">À encaisser</p><p class="valeur">${argent(r.aEncaisser, 2)}</p><p class="detail">Commandes non payées, taxes incluses</p></div>
     </section>
@@ -176,7 +176,17 @@ function vueResume(ctx) {
         <div class="ligne"><strong class="grow">TPS à remettre</strong><strong class="num">${argent(netTps, 2)}</strong></div>
         <div class="ligne"><span class="grow">TVQ perçue</span><span class="num">${argent(r.tvqPercue, 2)}</span></div>
         <div class="ligne"><span class="grow">TVQ payée (RTI)</span><span class="num">− ${argent(r.tvqPayee, 2)}</span></div>
-        <div class="ligne"><strong class="grow">TVQ à remettre</strong><strong class="num">${argent(netTvq, 2)}</strong></div>` : '<p class="petit doux">Taxes désactivées dans Paramètres.</p>'}
+        <div class="ligne"><strong class="grow">TVQ à remettre</strong><strong class="num">${argent(netTvq, 2)}</strong></div>` : (() => {
+          const vt = ventesTaxables(m);
+          const pctSeuil = Math.max(0, Math.min(100, vt.quatreTrimestres / vt.seuil * 100));
+          const alerte = vt.quatreTrimestres >= vt.avertir || vt.trimestre >= vt.avertir;
+          return `<p class="petit" style="margin:0 0 8px">Georama n’est pas inscrite à la TPS ni à la TVQ : aucune taxe sur les ventes.</p>
+        <div class="ligne"><span class="grow">Taxes payées sur les dépenses</span><span class="num">${argent(r.tpsPayee + r.tvqPayee, 2)}</span></div>
+        <p class="tres-petit doux" style="margin:2px 0 10px">Non récupérables : comptées dans les dépenses.</p>
+        <div class="ligne"><span class="grow">Ventes des 4 derniers trimestres</span><span class="num">${argent(vt.quatreTrimestres, 2)} / ${argent(vt.seuil)}</span></div>
+        <div class="barre"><span style="width:${pctSeuil}%"></span></div>
+        ${alerte ? `<p class="petit retard" style="margin:8px 0 0"><strong>Plus de ${argent(vt.avertir)} : préparer l’inscription à la TPS et à la TVQ avant de dépasser ${argent(vt.seuil)}.</strong></p>` : ''}`;
+        })()}
         <p class="tres-petit doux" style="margin:8px 0 0">Estimation pour préparer la déclaration. La comptabilité officielle reste dans QuickBooks.</p>
       </section>
       <section class="carte table-boite">

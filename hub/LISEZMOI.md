@@ -48,6 +48,11 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.14.4 (13 novembre 2026)
+- Taxes : Georama n'est pas inscrite à la TPS ni à la TVQ (décision du 13 nov., inscription à 30 000 $ de ventes taxables). Réglage par défaut « taxes » à faux ; libellé dans Paramètres : « Georama est inscrite à la TPS et à la TVQ ».
+- Dépenses : les taxes des dépenses automatiques (Meta, abonnements) sont toujours estimées. Pas inscrite : elles ne se récupèrent pas et comptent dans le coût (Finances : « Dépenses · taxes incluses », bénéfice = ventes − dépenses taxes incluses).
+- Finances › Taxes, pas inscrite : taxes payées sur les dépenses, ventes des 4 derniers trimestres civils sur 30 000 $, avertissement dès 25 000 $.
+
 ### v1.14.3 (13 novembre 2026)
 - Interface réduite de 20 % : zoom de 80 % par défaut sur ordinateur (100 % au cellulaire). Paramètres › « Taille de l'interface » (70 à 110 %), réglé par appareil (localStorage georama-hub-taille). Les hauteurs plein écran (menu, Georama Production, connexion) restent pleines (variables --vh100 et --vw100).
 - Agent 1.7.4 installé sur DESKTOP-9RP64TG ; il ignore aussi les copies de conflit OneDrive dans le dossier de Production et retire les anciens noms du PDF (Confirmation_Georama_<numéro>.pdf et ses copies). Georama Production 4.43 : PDF de l'interface aussi nommé Maquette_Georama_<numéro>.pdf.

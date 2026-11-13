@@ -146,7 +146,8 @@ export const REGLAGES_DEFAUT = {
   heuresSemaine: 10,
   delaiJours: 21,
   livraison: 25,
-  taxes: true,
+  // taxes = Georama est inscrite à la TPS et à la TVQ. Décision du 13 nov. 2026 : pas d'inscription avant 30 000 $ de ventes taxables.
+  taxes: false,
   dateLimiteNoel: '2026-12-01',
   dernierEnvoi: '2026-12-18',
   membres: ['Charles Desbiens', 'Maryse Perron Chartier'],
@@ -370,27 +371,44 @@ export function depensesAuto(m, periode) {
     const date = mois + '-01';
     if (!depense || !dansPeriode(date, periode) || dejaEntree(m, 'Meta', mois)) return;
     const ht = Math.round(depense * 100) / 100;
-    l.push(Object.assign({ ht }, taxesDe(ht, R.taxes), { d: { id: 'auto-meta-' + mois, date, fournisseur: 'Meta (pubs Facebook et Instagram)', categorie: 'Publicité', montant: ht,
+    // v1.14.4 : taxes des dépenses toujours estimées (elles sont payées, inscrite ou non).
+    l.push(Object.assign({ ht }, taxesDe(ht, true), { d: { id: 'auto-meta-' + mois, date, fournisseur: 'Meta (pubs Facebook et Instagram)', categorie: 'Publicité', montant: ht,
       note: 'Dépensé en pubs ce mois-là (lu dans Meta). Taxes estimées : à confirmer avec le reçu Meta.', auto: 'meta' } }));
   });
   abonnements(m).forEach(a => occurrences(a, aujourdhui()).forEach(date => {
     if (!dansPeriode(date, periode) || dejaEntree(m, a.fournisseur, date.slice(0, 7))) return;
     const ht = Number(a.montant) || 0;
-    l.push(Object.assign({ ht }, taxesDe(ht, a.taxes !== false && R.taxes), { d: { id: 'auto-ab-' + a.id + '-' + date, date, fournisseur: a.fournisseur,
+    l.push(Object.assign({ ht }, taxesDe(ht, a.taxes !== false), { d: { id: 'auto-ab-' + a.id + '-' + date, date, fournisseur: a.fournisseur,
       categorie: a.categorie || 'Logiciels et abonnements', montant: ht, note: 'Abonnement ' + (a.frequence === 'annuel' ? 'annuel' : 'mensuel') + ' (automatique)', auto: 'abonnement', abonnement: a.id } }));
   }));
   return l;
 }
 export function resume(m, periode) {
+  const inscrite = !!reglages(m).taxes;
   const v = ventes(m, periode), d = depenses(m, periode);
   const s = (l, k) => l.reduce((t, x) => t + x[k], 0);
+  // v1.14.4 : pas inscrite = les taxes payées sur les dépenses ne se récupèrent pas (pas de CTI/RTI) : elles font partie du coût.
+  const depensesCout = s(d, 'ht') + (inscrite ? 0 : s(d, 'tps') + s(d, 'tvq'));
   return {
+    inscrite,
     ventesHT: s(v, 'ht'), tpsPercue: s(v, 'tps'), tvqPercue: s(v, 'tvq'),
-    depensesHT: s(d, 'ht'), tpsPayee: s(d, 'tps'), tvqPayee: s(d, 'tvq'),
+    depensesHT: s(d, 'ht'), tpsPayee: s(d, 'tps'), tvqPayee: s(d, 'tvq'), depensesCout,
     nbVentes: v.length, nbDepenses: d.length,
-    benefice: s(v, 'ht') - s(d, 'ht'),
+    benefice: s(v, 'ht') - depensesCout,
     aEncaisser: v.filter(x => !x.c.payee).reduce((t, x) => t + x.ht + x.tps + x.tvq, 0),
   };
+}
+
+// Seuil du petit fournisseur (30 000 $) : ventes du trimestre civil en cours et des 4 derniers trimestres civils
+// (le trimestre en cours et les 3 précédents). Avertissement à 25 000 $. Estimation : ventes du hub avant taxes.
+export const SEUIL_TAXES = 30000, AVERTIR_TAXES = 25000;
+export function ventesTaxables(m, jour) {
+  const d = versDate(jour || aujourdhui());
+  const y = d.getFullYear(), q = Math.floor(d.getMonth() / 3);
+  const mois = [];
+  for (let k = 11; k >= 0; k--) { const t = new Date(y, q * 3 + 2 - k, 1); mois.push(t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0')); }
+  const parMois = mois.map(id => ventes(m, id).reduce((t, x) => t + x.ht, 0));
+  return { quatreTrimestres: parMois.reduce((a, b) => a + b, 0), trimestre: parMois.slice(9).reduce((a, b) => a + b, 0), depuis: mois[0], seuil: SEUIL_TAXES, avertir: AVERTIR_TAXES };
 }
 
 export function commandeTexte(c) { return (c.numero || '') + ' · ' + (c.lieu || c.client || ''); }
