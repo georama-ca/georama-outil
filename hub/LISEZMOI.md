@@ -48,6 +48,14 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.14.0 (13 novembre 2026)
+- Confirmation automatique des commandes régulières du site (G-…, js/confirmation-auto.js) : dès que le PDF client « Confirmation_Georama_<numéro>.pdf » est dans le dossier de la commande, le hub envoie le courriel « Confirmation (site) » avec le PDF joint, par Microsoft Graph, depuis le compte d'envoi (info@georama.ca par défaut). Il faut qu'un hub soit ouvert avec ce compte (vérification toutes les 3 min). Une seule fois par commande ; commandes reçues depuis le 13 nov. seulement (réglable).
+- Le courriel donne le délai avant l'entrée en production (d'après la file d'impression du hub) et la durée d'impression (heures des plaques, 37 h par plaque 10 × 12 par défaut), plus la date de livraison ou de récupération. Aucune invitation à valider, à changer ni à répondre.
+- Paramètres › Courriels aux clients : case « Confirmation automatique », compte qui envoie, date de départ, bouton « Donner l'autorisation d'envoyer ». Variables {entree_production} {duree_impression} {ligne_livraison}.
+- Fiche de commande : l'état de la confirmation automatique (en attente du PDF, envoyée, ou raison de l'échec). Le modèle « Confirmation (site) » est suggéré pour les commandes du site.
+- Fonction partagée envoyerGraph() dans courriels.js (envoi manuel et automatique).
+- Georama Production 4.42 : le PDF de confirmation dit précisément ce qui sera imprimé (relief, forêt, eau, chemins, arbres 3D, terrain, repères, tracé, plaques, cadre, accroche), sans lien « Une question ? » ni bouton « Nous écrire ».
+
 ### v1.13.4 (12 novembre 2026)
 - Chrono automatique : il démarre tout seul à la première vraie activité dans le hub (souris qui bouge, clic, clavier, molette, toucher, travail dans Georama Production) et s'arrête après 10 min sans activité (avant : 20 min). Le temps est enregistré jusqu'à la dernière activité. Au retour après une absence, l'ancien chrono est fermé puis un nouveau démarre.
 - L'ouverture du hub ou un rechargement automatique (nouvelle version) ne compte pas comme une activité. Les mouvements de souris créés par un rafraîchissement de la page sont ignorés ; le défilement seul ne compte plus.

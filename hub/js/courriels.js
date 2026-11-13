@@ -1,6 +1,6 @@
 // Courriels aux clients : modèles, suggestion du bon courriel au bon moment, ouverture dans Outlook.
-import { esc, ouvrirFenetre, fermerFenetre, toast, prenom, dateLongue, aujourdhui, joursEntre, ilYa, argent } from './ui.js';
-import { reglages, formatTexte, nomSegment, totalHT, taxesDe, journaliser, demandeApprobation, dossierCommande } from './donnees.js';
+import { esc, ouvrirFenetre, fermerFenetre, toast, prenom, dateLongue, aujourdhui, joursEntre, ilYa, argent, ajouterJours } from './ui.js';
+import { reglages, formatTexte, nomSegment, totalHT, taxesDe, journaliser, demandeApprobation, dossierCommande, planifier, plaquesDe, nbPlaques } from './donnees.js';
 import { jetonEnvoi, autoriserEnvoi } from './auth.js';
 
 const LIMITE_PJ = 3 * 1024 * 1024; // Graph : envoi simple jusqu'à environ 3 Mo de pièces jointes
@@ -11,6 +11,7 @@ function pjParDefaut(choix, f, fichiers) {
     return rendu && rendu.nom === f.nom;
   }
   if (choix === 'recue') return /^(Confirmation|Previsualisation)_.*\.pdf$/i.test(f.nom);
+  if (choix === 'confirmation') return /^Confirmation_Georama_[A-Z0-9-]+\.pdf$/i.test(f.nom);
   return false;
 }
 // Images réduites en JPEG (1800 px max) pour rester sous la limite d'envoi
@@ -36,6 +37,28 @@ async function versBase64(blob) {
 }
 
 export const MODELES = [
+  {
+    // v1.14 : commandes régulières du site (G-…), envoyé tout seul depuis info@ avec le PDF client.
+    // Pour rassurer : aucune invitation à valider, à changer ni à répondre.
+    id: 'confirmation', nom: 'Confirmation (site)',
+    objet: 'Confirmation de votre commande Georama ({numero})',
+    corps: `Bonjour {prenom},
+
+Merci pour votre commande ! Votre maquette de {lieu} est confirmée et sa place est réservée dans notre calendrier d'impression, à Saint-Félicien.
+
+En bref :
+- Numéro de commande : {numero}
+- Format : {format}, gamme {gamme}
+- Entrée en production : {entree_production}
+- Durée d'impression de votre maquette : {duree_impression}
+- {ligne_livraison}
+
+Le document joint montre exactement ce qui sera imprimé : la vue 3D de votre maquette, son format, ses couleurs et ses mesures.
+
+Nous vous écrirons quand elle sera prête à partir.
+
+{signature}`,
+  },
   {
     id: 'recue', nom: 'Commande reçue',
     objet: 'Votre maquette Georama est commandée ({numero})',
@@ -134,6 +157,28 @@ function signature(ctx) {
 }
 export const SIGNATURE_DEFAUT = '{prenom_moi}\nGeorama · Changez de perspective\ninfo@georama.ca · georama.ca';
 
+// Entrée en production et durée d'impression, d'après la file d'impression du hub.
+export function planConfirmation(m, c) {
+  const R = reglages(m);
+  const pl = plaquesDe(m, c.id);
+  const heures = pl.length ? pl.reduce((s, p) => s + (Number(p.heures) || R.heuresParPlaque || 37), 0) : nbPlaques(c) * (R.heuresParPlaque || 37);
+  let debutH = null;
+  try { (planifier(m).blocs || []).forEach(b => { if (b.c && b.c.id === c.id) debutH = debutH === null ? b.debut : Math.min(debutH, b.debut); }); } catch (e) { debutH = null; }
+  const jours = debutH === null ? null : Math.ceil(debutH / 24);
+  const dateProd = jours === null ? '' : ajouterJours(aujourdhui(), jours);
+  const sansJour = iso => dateLongue(iso).replace(/^\S+\s/, '');
+  const h = Math.round(heures);
+  const n = pl.length || nbPlaques(c);
+  return {
+    jours, heures: h, plaques: n,
+    entree_production: jours === null ? 'dans les prochains jours' : (jours <= 1 ? 'd\u2019ici 24 heures' : 'dans environ ' + jours + ' jours (vers le ' + sansJour(dateProd) + ')'),
+    duree_impression: 'environ ' + h + ' heures' + (h >= 48 ? ' (un peu plus de ' + Math.floor(h / 24) + ' jours)' : '') + (n > 1 ? ' pour vos ' + n + ' plaques' : '') + ', couche par couche',
+    ligne_livraison: c.livraison === 'recuperation'
+      ? 'Récupération à Saint-Félicien : prête vers le ' + (c.promise ? sansJour(c.promise) : 'bientôt')
+      : 'Livraison prévue : vers le ' + (c.promise ? sansJour(c.promise) : 'bientôt'),
+  };
+}
+
 export function remplir(texte, c, ctx) {
   const R = reglages(ctx.m);
   const ht = totalHT(c);
@@ -153,6 +198,7 @@ export function remplir(texte, c, ctx) {
     total: argent(ht + t.tps + t.tvq, 2),
     signature: signature(ctx),
   };
+  if (/\{(entree_production|duree_impression|ligne_livraison)\}/.test(texte)) Object.assign(v, planConfirmation(ctx.m, c));
   return String(texte).replace(/\{(\w+)\}/g, (tout, k) => (k in v ? v[k] : tout));
 }
 
@@ -162,7 +208,10 @@ export function suggestion(c) {
   const envoyes = new Set((c.courriels || []).map(x => x.modele));
   const s = c.statut;
   if (s === 'approbation') return envoyes.has('approbation') ? null : (envoyes.has('recue') ? 'approbation' : 'recue');
-  if (s === 'nouvelle') return envoyes.has('recue') ? null : 'recue';
+  if (s === 'nouvelle') {
+    if (estCommandeSite(c)) return envoyes.has('confirmation') || envoyes.has('recue') ? null : 'confirmation';
+    return envoyes.has('recue') ? null : 'recue';
+  }
   if (s === 'production' || s === 'finition') {
     if (!envoyes.has('recue') && !envoyes.has('production')) return 'production';
     return envoyes.has('production') ? null : 'production';
@@ -182,7 +231,37 @@ export function suggestion(c) {
   }
   return null;
 }
+// Commande régulière du site (G-…) : la confirmation part toute seule depuis info@.
+export function estCommandeSite(c) { return !!c && String(c.id || '').startsWith('wix-') && !demandeApprobation(c); }
 export function nomModele(id) { return (MODELES.find(x => x.id === id) || { nom: id }).nom; }
+
+// Envoi par Microsoft Graph (/me/sendMail) avec des fichiers du dossier de la commande en pièces jointes.
+export async function envoyerGraph(m, c, { a, objet, corps, pieces = [] }) {
+  const jeton = await jetonEnvoi();
+  const pj = [];
+  if (pieces.length) {
+    const frais = await m.a.lister(dossierCommande(c)); // liens de téléchargement à jour
+    let total = 0;
+    for (const nomF of pieces) {
+      const x = frais.find(y => y.nom === nomF);
+      if (!x || !x.url) continue;
+      const brut = await (await fetch(x.url)).blob();
+      const { blob, nom } = await alleger(brut, nomF);
+      total += blob.size;
+      if (total > LIMITE_PJ) throw new Error('Pièces jointes trop lourdes (plus de 3 Mo). Décoche-en une.');
+      pj.push({ '@odata.type': '#microsoft.graph.fileAttachment', name: nom, contentType: blob.type || 'application/octet-stream', contentBytes: await versBase64(blob) });
+    }
+  }
+  const r = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+    method: 'POST', headers: { Authorization: 'Bearer ' + jeton, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: { subject: objet, body: { contentType: 'Text', content: String(corps) }, toRecipients: [{ emailAddress: { address: a } }], attachments: pj }, saveToSentItems: true }),
+  });
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    throw Object.assign(new Error('Microsoft refuse l’envoi (' + r.status + '). ' + t.slice(0, 160)), { code: r.status === 403 ? 'consentement' : '' });
+  }
+  return pj.length;
+}
 
 export function ouvrirCourriel(ctx, idCommande, idModele) {
   const m = ctx.m;
@@ -246,33 +325,11 @@ export function ouvrirCourriel(ctx, idCommande, idModele) {
     const bouton = form.querySelector('button[type=submit]');
     if (bouton) { bouton.disabled = true; bouton.textContent = 'Envoi…'; }
     try {
-      const jeton = await jetonEnvoi();
-      const cochees = joignables().filter((f, i) => d['pj-' + i]);
-      let pj = [];
-      if (cochees.length) {
-        const frais = await m.a.lister(dossierCommande(c)); // liens de téléchargement à jour
-        let total = 0;
-        for (const f of cochees) {
-          const x = frais.find(y => y.nom === f.nom);
-          if (!x || !x.url) continue;
-          const brut = await (await fetch(x.url)).blob();
-          const { blob, nom } = await alleger(brut, f.nom);
-          total += blob.size;
-          if (total > LIMITE_PJ) throw new Error('Pièces jointes trop lourdes (plus de 3 Mo). Décoche-en une.');
-          pj.push({ '@odata.type': '#microsoft.graph.fileAttachment', name: nom, contentType: blob.type || 'application/octet-stream', contentBytes: await versBase64(blob) });
-        }
-      }
-      const r = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-        method: 'POST', headers: { Authorization: 'Bearer ' + jeton, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: { subject: d.objet, body: { contentType: 'Text', content: String(d.corps) }, toRecipients: [{ emailAddress: { address: a } }], attachments: pj }, saveToSentItems: true }),
-      });
-      if (!r.ok) {
-        const t = await r.text().catch(() => '');
-        throw Object.assign(new Error('Microsoft refuse l’envoi (' + r.status + '). ' + t.slice(0, 160)), { code: r.status === 403 ? 'consentement' : '' });
-      }
+      const pieces = joignables().filter((f, i) => d['pj-' + i]).map(f => f.nom);
+      const n = await envoyerGraph(m, c, { a, objet: d.objet, corps: d.corps, pieces });
       marquer('envoye');
       fermerFenetre();
-      toast('Courriel envoyé à ' + a + (pj.length ? ' avec ' + pj.length + ' pièce' + (pj.length > 1 ? 's' : '') + ' jointe' + (pj.length > 1 ? 's' : '') : '') + '.');
+      toast('Courriel envoyé à ' + a + (n ? ' avec ' + n + ' pièce' + (n > 1 ? 's' : '') + ' jointe' + (n > 1 ? 's' : '') : '') + '.');
     } catch (e) {
       if (bouton) { bouton.disabled = false; bouton.textContent = 'Envoyer'; }
       if (e.code === 'consentement') { montrerAutorisation(form); toast('Il manque l’autorisation d’envoyer. Bouton dans la fenêtre.', true); }
@@ -330,8 +387,14 @@ export function ouvrirCourriel(ctx, idCommande, idModele) {
 export function carteCourriels(ctx, c) {
   const sugg = suggestion(c);
   const envoyes = (c.courriels || []).slice().reverse();
+  const auto = c.confirmationAuto || {};
+  const R = reglages(ctx.m);
+  const autoTxt = !estCommandeSite(c) || R.confirmationAuto === false || envoyes.some(e => e.modele === 'confirmation' || e.modele === 'recue') ? ''
+    : (auto.erreur ? '<div class="bandeau" style="margin:8px 0"><span>Confirmation automatique pas envoyée : ' + esc(auto.erreur) + '</span></div>'
+      : (c.recue && c.recue < (R.confirmationAutoDepuis || '2026-11-13') ? ''
+        : '<p class="tres-petit doux" style="margin:8px 0 0">La confirmation (avec le PDF) part toute seule depuis ' + esc(R.courrielConfirmation || 'info@georama.ca') + ' dès que le PDF client est prêt, quand le hub est ouvert avec ce compte.</p>'));
   return `<section class="carte">
-    <p class="surtitre">Courriels au client</p>
+    <p class="surtitre">Courriels au client</p>${autoTxt}
     ${sugg ? `<p class="petit" style="margin:8px 0 10px">À envoyer maintenant : <strong>${esc(nomModele(sugg))}</strong></p>
       <button type="button" class="btn" data-act="courriel" data-id="${esc(c.id)}" data-modele="${sugg}" style="width:100%">Préparer « ${esc(nomModele(sugg))} »</button>`
     : `<p class="petit doux" style="margin:8px 0 10px">${c.courriel ? 'Rien à envoyer pour l’instant.' : 'Pas de courriel pour ce client.'}</p>`}

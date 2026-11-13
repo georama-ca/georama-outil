@@ -123,7 +123,15 @@ export default {
       </form>
       <form data-form="courriels" class="carte">
         <h2>Courriels aux clients</h2>
-        <p class="petit doux" style="margin:0 0 12px">Les modèles proposés dans chaque commande. Variables : {prenom} {client} {numero} {lieu} {format} {gamme} {segment} {date_promise} {suivi} {lien_suivi} {lien_zone} {total} {signature}.</p>
+        <p class="petit doux" style="margin:0 0 12px">Les modèles proposés dans chaque commande. Variables : {prenom} {client} {numero} {lieu} {format} {gamme} {segment} {date_promise} {suivi} {lien_suivi} {lien_zone} {total} {signature} ; pour la confirmation : {entree_production} {duree_impression} {ligne_livraison}.</p>
+        <div class="carte" style="background:var(--fond-2, transparent);margin:0 0 14px;display:flex;flex-direction:column;gap:10px">
+          <label class="case"><input type="checkbox" name="confirmationAuto"${reglages(ctx.m).confirmationAuto !== false ? ' checked' : ''}> <span><strong>Confirmation automatique</strong> des commandes régulières du site (G-…) : courriel « Confirmation (site) » avec le PDF client, envoyé tout seul dès que le PDF est prêt.</span></label>
+          <div class="champs">
+            <div class="champ"><label for="conf-compte">Compte qui envoie</label><input id="conf-compte" name="courrielConfirmation" type="email" value="${esc(reglages(ctx.m).courrielConfirmation || 'info@georama.ca')}"><span class="aide">Le courriel part quand le hub est ouvert avec ce compte (n'importe quel appareil).</span></div>
+            <div class="champ"><label for="conf-depuis">Pour les commandes reçues depuis le</label><input id="conf-depuis" name="confirmationAutoDepuis" type="date" value="${esc(reglages(ctx.m).confirmationAutoDepuis || '2026-11-13')}"></div>
+          </div>
+          <div class="actions"><button type="button" class="btn-2" data-act="autoriser-envoi">Donner l’autorisation d’envoyer (une fois par compte)</button></div>
+        </div>
         <div class="champ" style="margin-bottom:14px"><label for="sig">Signature ({prenom_moi} = prénom de la personne connectée)</label><textarea id="sig" name="signature" rows="3">${esc(reglages(ctx.m).signatureCourriel || SIGNATURE_DEFAUT)}</textarea></div>
         ${modeles(ctx.m).map(x => `<details style="border-top:1px solid var(--bordure);padding:10px 0">
           <summary style="cursor:pointer;font-weight:600;min-height:32px;display:flex;align-items:center">${esc(x.nom)}${(reglages(ctx.m).modelesCourriel || {})[x.id] ? ' <span class="etiquette vert" style="margin-left:8px">modifié</span>' : ''}</summary>
@@ -155,6 +163,7 @@ export default {
       try { const r = await offre.userChoice; if (r && r.outcome === 'accepted') toast('Hub Georama installé.'); } catch (e) { /* rien */ }
       window.__offreInstallation = null;
     },
+    'autoriser-envoi': () => auth.autoriserEnvoi(),
     'reset-modele': (ctx, el) => {
       const R = reglages(ctx.m);
       const perso = Object.assign({}, R.modelesCourriel || {});
@@ -203,7 +212,13 @@ export default {
         if (objet !== x.objet || corps !== x.corps) perso[x.id] = { objet, corps };
       });
       const sig = String(d.signature || '').replace(/\r\n/g, '\n');
-      ctx.m.mettre('reglages', Object.assign({}, R, { id: 'general', modelesCourriel: perso, signatureCourriel: sig === SIGNATURE_DEFAUT ? '' : sig }));
+      const compte = String(d.courrielConfirmation || '').trim().toLowerCase();
+      ctx.m.mettre('reglages', Object.assign({}, R, {
+        id: 'general', modelesCourriel: perso, signatureCourriel: sig === SIGNATURE_DEFAUT ? '' : sig,
+        confirmationAuto: d.confirmationAuto === 'on',
+        courrielConfirmation: /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(compte) ? compte : (R.courrielConfirmation || 'info@georama.ca'),
+        confirmationAutoDepuis: /^\d{4}-\d{2}-\d{2}$/.test(d.confirmationAutoDepuis || '') ? d.confirmationAutoDepuis : (R.confirmationAutoDepuis || '2026-11-13'),
+      }));
       toast('Courriels enregistrés.');
     },
     ids: (ctx, d) => {

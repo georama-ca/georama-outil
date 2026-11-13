@@ -1,4 +1,5 @@
 // Hub Georama — démarrage, coquille (menu Cockpit), navigation et connexion.
+import { confirmationsAuto } from './confirmation-auto.js';
 import { CONFIG } from '../config.js';
 import * as auth from './auth.js';
 import { Magasin, AdaptateurLocal, AdaptateurOneDrive, lireLieu, ecrireLieu } from './store.js';
@@ -523,6 +524,9 @@ async function demarrer() {
     window.addEventListener('focus', () => ctx.m.rafraichir());
     // Suivi des courriels de prospection (en-têtes seulement), au plus toutes les 15 minutes
     setTimeout(() => synchroniserCourriels(ctx), 4000);
+    // Confirmation automatique des commandes du site (session du compte d'envoi seulement, info@ par défaut)
+    setTimeout(() => confirmationsAuto(ctx), 9000);
+    setInterval(() => confirmationsAuto(ctx), 3 * 60000);
     setInterval(() => { if (document.visibilityState === 'visible') synchroniserCourriels(ctx); }, 5 * 60000);
   }
   window.addEventListener('beforeunload', ev => { if (ctx.m.enAttente() && ctx.mode !== 'demo') { ev.preventDefault(); ev.returnValue = ''; } });
