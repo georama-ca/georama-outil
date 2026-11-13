@@ -66,6 +66,23 @@ function blocConnexion(ctx) {
   </section>`;
 }
 
+// v1.14.3 : taille de l'interface, par appareil (80 % par défaut sur ordinateur, 100 % au cellulaire)
+export const CLE_TAILLE = 'georama-hub-taille';
+export function tailleInterface() {
+  try { const v = Number(localStorage.getItem(CLE_TAILLE)); if (v >= 0.5 && v <= 1.5) return v; } catch (e) { /* rien */ }
+  return window.matchMedia && matchMedia('(min-width: 700px)').matches ? 0.8 : 1;
+}
+export function appliquerTaille(v) {
+  const z = v || tailleInterface();
+  document.documentElement.style.zoom = String(z);
+  document.documentElement.style.setProperty('--zoom', String(z));
+}
+function carteTaille() {
+  const t = Math.round(tailleInterface() * 100);
+  const choix = [70, 80, 90, 100, 110].map(v => `<button type="button" class="${v === t ? 'btn' : 'btn-2'}" data-act="taille" data-taille="${v}">${v} %</button>`).join('');
+  return `<section class="carte"><h2>Taille de l'interface</h2><p class="petit doux" style="margin:0 0 12px">Pour cet appareil seulement.</p><div class="actions" style="flex-wrap:wrap">${choix}</div></section>`;
+}
+
 // Carte « Appli sur le cellulaire » : installer le hub comme une appli (suit toutes les versions).
 function carteAppli() {
   const installe = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
@@ -87,6 +104,7 @@ export default {
       <span class="tres-petit doux">${i.active ? 'En service' : 'Pas en service'}</span></div>`).join('');
     return `<header class="entete"><div><p class="surtitre">Hub · v${esc(CONFIG.version)} · ${esc(CONFIG.versionDate)}</p><h1 class="titre-1">Paramètres</h1></div></header>
       ${blocConnexion(ctx)}
+      ${carteTaille()}
       ${blocAgent(ctx)}
       <form data-form="reglages" style="display:flex;flex-direction:column;gap:16px">
         <div class="g2">
@@ -165,6 +183,13 @@ export default {
       window.__offreInstallation = null;
     },
     'autoriser-envoi': () => auth.autoriserEnvoi(),
+    'taille': (ctx, el) => {
+      const v = Number(el.getAttribute('data-taille')) / 100;
+      try { localStorage.setItem(CLE_TAILLE, String(v)); } catch (e) { /* rien */ }
+      appliquerTaille(v);
+      el.parentElement.querySelectorAll('[data-taille]').forEach(b => { b.className = b === el ? 'btn' : 'btn-2'; });
+      toast('Interface à ' + Math.round(v * 100) + ' % sur cet appareil.');
+    },
     'reset-modele': (ctx, el) => {
       const R = reglages(ctx.m);
       const perso = Object.assign({}, R.modelesCourriel || {});

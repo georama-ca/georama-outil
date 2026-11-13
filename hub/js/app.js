@@ -1,4 +1,5 @@
 // Hub Georama — démarrage, coquille (menu Cockpit), navigation et connexion.
+import { appliquerTaille } from './vues/parametres.js';
 import { confirmationsAuto } from './confirmation-auto.js';
 import { CONFIG } from '../config.js';
 import * as auth from './auth.js';
@@ -450,6 +451,7 @@ function ecranDossier(adaptateur, message) {
 
 /* ---------- Démarrage ---------- */
 async function demarrer() {
+  try { appliquerTaille(); } catch (e) { /* rien */ }
   const retour = await auth.traiterRetour();
   let mode = 'demo';
   try { mode = localStorage.getItem(CLE_MODE) || ''; } catch (e) { mode = ''; }

@@ -688,16 +688,27 @@ class Agent:
                     cible = noms.get(b) or (b if b.lower().endswith('.pdf') and b.split('_')[0] in ('Maquette', 'Confirmation', 'Previsualisation', 'Soumission') else None)
                     if not cible:
                         continue
+                    # copie de conflit OneDrive (« …-DESKTOP-XXXX.pdf ») à côté de l'original : ignorée
+                    if b.lower().endswith('.pdf') and re.search(r'-[A-Z][A-Z0-9-]*\.pdf$', b) and \
+                            os.path.exists(os.path.join(src, re.sub(r'-[A-Z][A-Z0-9-]*\.pdf$', '.pdf', b))):
+                        continue
                     # 1.7.4 : le PDF client s'appelle « Maquette_Georama_<numéro>.pdf » dans le hub (un seul PDF, pas « Confirmation »)
                     cible = re.sub(r'^Confirmation_Georama_', 'Maquette_Georama_', cible)
                     d = os.path.join(dest, cible)
                     if not os.path.exists(d) or os.path.getmtime(f) > os.path.getmtime(d) + 1:
                         shutil.copy2(f, d)
                     if cible.startswith('Maquette_Georama_'):
-                        vieux = os.path.join(dest, cible.replace('Maquette_Georama_', 'Confirmation_Georama_', 1))
-                        if os.path.exists(vieux):
-                            os.remove(vieux)
-                            log.info('Ancien nom retiré : %s', os.path.basename(vieux))
+                        # anciens noms du même PDF : Confirmation_Georama_<num>.pdf et ses copies de conflit OneDrive
+                        # (Confirmation_Georama_<num>-DESKTOP-XXXX.pdf), Maquette_Georama_<num>-XXXX.pdf
+                        tige = re.escape(cible[len('Maquette_Georama_'):-4])
+                        motif = re.compile(r'^(Confirmation_Georama_' + tige + r'|Maquette_Georama_' + tige + r'-[A-Z0-9-]*[A-Z][A-Z0-9-]*)(-[A-Z0-9-]*[A-Z][A-Z0-9-]*)?\.pdf$')
+                        for vieux in os.listdir(dest):
+                            if vieux != cible and motif.match(vieux):
+                                try:
+                                    os.remove(os.path.join(dest, vieux))
+                                    log.info('Ancien PDF retiré : %s', vieux)
+                                except OSError as e:
+                                    log.warning('Ancien PDF %s : %s', vieux, e)
             except OSError as e:
                 log.warning('Synchro Production (%s) : %s', num, e)
 

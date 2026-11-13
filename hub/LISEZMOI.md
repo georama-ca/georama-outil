@@ -48,6 +48,10 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.14.3 (13 novembre 2026)
+- Interface réduite de 20 % : zoom de 80 % par défaut sur ordinateur (100 % au cellulaire). Paramètres › « Taille de l'interface » (70 à 110 %), réglé par appareil (localStorage georama-hub-taille). Les hauteurs plein écran (menu, Georama Production, connexion) restent pleines (variables --vh100 et --vw100).
+- Agent 1.7.4 installé sur DESKTOP-9RP64TG ; il ignore aussi les copies de conflit OneDrive dans le dossier de Production et retire les anciens noms du PDF (Confirmation_Georama_<numéro>.pdf et ses copies). Georama Production 4.43 : PDF de l'interface aussi nommé Maquette_Georama_<numéro>.pdf.
+
 ### v1.14.2 (13 novembre 2026), agent 1.7.4
 - Le PDF client s'appelle maintenant « Maquette_Georama_<numéro>.pdf » (le mot « Confirmation » portait à confusion). Le hub l'envoie déjà sous ce nom en pièce jointe, même si le fichier d'origine porte l'ancien nom.
 - Agent 1.7.4 et pont produire_hub.py : le PDF est produit et copié dans le hub sous le nouveau nom ; l'ancien « Confirmation_Georama_<numéro>.pdf » est retiré du dossier de la commande pour qu'il n'en reste qu'un.
