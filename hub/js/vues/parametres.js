@@ -128,6 +128,7 @@ export default {
           <label class="case"><input type="checkbox" name="confirmationAuto"${reglages(ctx.m).confirmationAuto !== false ? ' checked' : ''}> <span><strong>Confirmation automatique</strong> des commandes régulières du site (G-…) : courriel « Confirmation (site) » avec le PDF client, envoyé tout seul dès que le PDF est prêt.</span></label>
           <div class="champs">
             <div class="champ"><label for="conf-compte">Compte qui envoie</label><input id="conf-compte" name="courrielConfirmation" type="email" value="${esc(reglages(ctx.m).courrielConfirmation || 'info@georama.ca')}"><span class="aide">Le courriel part quand le hub est ouvert avec ce compte (n'importe quel appareil).</span></div>
+            <div class="champ"><label for="conf-marge">Jours ajoutés à la date de livraison annoncée</label><input id="conf-marge" name="margeLivraisonJours" type="number" min="0" max="60" value="${esc(reglages(ctx.m).margeLivraisonJours ?? 7)}"><span class="aide">Marge de sécurité dans la confirmation (la date promise du hub ne change pas).</span></div>
             <div class="champ"><label for="conf-depuis">Pour les commandes reçues depuis le</label><input id="conf-depuis" name="confirmationAutoDepuis" type="date" value="${esc(reglages(ctx.m).confirmationAutoDepuis || '2026-11-13')}"></div>
           </div>
           <div class="actions"><button type="button" class="btn-2" data-act="autoriser-envoi">Donner l’autorisation d’envoyer (une fois par compte)</button></div>
@@ -216,6 +217,7 @@ export default {
       ctx.m.mettre('reglages', Object.assign({}, R, {
         id: 'general', modelesCourriel: perso, signatureCourriel: sig === SIGNATURE_DEFAUT ? '' : sig,
         confirmationAuto: d.confirmationAuto === 'on',
+        margeLivraisonJours: Math.max(0, Math.min(60, Math.round(Number(d.margeLivraisonJours)))) || (String(d.margeLivraisonJours).trim() === '0' ? 0 : 7),
         courrielConfirmation: /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(compte) ? compte : (R.courrielConfirmation || 'info@georama.ca'),
         confirmationAutoDepuis: /^\d{4}-\d{2}-\d{2}$/.test(d.confirmationAutoDepuis || '') ? d.confirmationAutoDepuis : (R.confirmationAutoDepuis || '2026-11-13'),
       }));

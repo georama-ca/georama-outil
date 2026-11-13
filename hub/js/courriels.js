@@ -53,7 +53,7 @@ En bref :
 - Durée d'impression de votre maquette : {duree_impression}
 - {ligne_livraison}
 
-Le document joint montre exactement ce qui sera imprimé : la vue 3D de votre maquette, son format, ses couleurs et ses mesures.
+Le document joint montre ce qui sera imprimé : la vue 3D de votre maquette, son format, ses couleurs et ses mesures.
 
 Nous vous écrirons quand elle sera prête à partir.
 
@@ -169,13 +169,16 @@ export function planConfirmation(m, c) {
   const sansJour = iso => dateLongue(iso).replace(/^\S+\s/, '');
   const h = Math.round(heures);
   const n = pl.length || nbPlaques(c);
+  // Date annoncée au client : date promise + marge (7 jours par défaut, réglage margeLivraisonJours)
+  const marge = Number.isFinite(Number(R.margeLivraisonJours)) ? Number(R.margeLivraisonJours) : 7;
+  const livraison = c.promise ? ajouterJours(c.promise, marge) : '';
   return {
     jours, heures: h, plaques: n,
     entree_production: jours === null ? 'dans les prochains jours' : (jours <= 1 ? 'd\u2019ici 24 heures' : 'dans environ ' + jours + ' jours (vers le ' + sansJour(dateProd) + ')'),
     duree_impression: 'environ ' + h + ' heures' + (h >= 48 ? ' (un peu plus de ' + Math.floor(h / 24) + ' jours)' : '') + (n > 1 ? ' pour vos ' + n + ' plaques' : '') + ', couche par couche',
     ligne_livraison: c.livraison === 'recuperation'
-      ? 'Récupération à Saint-Félicien : prête vers le ' + (c.promise ? sansJour(c.promise) : 'bientôt')
-      : 'Livraison prévue : vers le ' + (c.promise ? sansJour(c.promise) : 'bientôt'),
+      ? 'Récupération à Saint-Félicien : prête vers le ' + (livraison ? sansJour(livraison) : 'bientôt')
+      : 'Livraison prévue : vers le ' + (livraison ? sansJour(livraison) : 'bientôt'),
   };
 }
 

@@ -48,6 +48,10 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.14.1 (13 novembre 2026)
+- Un seul PDF par commande : les copies de conflit OneDrive (ex. Confirmation_Georama_G-2026-005-DESKTOP-9RP64TG.pdf, quand Confirmation_Georama_G-2026-005.pdf existe) ne sont plus montrées ni proposées en pièce jointe, et le hub les met à la corbeille OneDrive (récupérables) dès qu'il liste le dossier de la commande.
+- Courriel « Confirmation (site) » : « montre ce qui sera imprimé » (sans « exactement ») ; la date de livraison ou de récupération annoncée = date promise + 7 jours (réglage « Jours ajoutés à la date de livraison annoncée », Paramètres › Courriels aux clients). La date promise du hub ne change pas.
+
 ### v1.14.0 (13 novembre 2026)
 - Confirmation automatique des commandes régulières du site (G-…, js/confirmation-auto.js) : dès que le PDF client « Confirmation_Georama_<numéro>.pdf » est dans le dossier de la commande, le hub envoie le courriel « Confirmation (site) » avec le PDF joint, par Microsoft Graph, depuis le compte d'envoi (info@georama.ca par défaut). Il faut qu'un hub soit ouvert avec ce compte (vérification toutes les 3 min). Une seule fois par commande ; commandes reçues depuis le 13 nov. seulement (réglable).
 - Le courriel donne le délai avant l'entrée en production (d'après la file d'impression du hub) et la durée d'impression (heures des plaques, 37 h par plaque 10 × 12 par défaut), plus la date de livraison ou de récupération. Aucune invitation à valider, à changer ni à répondre.

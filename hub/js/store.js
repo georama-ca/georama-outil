@@ -53,6 +53,18 @@ async function graph(chemin, opts = {}) {
   }));
   return r;
 }
+// Copie de conflit OneDrive : « nom-NOMDEL'ORDI.ext » (ex. Confirmation_Georama_G-2026-005-DESKTOP-9RP64TG.pdf)
+// quand le fichier d'origine « nom.ext » est aussi dans le dossier. Le suffixe est en majuscules et chiffres
+// avec au moins une lettre (« -005 » ou « -rendu » ne comptent pas).
+export function estCopieConflit(nom, noms) {
+  const i = nom.lastIndexOf('.');
+  const tige = i > 0 ? nom.slice(0, i) : nom, ext = i > 0 ? nom.slice(i) : '';
+  for (let k = tige.indexOf('-'); k > 0; k = tige.indexOf('-', k + 1)) {
+    const suffixe = tige.slice(k + 1);
+    if (suffixe.length >= 4 && /^[A-Z0-9-]+$/.test(suffixe) && /[A-Z]/.test(suffixe) && noms.has(tige.slice(0, k) + ext)) return true;
+  }
+  return false;
+}
 function cheminEncode(p) { return p.split('/').filter(Boolean).map(encodeURIComponent).join('/'); }
 function encoderPartage(url) {
   const b = btoa(unescape(encodeURIComponent(url.trim()))).replace(/=+$/, '').replace(/\//g, '_').replace(/\+/g, '-');
@@ -123,7 +135,12 @@ export class AdaptateurOneDrive {
     if (r.status === 404) return [];
     if (!r.ok) throw new Error('Liste des fichiers refusée (' + r.status + ').');
     const j = await r.json();
-    return (j.value || []).filter(x => x.file).map(x => ({
+    const fichiers = (j.value || []).filter(x => x.file);
+    const noms = new Set(fichiers.map(x => x.name));
+    // v1.14.1 : un seul fichier par nom. Les copies de conflit OneDrive sont mises à la corbeille (récupérables).
+    const doublons = fichiers.filter(x => estCopieConflit(x.name, noms));
+    doublons.forEach(x => graph('/drives/' + encodeURIComponent(this.lieu.driveId) + '/items/' + encodeURIComponent(x.id), { method: 'DELETE' }).catch(() => {}));
+    return fichiers.filter(x => !doublons.includes(x)).map(x => ({
       nom: x.name, taille: x.size, maj: x.lastModifiedDateTime, webUrl: x.webUrl,
       url: x['@microsoft.graph.downloadUrl'] || '', image: /\.(png|jpe?g|webp)$/i.test(x.name),
     }));
