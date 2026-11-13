@@ -119,28 +119,59 @@ function majChrono() {
   const el = document.getElementById('chrono-g'); if (el) el.innerHTML = chronoHtml();
   const em = document.getElementById('chrono-m'); if (em) em.innerHTML = chronoMobile();
 }
-// Arrêt automatique : sans activité dans le hub pendant INACTIF_MIN minutes, le chrono s'arrête
-// et le temps est enregistré jusqu'à la dernière activité (pas jusqu'au retour).
-// Activité = souris, clavier, défilement, toucher, ou travail dans Georama Production (cadre actif).
+// Chrono automatique (v1.13.4) :
+// - il démarre tout seul dès que Charles ou Maryse se servent du hub (première vraie activité) ;
+// - il s'arrête tout seul après INACTIF_MIN minutes sans activité, et le temps est enregistré
+//   jusqu'à la dernière activité (pas jusqu'au retour) ;
+// - « Arrêter » à la main met le démarrage automatique en pause jusqu'à la prochaine absence
+//   de INACTIF_MIN minutes (nouvelle séance).
+// Activité = souris qui bouge vraiment, clic, clavier, molette, toucher, ou travail dans Georama Production (cadre actif).
+// Un rechargement automatique du hub (nouvelle version) ne compte pas comme une activité.
 const CLE_ACTIVITE = 'georama-hub-activite';
-const INACTIF_MIN = 20;
+const CLE_PAUSE_AUTO = 'georama-hub-chrono-pause';
+const INACTIF_MIN = 10;
 let derniereEcriture = 0;
+function chronoAutoPermis() { return ctx.m && ctx.moi && ctx.mode !== 'demo' && ctx.R.chronoAuto !== false; }
+function demarrerChronoAuto() {
+  try { localStorage.setItem(CLE_CHRONO_G, JSON.stringify({ debut: Date.now(), qui: ctx.moi, auto: true })); } catch (e) { return; }
+  majChrono();
+  toast('Chrono démarré tout seul. Il s’arrêtera après ' + INACTIF_MIN + ' min sans activité.');
+}
 function noterActivite() {
   const t = Date.now();
   if (t - derniereEcriture < 15000) return;
   derniereEcriture = t;
+  const avant = derniereActivite();
+  const nouvelleSeance = !avant || t - avant >= INACTIF_MIN * 60000;
+  // Retour après une absence : fermer d'abord l'ancien chrono à la dernière activité connue.
+  if (nouvelleSeance && avant && ctx.m) verifierInactivite(avant, true);
   try { localStorage.setItem(CLE_ACTIVITE, String(t)); } catch (e) { /* rien */ }
+  if (nouvelleSeance) { try { localStorage.removeItem(CLE_PAUSE_AUTO); } catch (e) { /* rien */ } }
   const msg = (() => { try { return localStorage.getItem('georama-hub-chrono-auto'); } catch (e) { return null; } })();
-  if (msg) { try { localStorage.removeItem('georama-hub-chrono-auto'); } catch (e) { /* rien */ } toast(msg); }
+  if (msg) { try { localStorage.removeItem('georama-hub-chrono-auto'); } catch (e) { /* rien */ } }
+  const pause = (() => { try { return localStorage.getItem(CLE_PAUSE_AUTO); } catch (e) { return '1'; } })();
+  if (chronoAutoPermis() && !lireChronoG() && !pause) {
+    demarrerChronoAuto();
+    if (msg) setTimeout(() => toast(msg), 3500);
+  } else if (msg) toast(msg);
+}
+// La souris compte seulement si elle bouge vraiment (pas un événement créé par un rafraîchissement de la page).
+let sourisX = null, sourisY = null;
+function mouvementSouris(ev) {
+  if (ev.pointerType && ev.pointerType !== 'mouse') return noterActivite();
+  if (sourisX !== null && Math.abs(ev.screenX - sourisX) + Math.abs(ev.screenY - sourisY) < 4) return;
+  const premier = sourisX === null;
+  sourisX = ev.screenX; sourisY = ev.screenY;
+  if (!premier) noterActivite();
 }
 function derniereActivite() { try { return Number(localStorage.getItem(CLE_ACTIVITE)) || 0; } catch (e) { return 0; } }
 // Dernière activité AVANT cette ouverture du hub (ordi en veille, onglet fermé…)
 const activiteAvant = derniereActivite();
-function verifierInactivite(depuis) {
+function verifierInactivite(depuis, retour) {
   const c = lireChronoG();
   if (!c || c.qui !== ctx.moi || !ctx.m) return;
   const a = document.activeElement;
-  if (document.visibilityState === 'visible' && document.hasFocus() && a && a.tagName === 'IFRAME') { noterActivite(); return; }
+  if (!retour && document.visibilityState === 'visible' && document.hasFocus() && a && a.tagName === 'IFRAME') { noterActivite(); return; }
   const der = Math.max(depuis || derniereActivite(), c.debut);
   if (Date.now() - der < INACTIF_MIN * 60000) return;
   const minutes = Math.round((der - c.debut) / 60000);
@@ -155,7 +186,8 @@ function verifierInactivite(depuis) {
   try { localStorage.setItem('georama-hub-chrono-auto', msg); } catch (e) { /* rien */ }
   majChrono();
 }
-['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach(ev => window.addEventListener(ev, noterActivite, { passive: true, capture: true }));
+['pointerdown', 'keydown', 'wheel', 'touchstart'].forEach(ev => window.addEventListener(ev, noterActivite, { passive: true, capture: true }));
+window.addEventListener('pointermove', mouvementSouris, { passive: true, capture: true });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') verifierInactivite(); });
 
 // Nouvelle version publiée : le hub se recharge tout seul au bon moment (rien en attente d'envoi).
@@ -198,9 +230,9 @@ function arreterChrono() {
       const minutes = Math.max(1, Number(d.minutes) || min);
       ctx.m.mettre('temps', { id: uid('h'), qui: ctx.moi, date: aujourdhui(), minutes, categorie: d.categorie, commande: d.commande || '', note: d.note || '' }, true);
       if (d.commande) { const x = ctx.m.get('commandes', d.commande); if (x) ctx.m.modifier('commandes', x.id, { tempsMin: (Number(x.tempsMin) || 0) + minutes }, true); }
-      try { localStorage.removeItem(CLE_CHRONO_G); } catch (e) { /* rien */ }
+      try { localStorage.removeItem(CLE_CHRONO_G); if (ctx.mode !== 'demo') localStorage.setItem(CLE_PAUSE_AUTO, String(Date.now())); } catch (e) { /* rien */ }
       ctx.m.avertir('local');
-      toast(heures(minutes / 60) + ' ajoutées à ta semaine. Beau travail.');
+      toast(heures(minutes / 60) + ' ajoutées à ta semaine. Beau travail.' + (ctx.mode !== 'demo' && ctx.R.chronoAuto !== false ? ' Le chrono repartira tout seul à ta prochaine séance.' : ''));
     },
   });
 }
@@ -357,7 +389,7 @@ racine.addEventListener('submit', ev => {
 const GLOBAL = {
   recherche: () => ouvrirRecherche(),
   'chrono-start': () => {
-    try { localStorage.setItem(CLE_CHRONO_G, JSON.stringify({ debut: Date.now(), qui: ctx.moi })); } catch (e) { /* rien */ }
+    try { localStorage.setItem(CLE_CHRONO_G, JSON.stringify({ debut: Date.now(), qui: ctx.moi })); localStorage.removeItem(CLE_PAUSE_AUTO); } catch (e) { /* rien */ }
     majChrono();
     toast('Chrono démarré. Bonne session de travail.');
   },
@@ -480,7 +512,8 @@ async function demarrer() {
   if (ctx.mode === 'demo') demarrerAgentDemo(ctx.m);
   setInterval(majChrono, 20000);
   if (activiteAvant) verifierInactivite(activiteAvant);
-  noterActivite();
+  // Pas de noterActivite() ici : l'ouverture (ou un rechargement automatique) n'est pas une activité.
+  // Le premier clic, la souris, le clavier ou le toucher démarrent le chrono.
   setInterval(() => verifierInactivite(), 60000);
   setInterval(verifierVersion, 3 * 60000);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') verifierVersion(); });

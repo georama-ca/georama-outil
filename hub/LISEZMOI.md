@@ -48,6 +48,12 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.13.4 (12 novembre 2026)
+- Chrono automatique : il démarre tout seul à la première vraie activité dans le hub (souris qui bouge, clic, clavier, molette, toucher, travail dans Georama Production) et s'arrête après 10 min sans activité (avant : 20 min). Le temps est enregistré jusqu'à la dernière activité. Au retour après une absence, l'ancien chrono est fermé puis un nouveau démarre.
+- L'ouverture du hub ou un rechargement automatique (nouvelle version) ne compte pas comme une activité. Les mouvements de souris créés par un rafraîchissement de la page sont ignorés ; le défilement seul ne compte plus.
+- « Arrêter » à la main : pas de redémarrage automatique avant la prochaine séance (après 10 min d'absence).
+- Paramètres › Production : case « Chrono automatique » (réglage chronoAuto, coché par défaut). Rien en mode démo.
+
 ### v1.13.3 (11 novembre 2026)
 - Signal de l'ordi de la maison déplacé dans agent-maison.json (agent 1.7.3 ; seul DESKTOP-9RP64TG l'écrit). agent.json n'est plus lu que pour repérer un vieil agent (ex. Asus TUF 1.1 relancé par son raccourci de démarrage) : il ne remplace plus l'ordi de la maison dans le hub et ne crée plus de copies de conflit. Le ménage de l'agent supprime aussi agent-<ordi>.json sans numéro.
 

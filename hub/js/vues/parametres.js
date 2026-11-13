@@ -96,6 +96,7 @@ export default {
               <div class="champ"><label for="r-hpp">Heures par plaque 10 × 12</label><input id="r-hpp" name="heuresParPlaque" type="number" min="1" max="200" step="0.5" value="${esc(R.heuresParPlaque)}"><span class="aide">Estimé à 37 h (à mesurer). Sert aux nouvelles plaques.</span></div>
               <div class="champ"><label for="r-hpj">Heures d'impression par jour</label><input id="r-hpj" name="heuresParJour" type="number" min="1" max="24" step="1" value="${esc(R.heuresParJour)}"></div>
               <div class="champ"><label for="r-hsem">Heures Georama visées par semaine (chacun)</label><input id="r-hsem" name="heuresSemaine" type="number" min="1" max="80" step="0.5" value="${esc(R.heuresSemaine || 10)}"></div>
+              <div class="champ plein"><label class="case"><input type="checkbox" name="chronoAuto"${R.chronoAuto !== false ? ' checked' : ''}> Chrono automatique : démarre dès qu'on se sert du hub, s'arrête après 10 min sans activité</label></div>
               <div class="champ"><label for="r-delai">Délai promis (jours)</label><input id="r-delai" name="delaiJours" type="number" min="1" max="120" value="${esc(R.delaiJours)}"><span class="aide">3 semaines : 2 de production + 7 jours de livraison.</span></div>
               <div class="champ plein"><span class="lbl">Imprimantes</span>${imp}</div>
             </div>
@@ -228,6 +229,7 @@ export default {
         heuresParJour: Math.min(24, Number(d.heuresParJour) || R.heuresParJour),
         delaiJours: Number(d.delaiJours) || R.delaiJours,
         heuresSemaine: Number(d.heuresSemaine) || R.heuresSemaine || 10,
+        chronoAuto: !!form.querySelector('[name="chronoAuto"]').checked,
         objectif: Number(d.objectif) || 0,
         livraison: Number(d.livraison) || 0,
         dateLimiteNoel: d.dateLimiteNoel || R.dateLimiteNoel,
