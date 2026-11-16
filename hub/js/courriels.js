@@ -46,7 +46,7 @@ export const MODELES = [
     objet: 'Confirmation de votre commande Georama ({numero})',
     corps: `Bonjour {prenom},
 
-Merci pour votre commande ! Votre maquette de {lieu} est confirmée et sa place est réservée dans notre calendrier d'impression, à Saint-Félicien.
+Merci pour votre commande ! {votre_maquette} est confirmée et sa place est réservée dans notre calendrier d'impression.
 
 En bref :
 - Numéro de commande : {numero}
@@ -177,13 +177,24 @@ export function planConfirmation(m, c) {
   return {
     jours, heures: h, plaques: n,
     entree_production: jours === null ? 'dans les prochains jours' : (jours <= 1 ? 'd\u2019ici 24 heures' : 'dans environ ' + jours + ' jours (vers le ' + sansJour(dateProd) + ')'),
-    duree_impression: 'environ ' + h + ' heures' + (h >= 48 ? ' (un peu plus de ' + Math.floor(h / 24) + ' jours)' : '') + (n > 1 ? ' pour vos ' + n + ' plaques' : '') + ', couche par couche',
+    duree_impression: 'environ ' + h + ' heures' + (h >= 48 ? ' (un peu plus de ' + Math.floor(h / 24) + ' jours)' : '') + (n > 1 ? ' pour vos ' + n + ' plaques' : ''),
     ligne_livraison: c.livraison === 'recuperation'
-      ? 'Récupération à Saint-Félicien : prête vers le ' + (livraison ? sansJour(livraison) : 'bientôt')
+      ? 'Récupération : prête vers le ' + (livraison ? sansJour(livraison) : 'bientôt')
       : 'Livraison prévue : vers le ' + (livraison ? sansJour(livraison) : 'bientôt'),
   };
 }
 
+// v1.14.4 : le « lieu » d'une commande du site contient toute la description de l'article Wix
+// (« Maquette Georama · Terre, érablière et chalet  Boréal (…)  Sans cadre  10 × 12 po (25 × 30 cm)  https://… »).
+// Pour les courriels, garder seulement le nom : « Terre, érablière et chalet ».
+export function lieuPropre(c) {
+  let t = String((c && c.lieu) || '').replace(/https?:\/\/\S+/g, ' ');
+  t = t.replace(/^\s*maquette\s+georama\s*[·:\-–]?\s*/i, '');
+  t = t.split(/\s{2,}|\n|\s[·|]\s(?=(Boréal|Sapinière|Arctique|Terre|Monochrome|Sans cadre|Cadre|\d))/)[0] || '';
+  t = t.replace(/^\s*maquette\s+georama\s*[·:\-–]?\s*/i, '');
+  t = t.replace(/\(\s*\d+\s*[×x]\s*\d+\s*cm\s*\)/gi, '').replace(/\s+/g, ' ').trim();
+  return t;
+}
 export function remplir(texte, c, ctx) {
   const R = reglages(ctx.m);
   const ht = totalHT(c);
@@ -192,7 +203,8 @@ export function remplir(texte, c, ctx) {
     prenom: salutation(c) || 'bonjour',
     client: c.client || '',
     numero: c.numero || '',
-    lieu: c.lieu || 'votre territoire',
+    lieu: lieuPropre(c) || 'votre territoire',
+    votre_maquette: lieuPropre(c) ? 'Votre maquette « ' + lieuPropre(c) + ' »' : 'Votre maquette',
     format: formatTexte(c),
     gamme: c.gamme || '',
     segment: nomSegment(c.segment),

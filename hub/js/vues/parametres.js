@@ -141,7 +141,7 @@ export default {
       </form>
       <form data-form="courriels" class="carte">
         <h2>Courriels aux clients</h2>
-        <p class="petit doux" style="margin:0 0 12px">Les modèles proposés dans chaque commande. Variables : {prenom} {client} {numero} {lieu} {format} {gamme} {segment} {date_promise} {suivi} {lien_suivi} {lien_zone} {total} {signature} ; pour la confirmation : {entree_production} {duree_impression} {ligne_livraison}.</p>
+        <p class="petit doux" style="margin:0 0 12px">Les modèles proposés dans chaque commande. Variables : {prenom} {client} {numero} {lieu} {format} {gamme} {segment} {date_promise} {suivi} {lien_suivi} {lien_zone} {total} {signature} ; pour la confirmation : {votre_maquette} {entree_production} {duree_impression} {ligne_livraison}.</p>
         <div class="carte" style="background:var(--fond-2, transparent);margin:0 0 14px;display:flex;flex-direction:column;gap:10px">
           <label class="case"><input type="checkbox" name="confirmationAuto"${reglages(ctx.m).confirmationAuto !== false ? ' checked' : ''}> <span><strong>Confirmation automatique</strong> des commandes régulières du site (G-…) : courriel « Confirmation (site) » avec le PDF client, envoyé tout seul dès que le PDF est prêt.</span></label>
           <div class="champs">

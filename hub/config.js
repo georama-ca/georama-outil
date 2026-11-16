@@ -4,7 +4,7 @@
 // Tant qu'ils sont vides, le hub fonctionne en mode démo (données dans ce navigateur seulement).
 export const CONFIG = {
   version: '1.14.5',
-  versionDate: '2026-11-13',
+  versionDate: '2026-11-15',
   // « ID d'application (client) » de l'application « Hub Georama »
   clientId: '0eb2728a-feed-4887-b94e-b001bf64d465',
   // « ID de l'annuaire (locataire) » de Georama
