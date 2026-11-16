@@ -5,9 +5,12 @@
 //  - garde l'historique des échanges dans la collection « courriels » (partagée) ;
 //  - passe le prospect à « Contacté » au premier envoi et prévoit une relance 7 jours plus tard ;
 //  - signale les réponses reçues (« Répondre ») ;
-//  - tient à jour une carte « Relances prospection » dans « J'ai besoin de toi » (Tâches).
+//  - tient à jour une carte « Relances prospection » dans « J'ai besoin de toi » (Tâches) ;
+//  - depuis la 1.14.5 : crée tout seul le prospect quand un courriel de prospection part vers une
+//    adresse encore inconnue (objet qui parle de maquette, 3D, relief ou proposition), et l'activation
+//    du suivi est gardée dans les réglages partagés (une fois par compte, pour tous les appareils).
 import { jetonCourriel, autoriserCourriel } from './auth.js';
-import { aujourdhui, ajouterJours, joursEntre, prenom } from './ui.js';
+import { aujourdhui, ajouterJours, joursEntre, prenom, uid } from './ui.js';
 import { journaliser, reglages } from './donnees.js';
 
 const GRAPH = 'https://graph.microsoft.com/v1.0';
@@ -23,10 +26,33 @@ const cle = (n, ctx) => 'georama-hub-courriel-' + n + ':' + (ctx.courriel || ctx
 function lire(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
 function ecrire(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) { /* rien */ } }
 
+// Objets qui ressemblent à de la prospection (réglage motsProspection, un mot ou une expression par ligne).
+const MOTS_DEFAUT = ['maquette', '3d', 'relief', 'proposition', 'georama', 'topographi'];
+function regexProspection(m) {
+  const R = reglages(m);
+  const mots = String(R.motsProspection || '').split(/\r?\n|;|,/).map(s => s.trim().toLowerCase()).filter(Boolean);
+  const liste = mots.length ? mots : MOTS_DEFAUT;
+  return new RegExp(liste.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i');
+}
+
+// Activation partagée (réglages, par compte) : activée une fois, elle vaut sur tous les appareils de la personne.
+function actifPartage(ctx) {
+  const s = reglages(ctx.m).suiviCourriels;
+  return !!(s && typeof s === 'object' && s[String(ctx.courriel || '').toLowerCase()]);
+}
+function ecrireActifPartage(ctx, oui) {
+  const R = reglages(ctx.m);
+  const s = Object.assign({}, (R.suiviCourriels && typeof R.suiviCourriels === 'object') ? R.suiviCourriels : {});
+  const k = String(ctx.courriel || '').toLowerCase();
+  if (!k) return;
+  if (oui) s[k] = true; else delete s[k];
+  ctx.m.mettre('reglages', Object.assign({}, R, { id: 'general', suiviCourriels: s }));
+}
+
 // État pour l'affichage : 'demo' | 'inactif' | 'actif' | 'erreur'
 export function etatCourriel(ctx) {
   if (ctx.mode !== 'm365') return { etat: 'demo' };
-  const actif = lire(cle('actif', ctx)) === 'oui';
+  const actif = lire(cle('actif', ctx)) === 'oui' || actifPartage(ctx);
   const derniere = lire(cle('derniere', ctx));
   const erreur = lire(cle('erreur', ctx));
   return { etat: !actif ? 'inactif' : erreur ? 'erreur' : 'actif', derniere, erreur };
@@ -34,9 +60,10 @@ export function etatCourriel(ctx) {
 export function activerCourriel(ctx) {
   ecrire(cle('actif', ctx), 'oui');
   ecrire(cle('erreur', ctx), '');
+  ecrireActifPartage(ctx, true);
   autoriserCourriel();
 }
-export function desactiverCourriel(ctx) { ecrire(cle('actif', ctx), ''); }
+export function desactiverCourriel(ctx) { ecrire(cle('actif', ctx), ''); ecrireActifPartage(ctx, false); }
 
 const domaine = a => String(a || '').toLowerCase().split('@')[1] || '';
 function hash(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
@@ -53,7 +80,48 @@ function indexProspects(m) {
     });
   });
   compte.forEach((ids, d) => { if (ids.size > 1) parDomaine.delete(d); });
-  return a => { a = String(a || '').toLowerCase(); return parAdresse.get(a) || parDomaine.get(domaine(a)) || null; };
+  const trouver = a => { a = String(a || '').toLowerCase(); return parAdresse.get(a) || parDomaine.get(domaine(a)) || null; };
+  // Un prospect créé pendant la lecture est tout de suite reconnu pour les courriels suivants (réponses comprises).
+  const ajouter = (a, p) => { a = String(a || '').toLowerCase(); parAdresse.set(a, p); const d = domaine(a); if (d && !PUBLICS.has(d) && !compte.has(d)) { compte.set(d, new Set([p.id])); parDomaine.set(d, p); } };
+  return { trouver, ajouter };
+}
+
+// Adresses des clients (commandes) : un courriel à un client n'est pas de la prospection.
+function adressesClients(m) {
+  const s = new Set();
+  m.liste('commandes').forEach(c => String(c.courriel || '').split(/[;,\s]+/).filter(x => x.includes('@')).forEach(a => s.add(a.toLowerCase())));
+  return s;
+}
+
+// Nom d'organisation deviné pour un prospect créé depuis un courriel : nom affiché du destinataire,
+// sinon le domaine sans son suffixe (yamachiche.ca → Yamachiche).
+const MOTS_ORGANISATION = /municipalit|\bville\b|\bmrc\b|\binc\b|lt[ée]e|\bclub\b|\bparc\b|soci[ée]t|coop|universit|[ée]cole|\bcentre\b|\bgolf\b|station|\bferme\b|\binfo\b|accueil|communication|direction|service|office|tourisme|zec|pourvoirie|association|f[ée]d[ée]ration|corporation|groupe|usine|mine|hydro/i;
+function nomDepuisDomaine(a) {
+  const d = domaine(a);
+  const base = d.replace(/\.(qc\.ca|gouv\.qc\.ca|ca|com|org|net|quebec|coop|info)$/i, '').split('.').pop() || d;
+  return base ? base.charAt(0).toUpperCase() + base.slice(1) : a;
+}
+// « Municipalité de Yamachiche » <info@yamachiche.ca> → organisation = le nom affiché.
+// « Caroline Beaudry » <...@hydroquebec.com> → organisation = Hydroquebec, contact = Caroline Beaudry.
+function nomDepuisAdresse(a, nom) {
+  const n = String(nom || '').trim();
+  const personne = n && !n.includes('@') && !MOTS_ORGANISATION.test(n);
+  if (n && !n.includes('@') && !personne) return n;
+  if (!PUBLICS.has(domaine(a))) return nomDepuisDomaine(a);
+  return n && !n.includes('@') ? n : nomDepuisDomaine(a);
+}
+
+// Crée le prospect d'un courriel de prospection envoyé à une adresse inconnue.
+function creerProspect(ctx, a, nom, msg) {
+  const jour = String(msg.sentDateTime || msg.receivedDateTime || new Date().toISOString()).slice(0, 10);
+  const p = {
+    id: uid('r'), organisation: nomDepuisAdresse(a, nom), contact: (nom && !String(nom).includes('@')) ? String(nom).trim() : '', courriel: a,
+    type: 'Autre', region: '', statut: 'contacte', action: 'Relancer si pas de réponse', prochaine: ajouterJours(jour, DELAI_RELANCE),
+    valeur: 0, responsable: ctx.moi, source: 'courriel',
+    notes: 'Créé automatiquement par le hub à partir du courriel envoyé le ' + jour + ' (objet « ' + (msg.subject || '') + ' »). À compléter : type, région, contact.',
+  };
+  ctx.m.mettre('prospects', p, true);
+  return p;
 }
 
 async function lireMessages(depuis) {
@@ -98,16 +166,28 @@ async function faire(ctx) {
     return { erreur: err.message };
   }
   ecrire(cle('erreur', ctx), '');
-  const trouver = indexProspects(m);
+  const index = indexProspects(m);
+  const clients = adressesClients(m);
+  const prospection = regexProspection(m);
   const connus = new Set(m.liste('courriels', true).map(c => c.id));
-  const nouveaux = [];
+  const nouveaux = [], crees = [];
+  // Du plus ancien au plus récent : le prospect créé par un envoi reconnaît ensuite la réponse.
+  msgs.sort((a, b) => String(a.sentDateTime || a.receivedDateTime).localeCompare(String(b.sentDateTime || b.receivedDateTime)));
   msgs.forEach(msg => {
     const de = ((msg.from && msg.from.emailAddress && msg.from.emailAddress.address) || '').toLowerCase();
     const envoye = de === moi;
-    const autres = envoye ? [].concat(msg.toRecipients || [], msg.ccRecipients || []).map(r => r.emailAddress && r.emailAddress.address) : [de];
+    const autres = envoye ? [].concat(msg.toRecipients || [], msg.ccRecipients || []).map(r => r.emailAddress && r.emailAddress) : [msg.from && msg.from.emailAddress];
     const vus = new Set();
-    autres.filter(Boolean).forEach(a => {
-      const p = trouver(a);
+    // Un envoi dont l'objet parle de prospection, vers une adresse hors Georama qui n'est ni un prospect ni un client : nouveau prospect.
+    const estProspection = envoye && prospection.test(msg.subject || '');
+    autres.filter(r => r && r.address).forEach(r => {
+      const a = String(r.address).toLowerCase();
+      let p = index.trouver(a);
+      if (!p && estProspection && domaine(a) && domaine(a) !== 'georama.ca' && !clients.has(a)) {
+        p = creerProspect(ctx, a, r.name, msg);
+        index.ajouter(a, p);
+        crees.push(p.organisation);
+      }
       if (!p || vus.has(p.id)) return;
       vus.add(p.id);
       const id = 'c' + hash((msg.internetMessageId || msg.id) + '|' + p.id);
@@ -118,13 +198,21 @@ async function faire(ctx) {
     });
   });
   nouveaux.sort((a, b) => String(a.date).localeCompare(String(b.date))).forEach(c => m.mettre('courriels', c, true));
+  if (crees.length) journaliser(m, (crees.length === 1 ? 'Nouveau prospect créé à partir d’un courriel envoyé : ' + crees[0] : crees.length + ' nouveaux prospects créés à partir des courriels envoyés : ' + crees.slice(0, 6).join(', ') + (crees.length > 6 ? '…' : '')) + '. Type et région à compléter.', '#/marketing', 'prospect');
   appliquer(ctx, nouveaux);
   majTacheRelances(ctx);
   // Une marge d'un jour pour rattraper les messages déplacés ou arrivés en retard.
   ecrire(kDepuis, new Date(Date.parse(debut) - 86400000).toISOString().slice(0, 19) + 'Z');
   ecrire(cle('derniere', ctx), new Date().toISOString());
   m.avertir('local');
-  return { nouveaux: nouveaux.length };
+  return { nouveaux: nouveaux.length, crees: crees.length };
+}
+
+// Relecture complète (90 jours) : oublie la date de la dernière lecture, pour rattraper des envois passés
+// (ex. courriels partis avant que le suivi soit activé ou avant que le prospect existe).
+export function relireTout(ctx) {
+  ecrire(cle('depuis', ctx), '');
+  return synchroniserCourriels(ctx, true);
 }
 
 // Échanges d'un prospect, du plus récent au plus ancien

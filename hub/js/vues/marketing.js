@@ -5,7 +5,7 @@ import { ouvrirCommande } from './commandes.js';
 import { vueSuivi, monterCarte, etatSuivi, totauxMeta, statsWix, tableauMeta } from './suivi.js';
 import { blocCorrelation } from './correlation.js';
 import { vueContenu, actionsContenu, changesContenu } from './contenu.js';
-import { etatCourriel, activerCourriel, synchroniserCourriels, echanges, dernierEchange, aRelancer, modeleCourriel, lienOutlook, lienMailto } from '../suivi-courriels.js';
+import { etatCourriel, activerCourriel, synchroniserCourriels, relireTout, echanges, dernierEchange, aRelancer, modeleCourriel, lienOutlook, lienMailto } from '../suivi-courriels.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.mkt) ctx.etat.mkt = { q: '', statut: 'actifs' };
@@ -79,16 +79,27 @@ function blocEchanges(ctx, p) {
   </section>`;
 }
 
+function bilanLecture(r) {
+  if (!r) return 'Suivi pas activé.';
+  if (r.erreur) return r.erreur;
+  const parts = [];
+  if (r.nouveaux) parts.push(r.nouveaux + ' nouvel échange' + (r.nouveaux > 1 ? 's' : '') + ' trouvé' + (r.nouveaux > 1 ? 's' : ''));
+  if (r.crees) parts.push(r.crees + ' prospect' + (r.crees > 1 ? 's' : '') + ' créé' + (r.crees > 1 ? 's' : ''));
+  return parts.length ? parts.join(', ') + '.' : 'Rien de nouveau.';
+}
+
 function carteCourriel(ctx) {
   const e = etatCourriel(ctx);
   if (e.etat === 'demo') return '';
   if (e.etat === 'inactif' || e.erreur === 'consentement') {
-    return `<div class="bandeau info"><span><strong>Suivi des courriels.</strong> Le hub peut suivre tout seul tes courriels de prospection : il passe le prospect à « Contacté » quand tu envoies, te signale les réponses et te rappelle de relancer après 7 jours. Il lit seulement l’objet, la date et les adresses, jamais le contenu. Microsoft va te demander une autorisation, une seule fois.</span>
+    return `<div class="bandeau info"><span><strong>Suivi des courriels.</strong> Le hub peut suivre tout seul tes courriels de prospection : il passe le prospect à « Contacté » quand tu envoies, te signale les réponses et te rappelle de relancer après 7 jours. Il lit seulement l’objet, la date et les adresses, jamais le contenu. Microsoft va te demander une autorisation, une seule fois ; l’activation vaut ensuite sur tous tes appareils. Un courriel de prospection envoyé à une adresse inconnue crée le prospect tout seul.</span>
       <button type="button" class="btn" data-act="courriel-activer">${e.erreur === 'consentement' ? 'Donner l’autorisation' : 'Activer'}</button></div>`;
   }
   const quand = e.derniere ? Math.max(0, Math.round((Date.now() - Date.parse(e.derniere)) / 60000)) : null;
-  return `<p class="petit doux" style="margin:0 0 10px">Courriels suivis automatiquement${quand !== null ? ' · lus il y a ' + (quand < 1 ? 'moins d’une minute' : quand + ' min') : ''}${e.erreur ? ' · <span class="retard">' + esc(e.erreur) + '</span>' : ''}
-    · <button type="button" class="btn-lien petit" data-act="courriel-lire">Lire maintenant</button></p>`;
+  return `<p class="petit doux" style="margin:0 0 10px">Courriels suivis automatiquement pour ${esc(ctx.courriel || ctx.moi)}${quand !== null ? ' · lus il y a ' + (quand < 1 ? 'moins d’une minute' : quand + ' min') : ''}${e.erreur ? ' · <span class="retard">' + esc(e.erreur) + '</span>' : ''}
+    · <button type="button" class="btn-lien petit" data-act="courriel-lire">Lire maintenant</button>
+    · <button type="button" class="btn-lien petit" data-act="courriel-relire" title="Relit les 90 derniers jours pour rattraper des envois passés">Relire 90 jours</button>
+    <br><span class="tres-petit">Un courriel envoyé dont l’objet parle de maquette, 3D, relief ou proposition crée le prospect tout seul s’il n’existe pas encore (type et région à compléter).</span></p>`;
 }
 
 function ouvrirCampagne(ctx, id) {
@@ -270,10 +281,8 @@ export default {
     },
     'ouvrir-k': (ctx, el) => ouvrirCampagne(ctx, el.getAttribute('data-id')),
     'courriel-activer': ctx => activerCourriel(ctx),
-    'courriel-lire': ctx => {
-      toast('Lecture des courriels…');
-      synchroniserCourriels(ctx, true).then(r => toast(r && r.erreur ? r.erreur : (r && r.nouveaux ? r.nouveaux + ' nouvel échange' + (r.nouveaux > 1 ? 's' : '') + ' trouvé' + (r.nouveaux > 1 ? 's' : '') + '.' : 'Rien de nouveau.'), !!(r && r.erreur)));
-    },
+    'courriel-lire': ctx => { toast('Lecture des courriels…'); synchroniserCourriels(ctx, true).then(r => toast(bilanLecture(r), !!(r && r.erreur))); },
+    'courriel-relire': ctx => { toast('Relecture des 90 derniers jours…'); relireTout(ctx).then(r => toast(bilanLecture(r), !!(r && r.erreur))); },
     'filtre-statut': (ctx, el) => { const e = etatVue(ctx); const s = el.getAttribute('data-s'); e.statut = e.statut === s ? 'actifs' : s; ctx.rendre(); },
   },
   changes: {

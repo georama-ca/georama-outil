@@ -48,6 +48,12 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.14.5 (15 novembre 2026)
+- Prospection : un courriel envoyé depuis le compte connecté (ex. charles@) vers une adresse qui n'est ni un prospect ni un client, et dont l'objet parle de maquette, 3D, relief, proposition ou Georama, crée le prospect tout seul (statut « Contacté », relance à J+7, notes « créé automatiquement »). Avant, seuls les prospects déjà dans le hub avec la bonne adresse étaient suivis : Yamachiche et Hydro-Québec passaient dans le vide. Mots-clés réglables (réglage `motsProspection`, un par ligne).
+- Suivi des courriels : l'activation est gardée dans les réglages partagés, par compte. Activé une fois, il vaut sur tous les appareils de la personne (avant : par navigateur).
+- Bouton « Relire 90 jours » dans Prospection, pour rattraper les envois faits avant l'activation ou avant la création du prospect.
+- Les courriels sont lus du plus ancien au plus récent : la réponse d'un prospect créé par un envoi est reconnue dans la même lecture.
+
 ### v1.14.4 (13 novembre 2026)
 - Taxes : Georama n'est pas inscrite à la TPS ni à la TVQ (décision du 13 nov., inscription à 30 000 $ de ventes taxables). Réglage par défaut « taxes » à faux ; libellé dans Paramètres : « Georama est inscrite à la TPS et à la TVQ ».
 - Dépenses : les taxes des dépenses automatiques (Meta, abonnements) sont toujours estimées. Pas inscrite : elles ne se récupèrent pas et comptent dans le coût (Finances : « Dépenses · taxes incluses », bénéfice = ventes − dépenses taxes incluses).
