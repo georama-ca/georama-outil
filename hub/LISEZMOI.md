@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.14.8 (16 novembre 2026)
+- Fiche de production : bandeau « PDF client » tout en haut, avec le PDF le plus récent de la commande (Maquette_, sinon Confirmation_, Previsualisation_ ou Soumission_), sa taille et son âge, et les boutons « Ouvrir le PDF » (visionneuse OneDrive), « Télécharger » et « Refaire ». Sans PDF : « Faire le PDF client ».
+
 ### v1.14.7 (16 novembre 2026)
 Georama Production dans le hub suit la taille de l'interface (70 à 110 %) : le cadre remplit toute la zone au lieu d'être réduit une 2e fois par le zoom.
 

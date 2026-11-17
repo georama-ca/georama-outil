@@ -286,6 +286,7 @@ function vueFiche(ctx) {
     <div class="cmd-cartes" aria-label="Commandes en cours">${cartes}</div>
     <div class="cote">
       <div class="principal" style="display:flex;flex-direction:column;gap:16px">
+      ${blocPdfClient(ctx, c)}
       ${carteFichiers(ctx, c)}
       <section class="carte">
         <div class="carte-tete"><h2 style="display:flex;align-items:center;gap:10px">${icoSegment(c.segment, 22)}${esc(c.numero)} · ${esc(c.lieu || c.client)}</h2><span class="petit doux">${esc(formatTexte(c))} · gamme ${esc(c.gamme)}</span></div>
@@ -322,6 +323,30 @@ function vueFiche(ctx) {
       </aside>
     </div>`;
 }
+// v1.14.8 : PDF client de la commande (le plus récent) bien en vue dans la fiche
+const MOTIF_PDF_CLIENT = /^(Maquette|Confirmation|Previsualisation|Soumission)_Georama_.*\.pdf$/i;
+function pdfClient(ctx, c) {
+  const cache = (ctx.etat.fichiers || {})[c.id];
+  if (!cache || !cache.liste) return { charge: false, pdf: null };
+  const rang = n => /^Maquette_/i.test(n) ? 0 : /^Confirmation_/i.test(n) ? 1 : /^Previsualisation_/i.test(n) ? 2 : 3;
+  const pdfs = cache.liste.filter(f => MOTIF_PDF_CLIENT.test(f.nom))
+    .sort((x, y) => rang(x.nom) - rang(y.nom) || String(y.maj).localeCompare(String(x.maj)));
+  return { charge: true, pdf: pdfs[0] || null };
+}
+function blocPdfClient(ctx, c) {
+  const { charge, pdf } = pdfClient(ctx, c);
+  const ic = ico('fichier').replace('<svg', '<svg width="18" height="18" style="vertical-align:-4px"');
+  if (!charge) return `<div class="bandeau" style="margin:0"><span>${ic} PDF client : lecture du dossier…</span></div>`;
+  if (!pdf) return `<div class="bandeau" style="margin:0"><span>${ic} Pas encore de PDF client pour cette commande.</span><button type="button" class="btn-2" data-act="travail" data-type="pdf"${c.lien ? '' : ' disabled title="Ajoute le lien de la zone dans la commande"'}>Faire le PDF client</button></div>`;
+  const ouvrir = pdf.webUrl || pdf.url;
+  return `<div class="bandeau" style="margin:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+    <span class="grow">${ic} <strong>PDF client</strong> · ${esc(pdf.nom)} <span class="tres-petit doux">(${pdf.taille ? nombre(pdf.taille / 1048576, 1) + ' Mo · ' : ''}${esc(ilYa(pdf.maj))})</span></span>
+    <a class="btn" href="${esc(ouvrir)}" target="_blank" rel="noopener">Ouvrir le PDF</a>
+    ${pdf.url ? `<a class="btn-2" href="${esc(pdf.url)}" download="${esc(pdf.nom)}">Télécharger</a>` : ''}
+    <button type="button" class="btn-lien" data-act="travail" data-type="pdf"${c.lien ? '' : ' disabled'}>Refaire</button>
+  </div>`;
+}
+
 function carteFichiers(ctx, c) {
   const m = ctx.m;
   const a = agent(m);
