@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.14.7 (16 novembre 2026)
+Georama Production dans le hub suit la taille de l'interface (70 à 110 %) : le cadre remplit toute la zone au lieu d'être réduit une 2e fois par le zoom.
+
 ### v1.14.6 (15 novembre 2026)
 - Courriels aux clients : le nom de la maquette est nettoyé (lieuPropre) : plus de « Maquette Georama · », gamme, cadre, format « (25 × 30 cm) » ni lien de la description de l'article Wix. Ex. « Terre, érablière et chalet ».
 - Confirmation (site) : « Votre maquette « Terre, érablière et chalet » est confirmée et sa place est réservée dans notre calendrier d'impression. » (sans « à Saint-Félicien ») ; durée d'impression sans « couche par couche » ; récupération sans « à Saint-Félicien ». Nouvelle variable {votre_maquette}.

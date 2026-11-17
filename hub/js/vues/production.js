@@ -696,7 +696,10 @@ export function placerCadre() {
   const z = document.getElementById('zone-production');
   if (!z || !z.dataset.pret || document.getElementById('modal').open) { cadre.style.display = 'none'; return; }
   const r = z.getBoundingClientRect();
-  Object.assign(cadre.style, { display: 'block', left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px' });
+  // v1.14.7 : avec la taille de l'interface (zoom de 70 à 110 %), getBoundingClientRect donne des pixels à l'écran
+  // alors que le style du cadre est de nouveau multiplié par le zoom : on divise par le rapport écran / mise en page.
+  const k = z.offsetWidth ? (r.width / z.offsetWidth) || 1 : 1;
+  Object.assign(cadre.style, { display: 'block', left: r.left / k + 'px', top: r.top / k + 'px', width: r.width / k + 'px', height: r.height / k + 'px' });
 }
 async function serveurPret() {
   try { await fetch(PROD_URL + 'api/infos', { mode: 'no-cors', cache: 'no-store' }); return true; } catch (e) { return false; }
