@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- Outil Georama v4.18 (2026-11-12) -->
+<!-- Outil Georama v4.20 (2026-11-18) -->
+<!-- v4.20 : « Sans cadre » est choisi par défaut pour tous les types de maquettes (avant : cadre bois pâle +30 $) ; en grand format, où le cadre est inclus, le bois pâle reste le choix par défaut ; un lien qui contient déjà cd= garde son cadre -->
 <!-- v4.18 : couleurs alignées sur Georama Production 4.40 : lignes de lot et chemins en gris (Boréal, Sapinière), lacs Boréal en bleu brumeux (le bleu pâle n'existe pas en PETG Basic) -->
 <!-- v4.17 : l'étape « zone » de l'entonnoir est notée après la mise à jour du lien (la zone n'était jamais vide à cette étape) -->
 <!-- v4.16 : Terre à bois, la couche Érablières (rouge) n'est plus cochée par défaut ; numéro aligné sur Georama Production 4.16 -->
@@ -412,7 +413,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v4.18 · 2026-11-12</p>
+<p class="g-version">Outil Georama v4.20 · 2026-11-18</p>
 </div>
 </aside>
 </div>
@@ -485,7 +486,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <div id="vueMur" hidden role="dialog" aria-label="Votre maquette au mur">
 <div class="v3-barre">
 <strong id="murTitre">Votre maquette au mur</strong>
-<label hidden>Cadre <select id="murCadre"><option value="sans">Sans cadre</option><option value="bois" selected>Cadre bois pâle (+30 $)</option><option value="noir">Cadre noir (+30 $)</option><option value="blanc">Cadre blanc (+30 $)</option></select></label>
+<label hidden>Cadre <select id="murCadre"><option value="sans" selected>Sans cadre</option><option value="bois">Cadre bois pâle (+30 $)</option><option value="noir">Cadre noir (+30 $)</option><option value="blanc">Cadre blanc (+30 $)</option></select></label>
 <label hidden>Couleurs <select id="murGamme"><option value="boreal">Boréal</option><option value="sapiniere">Sapinière</option><option value="arctique">Arctique</option><option value="terre">Terre</option><option value="unie">Monochrome</option></select></label>
 <button id="murFermer" type="button">✕ Fermer</button>
 <div id="murChoix" aria-label="Couleurs et cadre de votre maquette">
@@ -5779,9 +5780,22 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     '<p class="g-aide" id="gFormatAide"></p>';
   el("gChoixHote").insertBefore(blocTaille, choix);
   // v1.9 : « Sans cadre » est offert pour tous les formats (même prix pour les grands formats)
+  let cadreChoisiParClient = /[?&]cd=/.test(location.search);
+  document.addEventListener("click", (e) => { if (e.target.closest && e.target.closest("#choixCadres [data-cd]")) cadreChoisiParClient = true; }, true);
   function cadreObligatoire() {
     const sans = document.querySelector('#choixCadres [data-cd="sans"]');
     if (sans) sans.hidden = false;
+    // v4.20 : « Sans cadre » par défaut en 10 × 12 po ; en grand format le cadre est inclus, donc bois pâle par défaut.
+    // Dès que la personne choisit elle-même un cadre (ou que le lien contient cd=), son choix est gardé.
+    if (!cadreChoisiParClient) {
+      const voulu = format.plaques > 1 || format.entreprise ? "bois" : "sans";
+      if (el("murCadre").value !== voulu) {
+        el("murCadre").value = voulu;
+        el("murCadre").dispatchEvent(new Event("change", { bubbles: true }));
+        try { murChoixConstruire(); } catch (e) {}
+        try { murCadreDessiner(); } catch (e) {}
+      }
+    }
     if (false) {
       el("murCadre").value = "bois";
       el("murCadre").dispatchEvent(new Event("change", { bubbles: true }));
