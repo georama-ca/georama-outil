@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- Outil Georama v4.19 (2026-11-13) -->
+<!-- Outil Georama v4.21 (2026-11-18) -->
+<!-- v4.21 (essai) : v4.19 (bleu pâle) + v4.20 (« Sans cadre » choisi par défaut) -->
 <!-- v4.19 : lacs Boréal de retour en bleu pâle #8CC8EC (décision d'Anne-Marie du 13 nov., filament hors PETG Basic), outil et Production -->
 <!-- v4.18 : couleurs alignées sur Georama Production 4.40 : lignes de lot et chemins en gris (Boréal, Sapinière), lacs Boréal en bleu brumeux (le bleu pâle n'existe pas en PETG Basic) -->
 <!-- v4.17 : l'étape « zone » de l'entonnoir est notée après la mise à jour du lien (la zone n'était jamais vide à cette étape) -->
@@ -413,7 +414,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v4.19 · 2026-11-13</p>
+<p class="g-version">Outil Georama v4.21 · 2026-11-18</p>
 </div>
 </aside>
 </div>
@@ -486,7 +487,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <div id="vueMur" hidden role="dialog" aria-label="Votre maquette au mur">
 <div class="v3-barre">
 <strong id="murTitre">Votre maquette au mur</strong>
-<label hidden>Cadre <select id="murCadre"><option value="sans">Sans cadre</option><option value="bois" selected>Cadre bois pâle (+30 $)</option><option value="noir">Cadre noir (+30 $)</option><option value="blanc">Cadre blanc (+30 $)</option></select></label>
+<label hidden>Cadre <select id="murCadre"><option value="sans" selected>Sans cadre</option><option value="bois">Cadre bois pâle (+30 $)</option><option value="noir">Cadre noir (+30 $)</option><option value="blanc">Cadre blanc (+30 $)</option></select></label>
 <label hidden>Couleurs <select id="murGamme"><option value="boreal">Boréal</option><option value="sapiniere">Sapinière</option><option value="arctique">Arctique</option><option value="terre">Terre</option><option value="unie">Monochrome</option></select></label>
 <button id="murFermer" type="button">✕ Fermer</button>
 <div id="murChoix" aria-label="Couleurs et cadre de votre maquette">
