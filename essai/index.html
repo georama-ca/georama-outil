@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!-- Outil Georama v4.21 (2026-11-18) -->
-<!-- v4.21 (essai) : v4.19 (bleu pâle) + v4.20 (« Sans cadre » choisi par défaut) -->
+<!-- v4.21 (essai) : v4.19 (bleu pâle) + v4.20 (« Sans cadre » choisi par défaut en 10 × 12 po ; cadre bois pâle par défaut en grand format, où il est inclus) -->
 <!-- v4.19 : lacs Boréal de retour en bleu pâle #8CC8EC (décision d'Anne-Marie du 13 nov., filament hors PETG Basic), outil et Production -->
 <!-- v4.18 : couleurs alignées sur Georama Production 4.40 : lignes de lot et chemins en gris (Boréal, Sapinière), lacs Boréal en bleu brumeux (le bleu pâle n'existe pas en PETG Basic) -->
 <!-- v4.17 : l'étape « zone » de l'entonnoir est notée après la mise à jour du lien (la zone n'était jamais vide à cette étape) -->
@@ -5781,9 +5781,22 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     '<p class="g-aide" id="gFormatAide"></p>';
   el("gChoixHote").insertBefore(blocTaille, choix);
   // v1.9 : « Sans cadre » est offert pour tous les formats (même prix pour les grands formats)
+  let cadreChoisiParClient = /[?&]cd=/.test(location.search);
+  document.addEventListener("click", (e) => { if (e.target.closest && e.target.closest("#choixCadres [data-cd]")) cadreChoisiParClient = true; }, true);
   function cadreObligatoire() {
     const sans = document.querySelector('#choixCadres [data-cd="sans"]');
     if (sans) sans.hidden = false;
+    // v4.20 : « Sans cadre » par défaut en 10 × 12 po ; en grand format le cadre est inclus, donc bois pâle par défaut.
+    // Dès que la personne choisit elle-même un cadre (ou que le lien contient cd=), son choix est gardé.
+    if (!cadreChoisiParClient) {
+      const voulu = format.plaques > 1 || format.entreprise ? "bois" : "sans";
+      if (el("murCadre").value !== voulu) {
+        el("murCadre").value = voulu;
+        el("murCadre").dispatchEvent(new Event("change", { bubbles: true }));
+        try { murChoixConstruire(); } catch (e) {}
+        try { murCadreDessiner(); } catch (e) {}
+      }
+    }
     if (false) {
       el("murCadre").value = "bois";
       el("murCadre").dispatchEvent(new Event("change", { bubbles: true }));
