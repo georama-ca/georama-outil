@@ -1,0 +1,100 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Carte-cadeau Georama</title><style>
+@font-face{font-family:M;src:url(Montserrat-Medium.ttf);font-weight:500}
+@font-face{font-family:M;src:url(Montserrat-SemiBold.ttf);font-weight:600}
+@font-face{font-family:M;src:url(Montserrat-Bold.ttf);font-weight:700}
+@page{size:8.5in 11in;margin:0}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{width:816px;height:1056px;font-family:M;font-weight:500;color:#2A2F2B;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact;overflow:hidden}
+.p{padding:0 54px}
+.tete{display:flex;justify-content:space-between;align-items:center;padding-top:40px}
+.tete img{height:30px}
+.sur{font-size:11px;font-weight:700;letter-spacing:.22em;color:#62733D}
+h1{font-size:27px;white-space:nowrap;line-height:1.12;font-weight:700;margin:22px 0 6px;letter-spacing:-.01em}
+.chapo{font-size:13.5px;line-height:1.5;margin:0;max-width:640px}
+.haut{display:flex;gap:28px;margin-top:22px;align-items:stretch}
+.carte{flex:0 0 330px;height:208px;border-radius:14px;background:#62733D url(../img/fond-topo-vert.jpg) center/cover;padding:20px 22px;display:flex;flex-direction:column;justify-content:space-between;color:#0D1110}
+.carte .l1{display:flex;justify-content:space-between;align-items:flex-start}
+.carte .l1 img{height:34px}
+.carte .cc{font-size:10px;font-weight:600;letter-spacing:.2em}
+.carte .t{font-size:23px;line-height:1.1;font-weight:700}
+.carte .d{font-size:11px;font-weight:600;margin-top:5px}
+.carte .n{font-size:11px;font-weight:600;letter-spacing:.22em}
+.champs{flex:1;display:flex;flex-direction:column;gap:9px}
+.ch label{display:block;font-size:9.5px;font-weight:700;letter-spacing:.14em;color:#62733D;margin-bottom:3px}
+.ch .z{border:1px solid #C9CDC3;border-radius:6px;background:#F7F7F3;height:26px}
+.ch.msg{flex:1;display:flex;flex-direction:column}
+.ch.msg .z{flex:1;height:auto}
+.duo{display:flex;gap:12px}.duo .ch{flex:1}
+.code .z{background:#fff;border:1.5px solid #62733D}
+hr{border:0;border-top:1px dashed #B9BDB4;margin:26px 0 0}
+h2{font-size:11px;font-weight:700;letter-spacing:.2em;color:#62733D;margin:26px 0 11px}
+.recoit{display:flex;gap:26px}
+.recoit ul{flex:0 0 250px;list-style:none;margin:0;padding:0;font-size:12.5px;line-height:1.35}
+.recoit li{padding:8px 0 8px 18px;position:relative;border-bottom:1px solid #E6E8E1}
+.recoit li:before{content:"";position:absolute;left:2px;top:14px;width:7px;height:7px;border-radius:50%;background:#93AA5F}
+.recoit li b{font-weight:700}
+.types{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.types div{position:relative;border-radius:7px;overflow:hidden;height:100px}
+.types img{width:100%;height:100%;object-fit:cover;display:block}
+.types span{position:absolute;left:0;right:0;bottom:0;padding:12px 7px 5px;font-size:9.5px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(13,17,16,.8))}
+.etapes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.et{background:#F3F3EF;border-radius:10px;padding:14px 15px 15px}
+.et .no{width:24px;height:24px;border-radius:50%;background:#62733D;color:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.et b{display:block;font-size:13px;font-weight:700;margin:9px 0 4px;line-height:1.25}
+.et p{margin:0;font-size:11px;line-height:1.45}
+.apres{font-size:12px;line-height:1.5;margin:14px 0 0}
+.pied{position:absolute;left:0;top:974px;width:816px;height:82px;background:#2A2F2B;color:#F3F3EF;display:flex;align-items:center;justify-content:space-between;padding:0 54px}
+.pied .g{font-size:10.5px;line-height:1.6;max-width:500px;color:#D9DCD3}
+.pied .g b{color:#fff;font-weight:600}
+.pied .dr{text-align:right;font-size:11px;line-height:1.5}
+.pied .dr b{display:block;font-size:19px;font-weight:700;color:#B9CC8A;letter-spacing:.01em}
+</style></head><body>
+<div class="p">
+ <div class="tete"><img src="logo-sur-clair.svg" alt="Georama"><div class="sur">CARTE-CADEAU NUMÉRIQUE</div></div>
+ <h1>Votre cadeau : votre coin du Québec, en relief.</h1>
+ <p class="chapo">Cette carte vous donne droit à une maquette topographique Georama, fabriquée sur mesure à partir du vrai relief du lieu que vous choisissez : votre lac, votre terre, votre montagne.</p>
+ <div class="haut">
+  <div class="carte">
+   <div class="l1"><img src="../img/symbole-georama.svg" alt=""><div class="cc">CARTE-CADEAU</div></div>
+   <div><div class="t">Une maquette Signature</div><div class="d">10 × 12 po · jusqu'à 7 couleurs · livraison incluse</div></div>
+   <div class="n">GEORAMA</div>
+  </div>
+  <div class="champs">
+   <div class="duo"><div class="ch"><label>POUR</label><div class="z" data-champ="pour"></div></div><div class="ch"><label>DE LA PART DE</label><div class="z" data-champ="de"></div></div></div>
+   <div class="ch msg"><label>MESSAGE</label><div class="z" data-champ="message" data-multi="1"></div></div>
+   <div class="ch code"><label>CODE DE LA CARTE</label><div class="z" data-champ="code"></div></div>
+  </div>
+ </div>
+ <hr>
+ <h2>CE QUE VOUS RECEVEZ</h2>
+ <div class="recoit">
+  <ul>
+   <li><b>Une maquette Georama Signature</b></li>
+   <li>Format <b>10 × 12 po</b></li>
+   <li><b>Jusqu'à 7 couleurs</b>, à votre goût</li>
+   <li>Le vrai relief de votre lieu, imprimé en 3D à Saint-Félicien</li>
+   <li><b>Livraison incluse</b>, aucune taxe</li>
+  </ul>
+  <div class="types">
+   <div><img src="../img/maquette-terre-a-bois.jpg" alt=""><span>Terre à bois, chalet</span></div>
+   <div><img src="../img/maquette-terre-agricole.jpg" alt=""><span>Terre agricole</span></div>
+   <div><img src="../img/maquette-chasse.jpg" alt=""><span>Territoire de chasse</span></div>
+   <div><img src="../img/maquette-lac.jpg" alt=""><span>Lac de pêche</span></div>
+   <div><img src="../img/maquette-montagne.jpg" alt=""><span>Montagne, sommet</span></div>
+   <div><img src="../img/maquette-ville.jpg" alt=""><span>Ville, quartier</span></div>
+  </div>
+ </div>
+ <h2>COMMENT UTILISER VOTRE CARTE</h2>
+ <div class="etapes">
+  <div class="et"><div class="no">1</div><b>Trouvez votre lieu sur&nbsp;georama.ca</b><p>Cherchez une adresse, un lac ou un lot, puis tracez la zone à mettre en relief. Aucune inscription.</p></div>
+  <div class="et"><div class="no">2</div><b>Créez votre maquette</b><p>Ajoutez vos repères 3D, vos bâtiments ou vos chemins, puis choisissez vos couleurs. L'aperçu 3D est gratuit : essayez autant de lieux que vous voulez.</p></div>
+  <div class="et"><div class="no">3</div><b>Commandez avec votre&nbsp;code</b><p>Choisissez la maquette Signature de 10 × 12 po et entrez le code de votre carte au moment de payer.</p></div>
+ </div>
+ <p class="apres">Votre maquette arrive chez vous environ 3 semaines après la commande : 2 semaines de fabrication, puis environ 7&nbsp;jours de livraison.</p>
+</div>
+<div class="pied">
+ <div class="g"><b>N'expire pas</b> : prenez le temps de choisir votre territoire. <b>À l'abri des hausses de prix.</b> <b>Satisfait ou remboursé</b> 30 jours après l'envoi de la maquette. La carte n'est pas remboursable.</div>
+ <div class="dr"><b>georama.ca</b>Une question ? info@georama.ca</div>
+</div>
+</body></html>
