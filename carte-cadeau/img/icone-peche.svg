@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Pêche et fond de lac"><title>Pêche et fond de lac</title>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4">
+<path d="M6 36 L24 27 L42 36 L24 45 Z" stroke="#F3F3EF"></path>
+<path d="M12 19 C16 13 25 13 30 19 C25 25 16 25 12 19 Z M30 19 L36 14.5 V23.5 Z" stroke="#93AA5F" fill="#2A2F2B"></path><circle cx="17.5" cy="18" r="0.6" fill="#93AA5F" stroke="#93AA5F"></circle><path d="M16 37 Q20 35 24 37 T32 37" stroke="#93AA5F" stroke-width="2"></path>
+</g>
+</svg>

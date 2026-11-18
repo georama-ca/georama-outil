@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="Territoire de chasse"><title>Territoire de chasse</title>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4">
+<path d="M6 36 L24 27 L42 36 L24 45 Z" stroke="#F3F3EF"></path>
+<path d="M18.5 22 L15.5 37 M29.5 22 L32.5 37 M17.2 29 H30.8" stroke="#93AA5F"></path><path d="M17 22 V15 H31 V22 Z" stroke="#93AA5F" fill="#2A2F2B"></path><path d="M15 15 L24 9.5 L33 15 Z" stroke="#93AA5F" fill="#2A2F2B"></path><path d="M20.5 18.5 H27.5" stroke="#93AA5F" stroke-width="2"></path>
+</g>
+</svg>
