@@ -493,6 +493,16 @@ export function reparerPlaques(m) {
   m.liste('commandes').filter(c => estActive(c) && !avec.has(c.id)).forEach(c => synchroniserPlaques(m, c));
 }
 
+// v1.14.9 : une carte-cadeau achetée sur le site. Pas de plaque ni de production : seulement le PDF à envoyer.
+export function estCarteCadeauWix(w) { return !!w && (w.carteCadeau === true || (!w.lien && /carte[- ]cadeau|gift ?card/i.test(String(w.article || '')))); }
+export function estCarteCadeau(c) { return !!c && c.carteCadeau === true; }
+function prochainNumeroCarte(m, recue) {
+  const annee = (recue || aujourdhui()).slice(0, 4);
+  let max = 0;
+  m.liste('commandes').forEach(x => { const r = new RegExp('^C-' + annee + '-(\\d+)$').exec(x.numero || ''); if (r) max = Math.max(max, Number(r[1])); });
+  return 'C-' + annee + '-' + String(max + 1).padStart(3, '0');
+}
+
 export function importerWix(m) {
   const R = reglages(m);
   const ignores = new Set(R.wixIgnores || []);
@@ -501,6 +511,19 @@ export function importerWix(m) {
     const id = 'wix-' + w.id;
     if (ignores.has(w.id) || m.donnees.commandes.some(c => c.id === id)) return;
     const recue = String(w.date || '').slice(0, 10) || aujourdhui();
+    if (estCarteCadeauWix(w)) {
+      const carte = m.mettre('commandes', {
+        id, wixId: w.wixId, wixNumero: w.wixNumero, carteCadeau: true, client: w.client || 'Client du site', courriel: w.courriel, telephone: w.telephone,
+        lien: '', lieu: 'Carte-cadeau Georama', segment: w.segment || 'terre', produit: 'signature', gamme: w.gamme || 'Boréal',
+        prix: Number(w.prix) || 0, livraison: 'postes', fraisLivraison: 0, payee: !!w.payee, recue, promise: recue,
+        responsable: (R.membres || [])[0] || m.qui, etapes: {}, tempsMin: 0, statut: 'livree', importeeLe: new Date().toISOString(),
+        numero: prochainNumeroCarte(m, recue),
+        notes: 'Carte-cadeau achetée sur le site, commande Wix n° ' + (w.wixNumero || '?') + '. Rien à imprimer : la carte en PDF part par courriel à la personne qui a acheté.',
+      }, true);
+      journaliser(m, 'Carte-cadeau ' + carte.numero + ' achetée sur le site (' + carte.client + ') ; la carte en PDF part par courriel', '#/production/fiche/' + carte.id, 'wix');
+      ajoutees.push(carte);
+      return;
+    }
     const c = {
       id, wixId: w.wixId, wixNumero: w.wixNumero, client: w.client || 'Client du site', courriel: w.courriel, telephone: w.telephone,
       lien: w.lien, lieu: w.article || '', segment: w.segment || 'terre', produit: w.produit || 'signature', gamme: w.gamme || 'Boréal',

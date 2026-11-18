@@ -9,12 +9,19 @@ tips={'pour':'Nom de la personne qui reçoit','de':'Nom de la personne qui offre
 tr=Color(0,0,0,alpha=0)
 for f in json.load(open(S+'/champs.json')):
     x=f['x']*k+3;w=f['w']*k-6;h=f['h']*k-4;y=H-(f['y']+f['h'])*k+2
-    c.acroForm.textfield(name=f['n'],tooltip=tips[f['n']],x=x,y=y,width=w,height=h,borderWidth=0,borderColor=tr,fillColor=tr,textColor=Color(.165,.184,.169),fontName='Helvetica-Bold' if f['n']=='code' else 'Helvetica',fontSize=10 if f['m'] else 11,fieldFlags='multiline' if f['m'] else '',forceBorder=False)
+    c.acroForm.textfield(name=f['n'],tooltip=tips[f['n']],x=x,y=y,width=w,height=h,borderWidth=0,borderColor=tr,fillColor=tr,textColor=Color(.165,.184,.169),fontName='Helvetica-Bold' if f['n']=='code' else 'Helvetica',fontSize=10 if f['m'] else 11,fieldFlags='multiline' if f['m'] else '',forceBorder=False,maxlen=600 if f['m'] else 80)
 c.showPage();c.save()
 ov=PdfReader(S+'/champs.pdf');bg=PdfReader(S+'/fond.pdf')
 print(len(bg.pages))
 w=PdfWriter(clone_from=ov)
 w.pages[0].merge_page(bg.pages[0],over=False)
+# pdf-lib (hub) lit /DA sans décoder les échappements octaux de pypdf : on l'écrit en chaîne hexadécimale.
+from pypdf.generic import ByteStringObject, NameObject
+for a in w.pages[0]['/Annots']:
+    o=a.get_object()
+    if '/DA' in o: o[NameObject('/DA')]=ByteStringObject(str(o['/DA']).encode('latin-1'))
+af=w._root_object['/AcroForm']
+if '/DA' in af: af[NameObject('/DA')]=ByteStringObject(str(af['/DA']).encode('latin-1'))
 w.add_metadata({'/Title':'Carte-cadeau Georama','/Author':'Georama'})
 out='/home/claude/georama-outil/carte-cadeau/pdf/carte-cadeau-georama-modele.pdf'
 w.write(out)

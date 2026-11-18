@@ -1,6 +1,7 @@
 // Hub Georama — démarrage, coquille (menu Cockpit), navigation et connexion.
 import { appliquerTaille } from './vues/parametres.js';
 import { confirmationsAuto } from './confirmation-auto.js';
+import { cartesCadeauxAuto, envoyerCarteMaintenant } from './carte-cadeau-auto.js';
 import { CONFIG } from '../config.js';
 import * as auth from './auth.js';
 import { Magasin, AdaptateurLocal, AdaptateurOneDrive, lireLieu, ecrireLieu } from './store.js';
@@ -321,6 +322,7 @@ document.addEventListener('keydown', e => {
 function verifierWix() {
   const l = importerWix(ctx.m);
   reparerPlaques(ctx.m);
+  if (l.length === 1 && l[0].carteCadeau) { toast('Carte-cadeau achetée sur le site : ' + l[0].numero + ' (' + l[0].client + '). La carte en PDF part par courriel.'); return; }
   if (l.length) toast(l.length === 1 ? 'Nouvelle commande du site : ' + l[0].numero + ' (' + l[0].client + '). Elle est dans la file' + (l[0].lien ? ' et Georama Production prépare la première version.' : '.') : l.length + ' nouvelles commandes du site ajoutées.');
 }
 
@@ -389,6 +391,7 @@ racine.addEventListener('submit', ev => {
 });
 
 const GLOBAL = {
+  'carte-cadeau-pdf': el => envoyerCarteMaintenant(ctx, el.getAttribute('data-id')),
   recherche: () => ouvrirRecherche(),
   'chrono-start': () => {
     try { localStorage.setItem(CLE_CHRONO_G, JSON.stringify({ debut: Date.now(), qui: ctx.moi })); localStorage.removeItem(CLE_PAUSE_AUTO); } catch (e) { /* rien */ }
@@ -529,6 +532,9 @@ async function demarrer() {
     // Confirmation automatique des commandes du site (session du compte d'envoi seulement, info@ par défaut)
     setTimeout(() => confirmationsAuto(ctx), 9000);
     setInterval(() => confirmationsAuto(ctx), 3 * 60000);
+    // Carte-cadeau en PDF envoyée à l'acheteur (même compte d'envoi)
+    setTimeout(() => cartesCadeauxAuto(ctx), 14000);
+    setInterval(() => cartesCadeauxAuto(ctx), 3 * 60000);
     setInterval(() => { if (document.visibilityState === 'visible') synchroniserCourriels(ctx); }, 5 * 60000);
   }
   window.addEventListener('beforeunload', ev => { if (ctx.m.enAttente() && ctx.mode !== 'demo') { ev.preventDefault(); ev.returnValue = ''; } });

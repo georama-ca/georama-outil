@@ -48,6 +48,12 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.14.9 (17 novembre 2026)
+- **Carte-cadeau** : une carte-cadeau achetée sur le site n'entre plus dans la file d'impression. Elle devient une fiche « C-2026-001 » (statut Livrée, aucune plaque). Le hub ouvert avec info@ remplit le modèle PDF (`carte-cadeau/pdf/carte-cadeau-georama-modele.pdf`, cases Pour, De la part de, Message) et l'envoie à la personne qui a acheté : « Votre carte-cadeau Georama à imprimer ». Bouton « Envoyer la carte en PDF maintenant » ou « Renvoyer » dans la fiche. Réglage `carteCadeauAuto` (false pour arrêter l'envoi automatique).
+- Le code de la carte n'est pas dans le PDF : Wix le masque toujours dans son API. Il arrive dans le courriel de carte-cadeau de Wix ; la case « Code de la carte » reste à remplir par la personne qui achète.
+- **Agent 1.7.5** (à mettre à jour sur l'ordi de la maison) : marque les cartes-cadeaux dans les commandes et lit leur détail dans Wix (destinataire, expéditeur, message, 4 derniers caractères du code) dans `cartes-cadeaux.json`. Sans cette mise à jour, le PDF part quand même, avec seulement « De la part de » rempli. La clé API Wix a peut-être besoin de la permission des cartes-cadeaux.
+- Remplissage du PDF dans le navigateur avec pdf-lib 1.17.1 (licence MIT, `vendor/`).
+
 ### v1.14.8 (16 novembre 2026)
 - Fiche de production : bandeau « PDF client » tout en haut, avec le PDF le plus récent de la commande (Maquette_, sinon Confirmation_, Previsualisation_ ou Soumission_), sa taille et son âge, et les boutons « Ouvrir le PDF » (visionneuse OneDrive), « Télécharger » et « Refaire ». Sans PDF : « Faire le PDF client ».
 

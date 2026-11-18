@@ -221,7 +221,7 @@ export function remplir(texte, c, ctx) {
 
 // Le courriel qui convient à l'étape actuelle de la commande, s'il n'a pas déjà été envoyé.
 export function suggestion(c) {
-  if (!c || !c.courriel || c.statut === 'annulee') return null;
+  if (!c || !c.courriel || c.statut === 'annulee' || c.carteCadeau === true) return null;
   const envoyes = new Set((c.courriels || []).map(x => x.modele));
   const s = c.statut;
   if (s === 'approbation') return envoyes.has('approbation') ? null : (envoyes.has('recue') ? 'approbation' : 'recue');
@@ -249,11 +249,11 @@ export function suggestion(c) {
   return null;
 }
 // Commande régulière du site (G-…) : la confirmation part toute seule depuis info@.
-export function estCommandeSite(c) { return !!c && String(c.id || '').startsWith('wix-') && !demandeApprobation(c); }
-export function nomModele(id) { return (MODELES.find(x => x.id === id) || { nom: id }).nom; }
+export function estCommandeSite(c) { return !!c && String(c.id || '').startsWith('wix-') && !demandeApprobation(c) && c.carteCadeau !== true; }
+export function nomModele(id) { return (MODELES.find(x => x.id === id) || { nom: id === 'carte-cadeau' ? 'Carte-cadeau en PDF' : id }).nom; }
 
 // Envoi par Microsoft Graph (/me/sendMail) avec des fichiers du dossier de la commande en pièces jointes.
-export async function envoyerGraph(m, c, { a, objet, corps, pieces = [] }) {
+export async function envoyerGraph(m, c, { a, objet, corps, pieces = [], jointes = [] }) {
   const jeton = await jetonEnvoi();
   const pj = [];
   if (pieces.length) {
@@ -268,6 +268,12 @@ export async function envoyerGraph(m, c, { a, objet, corps, pieces = [] }) {
       if (total > LIMITE_PJ) throw new Error('Pièces jointes trop lourdes (plus de 3 Mo). Décoche-en une.');
       pj.push({ '@odata.type': '#microsoft.graph.fileAttachment', name: nomPourClient(nom), contentType: blob.type || 'application/octet-stream', contentBytes: await versBase64(blob) });
     }
+  }
+  // v1.14.9 : fichiers déjà prêts dans le navigateur (ex. la carte-cadeau en PDF remplie)
+  for (const j of jointes) {
+    if (!j || !j.blob) continue;
+    if (j.blob.size > LIMITE_PJ) throw new Error('Pièce jointe trop lourde (plus de 3 Mo).');
+    pj.push({ '@odata.type': '#microsoft.graph.fileAttachment', name: j.nom, contentType: j.blob.type || 'application/octet-stream', contentBytes: await versBase64(j.blob) });
   }
   const r = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
     method: 'POST', headers: { Authorization: 'Bearer ' + jeton, 'Content-Type': 'application/json' },
@@ -410,6 +416,18 @@ export function carteCourriels(ctx, c) {
     : (auto.erreur ? '<div class="bandeau" style="margin:8px 0"><span>Confirmation automatique pas envoyée : ' + esc(auto.erreur) + '</span></div>'
       : (c.recue && c.recue < (R.confirmationAutoDepuis || '2026-11-13') ? ''
         : '<p class="tres-petit doux" style="margin:8px 0 0">La confirmation (avec le PDF) part toute seule depuis ' + esc(R.courrielConfirmation || 'info@georama.ca') + ' dès que le PDF client est prêt, quand le hub est ouvert avec ce compte.</p>'));
+  if (c.carteCadeau === true) {
+    const k = c.carteCadeauPdf || {};
+    const etat = k.envoyee ? 'Carte en PDF envoyée à ' + esc(c.courriel || '') + ' (' + esc(ilYa(k.envoyee)) + ').'
+      : k.erreur ? 'Carte en PDF pas envoyée : ' + esc(k.erreur)
+      : 'La carte en PDF part toute seule depuis ' + esc(R.courrielConfirmation || 'info@georama.ca') + ', quand le hub est ouvert avec ce compte.';
+    return `<section class="carte">
+    <p class="surtitre">Carte-cadeau</p>
+    <p class="petit" style="margin:8px 0 10px">${etat}</p>
+    <button type="button" class="btn${k.envoyee ? '-lien' : ''}" data-act="carte-cadeau-pdf" data-id="${esc(c.id)}" style="${k.envoyee ? 'margin-top:6px' : 'width:100%'}">${k.envoyee ? 'Renvoyer la carte en PDF' : 'Envoyer la carte en PDF maintenant'}</button>
+    <button type="button" class="btn-lien" data-act="courriel" data-id="${esc(c.id)}" style="margin-top:6px">Écrire un autre courriel</button>
+  </section>`;
+  }
   return `<section class="carte">
     <p class="surtitre">Courriels au client</p>${autoTxt}
     ${sugg ? `<p class="petit" style="margin:8px 0 10px">À envoyer maintenant : <strong>${esc(nomModele(sugg))}</strong></p>

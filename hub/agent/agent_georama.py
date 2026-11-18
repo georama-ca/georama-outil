@@ -35,7 +35,7 @@ import urllib.error
 import urllib.request
 from urllib.parse import urlparse, parse_qs
 
-VERSION = '1.7.4'
+VERSION = '1.7.5'
 ICI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ICI)
 
@@ -301,6 +301,9 @@ def commandes_wix(cfg):
             produit = infos.get('produit') or ('gf6' if '24 × 30' in texte or '24 x 30' in texte else 'gf4' if '20 × 24' in texte or '20 x 24' in texte
                                                else 'essentiel' if 'essentiel' in texte else 'signature')
             prix = float(((li.get('price') or {}).get('amount')) or 0) * int(li.get('quantity') or 1)
+            # 1.7.5 : carte-cadeau achetée sur le site (rien à imprimer ; le hub envoie la carte en PDF)
+            carte = ((li.get('itemType') or {}).get('preset') == 'GIFT_CARD'
+                     or (not lien and re.search(r'carte[- ]cadeau|gift ?card', nom_produit, re.I) is not None))
             sortie.append({
                 'id': '%s-%d' % (o.get('id'), i + 1), 'wixId': o.get('id'), 'wixNumero': str(o.get('number', '')),
                 'date': cree, 'client': nom, 'courriel': (o.get('buyerInfo') or {}).get('email') or contact.get('email', ''),
@@ -308,7 +311,35 @@ def commandes_wix(cfg):
                 'gamme': infos.get('gamme') or 'Boréal', 'produit': produit, 'prix': round(prix, 2),
                 'livraison': 'recuperation' if recup else 'postes', 'payee': o.get('paymentStatus') == 'PAID',
                 'article': (nom_produit + (' · ' + options.strip() if options.strip() else ''))[:200],
+                'carteCadeau': bool(carte),
             })
+    return sortie
+
+
+def cartes_cadeaux_wix(cfg):
+    """1.7.5 : détail des cartes-cadeaux achetées (destinataire, expéditeur, message, 4 derniers caractères du code).
+    Wix masque toujours le code complet : il n'est jamais lu ni écrit ici."""
+    corps = json.dumps({'query': {'sort': [{'fieldName': 'createdDate', 'order': 'DESC'}], 'cursorPaging': {'limit': 50}}}).encode()
+    cle = ''.join(ch for ch in str(cfg['wix_cle_api']) if ch.isprintable()).strip()
+    req = urllib.request.Request('https://www.wixapis.com/gift-cards/v1/gift-cards/query', data=corps, method='POST', headers={
+        'Authorization': cle, 'wix-site-id': str(cfg['wix_site_id']).strip(), 'Content-Type': 'application/json'})
+    with urllib.request.urlopen(req, timeout=60) as r:
+        donnees = json.loads(r.read().decode('utf-8'))
+    sortie = []
+    for g in donnees.get('giftCards', []):
+        commande = g.get('orderInfo') or {}
+        if not commande.get('orderId'):
+            continue
+        n = g.get('notificationInfo') or {}
+        dest, exp = n.get('recipient') or {}, n.get('sender') or {}
+        sortie.append({
+            'id': g.get('id'), 'wixId': commande.get('orderId'), 'wixNumero': str(commande.get('orderNumber', '')),
+            'date': g.get('createdDate', ''), 'suffixe': g.get('codeSuffix', ''),
+            'pour': dest.get('name', ''), 'pourCourriel': dest.get('email', ''),
+            'de': exp.get('name', ''), 'deCourriel': exp.get('email', ''),
+            'message': n.get('personalizedMessage', ''), 'envoiLe': n.get('notificationDate', ''),
+            'montant': (g.get('initialValue') or {}).get('amount', ''),
+        })
     return sortie
 
 
@@ -571,6 +602,16 @@ class Agent:
                 connus[n['id']] = n
             ecrire_json(self.chemin('boite-wix.json'), sorted(connus.values(), key=lambda x: x.get('date', ''))[-300:])
             log.info('Wix : %d article(s) de commande lus. %s', len(nouvelles), DIAG_WIX)
+            # 1.7.5 : détail des cartes-cadeaux, seulement s'il y en a une dans les commandes
+            if any(n.get('carteCadeau') for n in connus.values()):
+                try:
+                    cartes = cartes_cadeaux_wix(self.cfg)
+                    vieux = lire_json(self.chemin('cartes-cadeaux.json'), {'items': []}) or {'items': []}
+                    tout = {x['id']: x for x in vieux.get('items', [])}
+                    tout.update({x['id']: x for x in cartes})
+                    ecrire_json(self.chemin('cartes-cadeaux.json'), sorted(tout.values(), key=lambda x: x.get('date', ''))[-300:])
+                except Exception as e:  # noqa: BLE001
+                    log.warning('Wix, cartes-cadeaux : %s (la clé API a peut-être besoin de la permission « Cartes-cadeaux »)', e)
             if not DIAG_WIX.get('lues'):
                 txt = 'Wix : la recherche de commandes ne renvoie rien. La clé API a sans doute besoin de la permission « Commandes » (Wix eCommerce : lire les commandes).'
                 if not any(m.get('texte') == txt for m in self.messages):
