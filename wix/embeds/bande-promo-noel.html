@@ -21,8 +21,12 @@
   function placer(b){ var h = header(); var y = 0;
     if (h) { var r = h.getBoundingClientRect(); y = Math.max(0, r.bottom); }
     b.style.top = y + 'px';
-    var pg = document.getElementById('SITE_PAGES');
-    if (pg) pg.style.marginTop = (document.getElementById('georamaBande') ? b.offsetHeight + 12 : 0) + 'px'; }
+    espace(document.getElementById('georamaBande') ? b.offsetHeight + 12 : 0); }
+  // Place pour la bande sous l'en-tête. Sur certaines pages (ex. /zone, /carte-cadeau), l'en-tête est DANS la page :
+  // une marge au-dessus de la page poussait alors l'en-tête et laissait une barre blanche en haut (corrigé le 18 nov. 2026).
+  function espace(px){ var pg = document.getElementById('SITE_PAGES'); var h = header();
+    if (pg && h && pg.contains(h)) { pg.style.marginTop = '0px'; h.style.marginBottom = px + 'px'; }
+    else { if (pg) pg.style.marginTop = px + 'px'; if (h) h.style.marginBottom = ''; } }
   function monter(){
     if (document.getElementById('georamaBande')) return;
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
@@ -34,7 +38,7 @@
         + '<span class="gb-plus"><span style="padding:0 6px">·</span><span class="gb-lien">Voir mon terrain en 3D →</span></span></a>')
       + '<button type="button" aria-label="Fermer">×</button>';
     b.querySelector('button').addEventListener('click', function(){
-      b.remove(); var pg = document.getElementById('SITE_PAGES'); if (pg) pg.style.marginTop = '0px'; try { sessionStorage.setItem(CLE, '1'); } catch(e) {} });
+      b.remove(); espace(0); try { sessionStorage.setItem(CLE, '1'); } catch(e) {} });
     document.body.appendChild(b); placer(b);
     var t = 0; function maj(){ if (t) return; t = requestAnimationFrame(function(){ t = 0; placer(b); }); }
     addEventListener('scroll', maj, {passive: true}); addEventListener('resize', maj);
