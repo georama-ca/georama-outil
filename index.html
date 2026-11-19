@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v4.24 (2026-11-18) -->
+<!-- Outil Georama v4.25 (2026-11-19) -->
 <!-- v4.24 : gamme Boréal, plans d’eau en bleu pâle #8CC8EC dans tous les segments (décision d’Anne-Marie du 18 nov.), avec Production 4.57 ; essai et page en ligne identiques -->
 <!-- v4.23 (essai) : légende de l’habitat de l’orignal (nourriture, abri, transition) en bas à droite de la carte -->
 <!-- v4.21 (essai) : v4.19 (bleu pâle) + v4.20 (« Sans cadre » choisi par défaut en 10 × 12 po ; cadre bois pâle par défaut en grand format, où il est inclus) -->
@@ -187,6 +187,13 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 #v3Scene #v3canvas{position:absolute;inset:0;width:100%;height:100%}
 #v3Filigrane{position:absolute;left:-50%;top:-50%;width:200%;height:200%;transform:rotate(-24deg);background-repeat:repeat;opacity:.16;pointer-events:none;z-index:2}
 
+.g-app .g-rassure{margin:6px 0 0;font-size:12.5px;line-height:1.35;color:#2f5d3a;font-weight:600}
+.g-app .g-reprise{margin:10px 14px 0;padding:10px 12px;border:1px solid #d9c9a8;border-radius:10px;background:#fff8ea;color:#2b2b2b}
+.g-app .g-reprise p{margin:0 0 8px;font-size:14px;line-height:1.35}
+.g-app .g-reprise span{color:#5b5b5b}
+.g-app .g-reprise-btn{display:flex;gap:8px;flex-wrap:wrap}
+.g-app .g-reprise button{font:inherit;font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:8px;border:1px solid #2b2b2b;background:#fff;color:#2b2b2b;cursor:pointer}
+.g-app .g-reprise #gRepriseOui{background:#2b2b2b;color:#fff}
 .g-app .g-version{margin:6px 0 0;font-size:11px;color:#8a8a8a;text-align:right}
 .g-app .g-btn-lac.actif{background:#e6f3fb;border-color:#0086D6;box-shadow:0 0 0 2px #0086D6 inset}
 
@@ -268,6 +275,10 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <div class="g-tete">
 <div class="g-tete-ligne"><span id="gEtapeNo">Étape 1 sur 5</span><span id="gProduit"></span></div>
 <div class="g-barre" aria-hidden="true"><i id="gBarre"></i></div>
+</div>
+<div class="g-reprise" id="gReprise" hidden>
+<p><strong>Reprendre ma maquette ?</strong> <span id="gRepriseLieu"></span></p>
+<div class="g-reprise-btn"><button type="button" id="gRepriseOui">Reprendre</button><button type="button" id="gRepriseNon">Non merci</button></div>
 </div>
 <div class="g-etapes" id="gEtapes">
 <section class="g-etape" data-etape="1">
@@ -415,8 +426,9 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <div class="g-total"><span>Total estimé</span><strong id="gTotal"></strong></div>
 <button type="button" class="g-suivant" id="gSuivant">Suivant</button>
 </div>
+<p class="g-rassure" id="gRassure" hidden>Satisfait ou remboursé 30 jours · Fabriquée en environ 3 semaines · Livraison 25 $</p>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v4.24 · 2026-11-18</p>
+<p class="g-version">Outil Georama v4.25 · 2026-11-19</p>
 </div>
 </aside>
 </div>
@@ -6090,6 +6102,8 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
         ? "−" + PROMO.pct + " % sur toutes les maquettes jusqu'au 1er décembre. Places limitées pour Noël."
         : "Places limitées pour Noël : commandez avant le 1er décembre.";
     }
+    if (el("gRassure")) el("gRassure").hidden = pas !== NB || surSoumission();
+    try { sauvBientot(); } catch (e) {}
     if (el("gAide5")) el("gAide5").textContent = surSoumission()
       ? (profilActif === "entreprise"
         ? "Rien à payer maintenant : Georama vous envoie une soumission PDF détaillée en 24 h, avec une première vue 3D. Vous pourrez y ajouter vos plans, vos bâtiments et votre logo."
@@ -6099,6 +6113,41 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
   }
   let majPrevue = 0;
   const majBientot = () => { cancelAnimationFrame(majPrevue); majPrevue = requestAnimationFrame(maj); };
+
+  /* ---------- v4.25 : sauvegarde automatique, pour reprendre sa maquette à la prochaine visite ----------
+     Rien n'est envoyé : le lien de la maquette reste dans le navigateur du client (30 jours). */
+  const SAUV_CLE = "georama-maquette-v1", SAUV_JOURS = 30;
+  const sauvLire = () => {
+    try { const o = JSON.parse(localStorage.getItem(SAUV_CLE) || "null"); return o && o.q && Date.now() - o.t < SAUV_JOURS * 864e5 ? o : null; } catch (e) { return null; }
+  };
+  const sauvOublier = () => { try { localStorage.removeItem(SAUV_CLE); } catch (e) {} };
+  let sauvPrevue = 0, sauvPrete = false;
+  function sauvegarder() {
+    if (!sauvPrete || !aMarqueur() || document.body.classList.contains("mode-apercu")) return;
+    const q = String(el("res").value || "").split("?")[1] || "";
+    if (!/(^|&)lat=/.test(q)) return;
+    if (el("gReprise")) el("gReprise").hidden = true;
+    try { localStorage.setItem(SAUV_CLE, JSON.stringify({ q: q, t: Date.now(), pas: pas, lieu: ((TYPES.find((x) => x.v === profilActif) || {}).nom || "") })); } catch (e) {}
+  }
+  const sauvBientot = () => { clearTimeout(sauvPrevue); sauvPrevue = setTimeout(sauvegarder, 800); };
+  setTimeout(() => {
+    sauvPrete = true;
+    const o = sauvLire(), boite = el("gReprise");
+    if (!o || !boite || zoneLien || aMarqueur() || params.get("prod") || params.get("commande")) return;
+    let quand = ""; try { quand = new Date(o.t).toLocaleDateString("fr-CA", { day: "numeric", month: "long" }); } catch (e) {}
+    el("gRepriseLieu").textContent = [o.lieu, quand && "commencée le " + quand].filter(Boolean).join(", ");
+    boite.hidden = false;
+    el("gRepriseOui").onclick = () => {
+      const th = params.get("theme");
+      location.replace(location.pathname + "?" + o.q + (th ? "&theme=" + encodeURIComponent(th) : "") + "&reprise=" + (o.pas || 3));
+    };
+    el("gRepriseNon").onclick = () => { boite.hidden = true; sauvOublier(); };
+  }, 1500);
+  window.addEventListener("message", (e) => { if (e.data && e.data.type === "georama-commande-recue") sauvOublier(); });
+  (function () {
+    const n = +params.get("reprise");
+    if (zoneLien && n > 3 && n <= NB) setTimeout(() => { try { if (pas === 3) ouvrir(n); } catch (e) {} }, 2500);
+  })();
 
   // Se brancher sur les fonctions du script principal
   const _update = update;
