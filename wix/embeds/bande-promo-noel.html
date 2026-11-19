@@ -1,8 +1,14 @@
 <script>
 (function(){
-  var FIN = Date.parse('2026-12-02T05:00:00Z'); // 1er déc. 23 h 59, heure de Toronto
-  if (Date.now() >= FIN) return;
-  try { if (sessionStorage.getItem('georamaBandeFermee') === '1') return; } catch(e) {}
+  // Deux temps (18 nov. 2026) : la promo de Noël jusqu'au 1er déc. 23 h 59 (heure de Toronto),
+  // puis la carte-cadeau du 2 au 24 déc. inclus. Après le 24 déc., plus de bande.
+  var FIN_PROMO = Date.parse('2026-12-02T05:00:00Z');
+  var FIN_CARTE = Date.parse('2026-12-25T05:00:00Z');
+  var maintenant = Date.now();
+  if (maintenant >= FIN_CARTE) return;
+  var CARTE = maintenant >= FIN_PROMO;
+  var CLE = CARTE ? 'georamaBandeCarteFermee' : 'georamaBandeFermee';
+  try { if (sessionStorage.getItem(CLE) === '1') return; } catch(e) {}
   var css = '#georamaBande{position:fixed;left:0;right:0;z-index:51;background:#FF671F;color:#0b0d0b;'
     + 'font-family:Montserrat,Arial,sans-serif;font-weight:700;font-size:14px;line-height:18px;'
     + 'padding:7px 40px;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.18);box-sizing:border-box}'
@@ -20,12 +26,15 @@
   function monter(){
     if (document.getElementById('georamaBande')) return;
     var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
-    var b = document.createElement('div'); b.id = 'georamaBande'; b.setAttribute('role', 'region'); b.setAttribute('aria-label', 'Promotion');
-    b.innerHTML = '<a href="https://www.georama.ca/zone">Promo Noël : −25 % sur toutes les maquettes jusqu’au 1<sup>er</sup> décembre'
-      + '<span class="gb-plus"><span style="padding:0 6px">·</span><span class="gb-lien">Voir mon terrain en 3D →</span></span></a>'
+    var b = document.createElement('div'); b.id = 'georamaBande'; b.setAttribute('role', 'region'); b.setAttribute('aria-label', CARTE ? 'Carte-cadeau' : 'Promotion');
+    b.innerHTML = (CARTE
+      ? '<a href="https://www.georama.ca/carte-cadeau?utm_source=georama&utm_medium=bande&utm_campaign=carte-cadeau">Trop tard pour Noël ? Pas avec une carte-cadeau'
+        + '<span class="gb-plus"><span style="padding:0 6px">·</span><span class="gb-lien">Offrir une maquette →</span></span></a>'
+      : '<a href="https://www.georama.ca/zone">Promo Noël : −25 % sur toutes les maquettes jusqu’au 1<sup>er</sup> décembre'
+        + '<span class="gb-plus"><span style="padding:0 6px">·</span><span class="gb-lien">Voir mon terrain en 3D →</span></span></a>')
       + '<button type="button" aria-label="Fermer">×</button>';
     b.querySelector('button').addEventListener('click', function(){
-      b.remove(); var pg = document.getElementById('SITE_PAGES'); if (pg) pg.style.marginTop = '0px'; try { sessionStorage.setItem('georamaBandeFermee', '1'); } catch(e) {} });
+      b.remove(); var pg = document.getElementById('SITE_PAGES'); if (pg) pg.style.marginTop = '0px'; try { sessionStorage.setItem(CLE, '1'); } catch(e) {} });
     document.body.appendChild(b); placer(b);
     var t = 0; function maj(){ if (t) return; t = requestAnimationFrame(function(){ t = 0; placer(b); }); }
     addEventListener('scroll', maj, {passive: true}); addEventListener('resize', maj);
