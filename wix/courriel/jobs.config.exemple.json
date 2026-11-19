@@ -1,0 +1,1 @@
+{ "jobs": [ { "functionLocation": "/courriel.web.js", "functionName": "relancer", "description": "Relance des maquettes envoyées par courriel", "executionConfig": { "cronExpression": "0 15 * * *" } } ] }
