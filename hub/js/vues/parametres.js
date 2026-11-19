@@ -143,7 +143,7 @@ export default {
         <h2>Courriels aux clients</h2>
         <p class="petit doux" style="margin:0 0 12px">Les modèles proposés dans chaque commande. Variables : {prenom} {client} {numero} {lieu} {format} {gamme} {segment} {date_promise} {suivi} {lien_suivi} {lien_zone} {total} {signature} ; pour la confirmation : {votre_maquette} {entree_production} {duree_impression} {ligne_livraison}.</p>
         <div class="carte" style="background:var(--fond-2, transparent);margin:0 0 14px;display:flex;flex-direction:column;gap:10px">
-          <label class="case"><input type="checkbox" name="confirmationAuto"${reglages(ctx.m).confirmationAuto !== false ? ' checked' : ''}> <span><strong>Confirmation automatique</strong> des commandes régulières du site (G-…) : courriel « Confirmation (site) » avec le PDF client, envoyé tout seul dès que le PDF est prêt.</span></label>
+          <label class="case"><input type="checkbox" name="envoiConfirmationAuto"${reglages(ctx.m).envoiConfirmationAuto === true ? ' checked' : ''}> <span><strong>Envoyer la confirmation toute seule</strong> (commandes régulières du site, G-…) dès que le PDF client est prêt. Décoché (par défaut depuis le 18 nov.) : la confirmation part seulement après votre validation, avec le bouton de la fiche.</span></label>
           <div class="champs">
             <div class="champ"><label for="conf-compte">Compte qui envoie</label><input id="conf-compte" name="courrielConfirmation" type="email" value="${esc(reglages(ctx.m).courrielConfirmation || 'info@georama.ca')}"><span class="aide">Le courriel part quand le hub est ouvert avec ce compte (n'importe quel appareil).</span></div>
             <div class="champ"><label for="conf-marge">Jours ajoutés à la date de livraison annoncée</label><input id="conf-marge" name="margeLivraisonJours" type="number" min="0" max="60" value="${esc(reglages(ctx.m).margeLivraisonJours ?? 7)}"><span class="aide">Marge de sécurité dans la confirmation (la date promise du hub ne change pas).</span></div>
@@ -241,7 +241,7 @@ export default {
       const compte = String(d.courrielConfirmation || '').trim().toLowerCase();
       ctx.m.mettre('reglages', Object.assign({}, R, {
         id: 'general', modelesCourriel: perso, signatureCourriel: sig === SIGNATURE_DEFAUT ? '' : sig,
-        confirmationAuto: d.confirmationAuto === 'on',
+        envoiConfirmationAuto: d.envoiConfirmationAuto === 'on',
         margeLivraisonJours: Math.max(0, Math.min(60, Math.round(Number(d.margeLivraisonJours)))) || (String(d.margeLivraisonJours).trim() === '0' ? 0 : 7),
         courrielConfirmation: /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(compte) ? compte : (R.courrielConfirmation || 'info@georama.ca'),
         confirmationAutoDepuis: /^\d{4}-\d{2}-\d{2}$/.test(d.confirmationAutoDepuis || '') ? d.confirmationAutoDepuis : (R.confirmationAutoDepuis || '2026-11-13'),

@@ -48,6 +48,10 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.14.10 (18 novembre 2026)
+- La confirmation des commandes régulières du site n'est plus envoyée toute seule : elle part après validation, avec le bouton « Confirmation (site) » de la fiche. La fiche affiche « Confirmation pas encore envoyée. Vérifie la maquette et le PDF client, puis envoie « Confirmation (site) » ci-dessous. »
+- Nouveau réglage envoiConfirmationAuto (faux par défaut), case « Envoyer la confirmation toute seule » dans Paramètres › Courriels aux clients. L'ancienne clé confirmationAuto n'est plus lue. Les cartes-cadeaux ne changent pas.
+
 ### v1.14.9 (17 novembre 2026)
 - **Carte-cadeau** : une carte-cadeau achetée sur le site n'entre plus dans la file d'impression. Elle devient une fiche « C-2026-001 » (statut Livrée, aucune plaque). Le hub ouvert avec info@ remplit le modèle PDF (`carte-cadeau/pdf/carte-cadeau-georama-modele.pdf`, cases Pour, De la part de, Message) et l'envoie à la personne qui a acheté : « Votre carte-cadeau Georama à imprimer ». Bouton « Envoyer la carte en PDF maintenant » ou « Renvoyer » dans la fiche. Réglage `carteCadeauAuto` (false pour arrêter l'envoi automatique).
 - Le code de la carte n'est pas dans le PDF : Wix le masque toujours dans son API. Il arrive dans le courriel de carte-cadeau de Wix ; la case « Code de la carte » reste à remplir par la personne qui achète.

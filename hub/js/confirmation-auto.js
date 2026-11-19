@@ -35,7 +35,9 @@ function verrou(id) {
 
 export async function confirmationsAuto(ctx) {
   const m = ctx.m;
-  if (enCours || !m || !sessionEnvoi(ctx) || reglages(m).confirmationAuto === false || !m.a.lister) return;
+  // v1.14.10 (18 nov.) : la confirmation n'est plus envoyée toute seule ; elle part après validation, à la main
+  // depuis la fiche. L'envoi automatique ne revient que si envoiConfirmationAuto est coché dans Paramètres.
+  if (enCours || !m || !sessionEnvoi(ctx) || reglages(m).envoiConfirmationAuto !== true || !m.a.lister) return;
   const liste = m.liste('commandes').filter(c => aConfirmer(m, c));
   if (!liste.length) return;
   enCours = true;

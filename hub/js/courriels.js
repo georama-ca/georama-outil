@@ -412,7 +412,10 @@ export function carteCourriels(ctx, c) {
   const envoyes = (c.courriels || []).slice().reverse();
   const auto = c.confirmationAuto || {};
   const R = reglages(ctx.m);
-  const autoTxt = !estCommandeSite(c) || R.confirmationAuto === false || envoyes.some(e => e.modele === 'confirmation' || e.modele === 'recue') ? ''
+  const dejaConf = envoyes.some(e => e.modele === 'confirmation' || e.modele === 'recue');
+  const autoTxt = !estCommandeSite(c) || dejaConf ? ''
+    : R.envoiConfirmationAuto !== true
+      ? '<div class="bandeau" style="margin:8px 0"><span><strong>Confirmation pas encore envoyée.</strong> Vérifie la maquette et le PDF client, puis envoie « Confirmation (site) » ci-dessous.</span></div>'
     : (auto.erreur ? '<div class="bandeau" style="margin:8px 0"><span>Confirmation automatique pas envoyée : ' + esc(auto.erreur) + '</span></div>'
       : (c.recue && c.recue < (R.confirmationAutoDepuis || '2026-11-13') ? ''
         : '<p class="tres-petit doux" style="margin:8px 0 0">La confirmation (avec le PDF) part toute seule depuis ' + esc(R.courrielConfirmation || 'info@georama.ca') + ' dès que le PDF client est prêt, quand le hub est ouvert avec ce compte.</p>'));
