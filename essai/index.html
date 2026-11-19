@@ -6127,14 +6127,15 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
     const q = String(el("res").value || "").split("?")[1] || "";
     if (!/(^|&)lat=/.test(q)) return;
     if (el("gReprise")) el("gReprise").hidden = true;
-    try { localStorage.setItem(SAUV_CLE, JSON.stringify({ q: q, t: Date.now(), pas: pas, lieu: String(lieuResume() || "").slice(0, 80) })); } catch (e) {}
+    try { localStorage.setItem(SAUV_CLE, JSON.stringify({ q: q, t: Date.now(), pas: pas, lieu: ((TYPES.find((x) => x.v === profilActif) || {}).nom || "") })); } catch (e) {}
   }
   const sauvBientot = () => { clearTimeout(sauvPrevue); sauvPrevue = setTimeout(sauvegarder, 800); };
   setTimeout(() => {
     sauvPrete = true;
     const o = sauvLire(), boite = el("gReprise");
     if (!o || !boite || zoneLien || aMarqueur() || params.get("prod") || params.get("commande")) return;
-    el("gRepriseLieu").textContent = o.lieu ? "(" + o.lieu + ")" : "";
+    let quand = ""; try { quand = new Date(o.t).toLocaleDateString("fr-CA", { day: "numeric", month: "long" }); } catch (e) {}
+    el("gRepriseLieu").textContent = [o.lieu, quand && "commencée le " + quand].filter(Boolean).join(", ");
     boite.hidden = false;
     el("gRepriseOui").onclick = () => {
       const th = params.get("theme");
