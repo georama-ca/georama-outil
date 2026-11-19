@@ -8,6 +8,11 @@
 <div class="bas"></div>
 <script>
 var f=document.getElementById('f');
+// Test du courriel : ?courriel=ok ou ?courriel=echec simule la page Wix (aucun courriel n'est envoyé)
+var mode=new URLSearchParams(location.search).get('courriel');
+window.addEventListener('message',function(e){ if(!mode||e.source!==f.contentWindow||!e.data) return;
+  if(e.data.type==='georama-courriel-dispo') f.contentWindow.postMessage({type:'georama-courriel-pret'},'*');
+  if(e.data.type==='georama-courriel'){ window.dernierCourriel=e.data; setTimeout(function(){ f.contentWindow.postMessage({type:'georama-courriel-resultat',ok:mode==='ok'},'*'); },600); } });
 window.addEventListener('message',function(e){ if(e.source===f.contentWindow && e.data && e.data.type==='georama-pret') f.contentWindow.postMessage({type:'georama-profil',p:new URLSearchParams(location.search).get('p')||'chasse'},'*'); });
 </script>
 </body></html>

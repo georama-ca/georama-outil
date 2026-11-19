@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- Outil Georama v4.25 (2026-11-19) -->
+<!-- Outil Georama v4.26 (2026-11-19) -->
 <!-- v4.24 : gamme Boréal, plans d’eau en bleu pâle #8CC8EC dans tous les segments (décision d’Anne-Marie du 18 nov.), avec Production 4.57 ; essai et page en ligne identiques -->
 <!-- v4.23 (essai) : légende de l’habitat de l’orignal (nourriture, abri, transition) en bas à droite de la carte -->
 <!-- v4.21 (essai) : v4.19 (bleu pâle) + v4.20 (« Sans cadre » choisi par défaut en 10 × 12 po ; cadre bois pâle par défaut en grand format, où il est inclus) -->
@@ -187,6 +187,18 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 #v3Scene #v3canvas{position:absolute;inset:0;width:100%;height:100%}
 #v3Filigrane{position:absolute;left:-50%;top:-50%;width:200%;height:200%;transform:rotate(-24deg);background-repeat:repeat;opacity:.16;pointer-events:none;z-index:2}
 
+.g-app .g-courriel{margin:12px 0 14px;padding:12px;border:1px solid #d9d9d2;border-radius:10px;background:#f7f7f2}
+.g-app .g-courriel-titre{margin:0 0 8px;font-size:14px;font-weight:600;line-height:1.35}
+.g-app .g-courriel-ligne{display:flex;gap:8px;flex-wrap:wrap}
+.g-app .g-courriel-ligne input{flex:1 1 170px;min-width:0;font:inherit;font-size:16px;padding:9px 10px;border:1px solid #b9b9b0;border-radius:8px;background:#fff;color:#2b2b2b}
+.g-app .g-courriel-ligne button{flex:0 0 auto;font:inherit;font-size:14px;font-weight:600;padding:9px 14px;border-radius:8px;border:1px solid #2b2b2b;background:#2b2b2b;color:#fff;cursor:pointer}
+.g-app .g-courriel-ligne button:disabled{opacity:.55;cursor:default}
+.g-app .g-courriel-rappel{display:flex;gap:8px;align-items:flex-start;margin:10px 0 0;font-size:12.5px;line-height:1.4;color:#4a4a4a;cursor:pointer}
+.g-app .g-courriel-rappel input{margin:2px 0 0;flex:0 0 auto}
+.g-app .g-courriel-msg{margin:8px 0 0;font-size:13px;font-weight:600;min-height:0}
+.g-app .g-courriel-msg:empty{display:none}
+.g-app .g-courriel-msg.ok{color:#2f5d3a}
+.g-app .g-courriel-msg.err{color:#a3341f}
 .g-app .g-rassure{margin:6px 0 0;font-size:12.5px;line-height:1.35;color:#2f5d3a;font-weight:600}
 .g-app .g-reprise{margin:10px 14px 0;padding:10px 12px;border:1px solid #d9c9a8;border-radius:10px;background:#fff8ea;color:#2b2b2b}
 .g-app .g-reprise p{margin:0 0 8px;font-size:14px;line-height:1.35}
@@ -406,6 +418,12 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <div class="g-corps" id="gCorps5" hidden>
 <dl class="g-recap" id="gRecap"></dl>
 <p class="g-aide" id="gAide5">Votre maquette est fabriquée telle que vous la voyez ici : pas d’aperçu à approuver, la fabrication commence dès la commande.</p>
+<div class="g-courriel" id="gCourriel" hidden>
+<p class="g-courriel-titre">Pas prêt à commander ? Recevez votre maquette par courriel.</p>
+<div class="g-courriel-ligne"><input type="email" id="gCourrielAdr" placeholder="votre@courriel.ca" autocomplete="email" inputmode="email" aria-label="Votre courriel"><button type="button" id="gCourrielEnvoyer">M’envoyer ma maquette</button></div>
+<label class="g-courriel-rappel"><input type="checkbox" id="gCourrielRappel"> <span>Je veux aussi recevoir un rappel et les nouvelles de Georama par courriel. Désabonnement en un clic.</span></label>
+<p class="g-courriel-msg" id="gCourrielMsg" role="status"></p>
+</div>
 <div class="actions">
 <button id="copy" type="button">Partager un lien de visualisation</button>
 <button id="voirMur" type="button">Voir ma maquette au mur</button>
@@ -428,7 +446,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 </div>
 <p class="g-rassure" id="gRassure" hidden>Satisfait ou remboursé 30 jours · Fabriquée en environ 3 semaines · Livraison 25 $</p>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v4.25 · 2026-11-19</p>
+<p class="g-version">Outil Georama v4.26 · 2026-11-19</p>
 </div>
 </aside>
 </div>
@@ -6147,6 +6165,46 @@ V70V9|EauxMortes|Eaux Mortes, Lac des|92|47.5365,-70.8509,47.5407,-70.8342,47.53
   (function () {
     const n = +params.get("reprise");
     if (zoneLien && n > 3 && n <= NB) setTimeout(() => { try { if (pas === 3) ouvrir(n); } catch (e) {} }, 2500);
+  })();
+
+  /* ---------- v4.26 : « M'envoyer ma maquette par courriel » (étape 5) ----------
+     L'encadré reste caché tant que la page Wix n'a pas répondu « georama-courriel-pret » :
+     c'est elle qui envoie le courriel (l'outil n'envoie rien lui-même). */
+  (function () {
+    const boite = el("gCourriel");
+    if (!boite || window.parent === window) return;
+    let pret = false, attente = 0;
+    const msg = (t, c) => { const m = el("gCourrielMsg"); m.textContent = t; m.className = "g-courriel-msg" + (c ? " " + c : ""); };
+    const montrer = () => { boite.hidden = !pret || surSoumission(); };
+    window.addEventListener("message", (e) => {
+      if (e.source !== window.parent || !e.data) return;
+      if (e.data.type === "georama-courriel-pret") { pret = true; montrer(); }
+      if (e.data.type === "georama-courriel-resultat") {
+        clearTimeout(attente);
+        el("gCourrielEnvoyer").disabled = false;
+        if (e.data.ok) { msg("C’est parti. Regardez votre boîte de courriel (et les indésirables).", "ok"); try { etape("courriel"); } catch (er) {} }
+        else msg("L’envoi n’a pas fonctionné. Utilisez « Partager un lien de visualisation », juste en dessous.", "err");
+      }
+    });
+    app.addEventListener("change", montrer);
+    try { window.parent.postMessage({ type: "georama-courriel-dispo" }, "*"); } catch (e) {}
+    el("gCourrielEnvoyer").onclick = () => {
+      const adr = String(el("gCourrielAdr").value || "").trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(adr) || adr.length > 120) { msg("Vérifiez votre adresse de courriel.", "err"); el("gCourrielAdr").focus(); return; }
+      if (!aMarqueur()) { msg("Choisissez d’abord votre territoire sur la carte.", "err"); return; }
+      try { update(false); } catch (e) {}
+      const t = TYPES.find((x) => x.v === profilActif);
+      el("gCourrielEnvoyer").disabled = true;
+      msg("Envoi en cours…");
+      try {
+        window.parent.postMessage({
+          type: "georama-courriel", courriel: adr, rappel: !!el("gCourrielRappel").checked,
+          zone: (String(el("res").value || "").split("?")[1] || "").slice(0, 4000),
+          segment: profilActif, nom: t ? t.nom : "", prix: el("gTotal").textContent.trim().slice(0, 40)
+        }, "*");
+      } catch (e) {}
+      attente = setTimeout(() => { el("gCourrielEnvoyer").disabled = false; msg("L’envoi n’a pas fonctionné. Utilisez « Partager un lien de visualisation », juste en dessous.", "err"); }, 15000);
+    };
   })();
 
   // Se brancher sur les fonctions du script principal
