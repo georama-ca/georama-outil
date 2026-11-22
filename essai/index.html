@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<!-- Outil Georama v4.26 (2026-11-19) -->
+<!-- Outil Georama v4.27 (2026-11-21) -->
+<!-- v4.27 : aide au lieu (étape 2) : lien « Voir comment » + encadré après 20 s sans cadre posé, extrait vidéo de 18 s du tutoriel -->
 <!-- v4.24 : gamme Boréal, plans d’eau en bleu pâle #8CC8EC dans tous les segments (décision d’Anne-Marie du 18 nov.), avec Production 4.57 ; essai et page en ligne identiques -->
 <!-- v4.23 (essai) : légende de l’habitat de l’orignal (nourriture, abri, transition) en bas à droite de la carte -->
 <!-- v4.21 (essai) : v4.19 (bleu pâle) + v4.20 (« Sans cadre » choisi par défaut en 10 × 12 po ; cadre bois pâle par défaut en grand format, où il est inclus) -->
@@ -319,6 +320,11 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <div id="sugg" role="listbox" aria-label="Lieux suggérés" hidden></div>
 </form>
 <p class="g-aide" id="gAide2"></p>
+<div class="g-aide-lieu" id="gAideLieu" hidden role="status">
+<p><strong>Besoin d’un coup de main ?</strong> <span id="gAideLieuTxt"></span></p>
+<div class="g-aide-lieu-btn"><button type="button" id="gAideLieuVoir">Voir comment (18 s)</button><button type="button" id="gAideLieuNon">Fermer</button></div>
+</div>
+<button type="button" class="g-lien-demo" id="gAideLieuLien"><span aria-hidden="true">▶</span> Comment trouver mon coin ? Voir la démo (18 s)</button>
 <button type="button" id="monLacBtn" class="g-btn-lac" hidden>🎣 Choisir mon lac <span>— cliquez ensuite sur votre lac : le cadre s’ajuste</span></button>
 <div id="lacInfo" role="status"></div>
 <div id="lotInfo" role="status"></div>
@@ -446,7 +452,7 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 </div>
 <p class="g-rassure" id="gRassure" hidden>Satisfait ou remboursé 30 jours · Fabriquée en environ 3 semaines · Livraison 25 $</p>
 <p class="g-noel" id="gNoel">Places limitées pour Noël : commandez avant le 1er décembre.</p>
-<p class="g-version">Outil Georama v4.26 · 2026-11-19</p>
+<p class="g-version">Outil Georama v4.27 · 2026-11-21</p>
 </div>
 </aside>
 </div>
@@ -9045,6 +9051,122 @@ window.addEventListener("message", function (e) {
       return X >= 0 && Y >= 0 && X < M && Y < M && px[4 * (Y * M + X) + 3] > 0;
     };
   };
+})();
+</script>
+<style>
+/* v4.27 : aide au lieu */
+.g-app .g-aide-lieu{margin:10px 0 8px;padding:10px 12px;border:1px solid #d9c9a8;border-radius:10px;background:#fff8ea;color:#2b2b2b}
+.g-app .g-aide-lieu p{margin:0 0 8px;font-size:14px;line-height:1.4}
+.g-app .g-aide-lieu span{color:#3d3d3d}
+.g-app .g-aide-lieu-btn{display:flex;gap:8px;flex-wrap:wrap}
+.g-app .g-aide-lieu button{font:inherit;font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:8px;border:1px solid #2b2b2b;background:#fff;color:#2b2b2b;cursor:pointer}
+.g-app .g-aide-lieu #gAideLieuVoir{background:#2b2b2b;color:#fff}
+.g-app .g-lien-demo{display:inline-flex;align-items:center;gap:6px;margin:2px 0 8px;padding:4px 0;border:0;background:none;font:inherit;font-size:13px;font-weight:600;color:#2f5d3a;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.g-app .g-lien-demo span{font-size:10px;text-decoration:none}
+.g-demo{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(13,17,16,.86)}
+.g-demo[hidden]{display:none}
+.g-demo-boite{width:min(760px,100%);max-height:100%;display:flex;flex-direction:column;gap:8px;font-family:inherit}
+.g-demo video{display:block;width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:10px;background:#0d1110}
+.g-demo-st{min-height:2.7em;margin:0;color:#f3f3ef;font-size:16px;line-height:1.35;text-align:center}
+.g-demo-btn{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.g-demo-btn button{font:inherit;font-size:14px;font-weight:600;padding:8px 16px;border-radius:8px;border:1px solid #f3f3ef;background:transparent;color:#f3f3ef;cursor:pointer}
+.g-demo-btn #gDemoFermer{background:#f3f3ef;color:#2b2b2b}
+</style>
+<div class="g-demo" id="gDemo" hidden role="dialog" aria-modal="true" aria-label="Démo : trouver son coin sur la carte">
+<div class="g-demo-boite">
+<video id="gDemoVideo" muted playsinline loop preload="none" poster="/medias/tuto/lieu.jpg"></video>
+<p class="g-demo-st" id="gDemoSt" aria-live="polite"></p>
+<div class="g-demo-btn"><button type="button" id="gDemoSon">Activer le son</button><button type="button" id="gDemoFermer">Fermer</button></div>
+</div>
+</div>
+<script>
+/* v4.27 : aide au lieu (étape 2).
+   - Lien « Voir la démo » toujours offert à l'étape 2.
+   - Encadré d'aide si l'étape 2 est ouverte depuis 20 s sans cadre posé (une seule fois par navigateur).
+   - Extrait de 18 s du tutoriel, sans son au départ, sous-titres dessinés ici.
+   Compteur : aide-lieu (encadré montré), aide-lieu-video (démo ouverte). */
+(function () {
+  "use strict";
+  try {
+    const $i = (id) => document.getElementById(id);
+    const corps = $i("gCorps2"), boite = $i("gAideLieu"), lien = $i("gAideLieuLien"), demo = $i("gDemo"), vid = $i("gDemoVideo"), st = $i("gDemoSt"), son = $i("gDemoSon");
+    if (!corps || !boite || !demo || !vid) return;
+    const VIDEO = "/medias/tuto/lieu.mp4", DELAI = 20, CLE = "georama-aide-lieu-v1";
+    const ST = [
+      [0.3, 2.4, "Promenez-vous sur la carte."],
+      [2.4, 5.6, "La molette de la souris rapproche, comme sur n’importe quelle carte en ligne."],
+      [6.3, 10.2, "Glissez la carte pour vous déplacer, et rapprochez-vous jusqu’à reconnaître votre coin."],
+      [12.4, 15.5, "Cliquez à l’endroit voulu : le cadre orange apparaît."],
+      [15.5, 18.4, "Ce qui est dedans devient votre maquette."],
+    ];
+    const noter = (e) => { try { etape(e); } catch (x) {} };
+    const tactile = () => (window.matchMedia && matchMedia("(pointer: coarse)").matches) || "ontouchstart" in window;
+    const segment = () => { try { return profilActif; } catch (e) { return ""; } };
+    const aUnCadre = () => { try { return !!marker; } catch (e) { return false; } };
+    const dejaVu = () => { try { return localStorage.getItem(CLE) === "1"; } catch (e) { return montre; } };
+    const memoriser = () => { try { localStorage.setItem(CLE, "1"); } catch (e) {} };
+    let montre = false, attente = 0;
+
+    function texte() {
+      let t = tactile()
+        ? "Glissez un doigt sur la carte pour vous déplacer, pincez avec deux doigts pour vous rapprocher, puis touchez votre coin : le cadre orange apparaît."
+        : "Glissez la carte pour vous déplacer, utilisez la molette pour vous rapprocher, puis cliquez sur votre coin : le cadre orange apparaît.";
+      const s = segment();
+      if (s === "proprio" || s === "ferme") t += " Vous avez votre numéro de lot ? Entrez-le plutôt dans la recherche.";
+      if (s === "peche") t += " Vous pouvez aussi chercher le nom de votre lac.";
+      return t;
+    }
+
+    function cacherBoite() { boite.hidden = true; }
+
+    // Vérifie chaque seconde : étape 2 ouverte, aucun cadre, personne n'écrit dans la recherche.
+    setInterval(function () {
+      if (aUnCadre()) { if (!boite.hidden) cacherBoite(); attente = 0; return; }
+      if (montre || dejaVu()) return;
+      const ouverte = !corps.hidden && corps.offsetParent !== null;
+      const q = $i("q"), sugg = $i("sugg");
+      const ecrit = (q && document.activeElement === q && q.value.trim()) || (sugg && !sugg.hidden);
+      if (!ouverte || document.hidden || !demo.hidden) { attente = 0; return; }
+      if (ecrit) return;
+      if (++attente < DELAI) return;
+      montre = true; memoriser();
+      $i("gAideLieuTxt").textContent = texte();
+      boite.hidden = false;
+      noter("aide-lieu");
+    }, 1000);
+
+    $i("gAideLieuNon").onclick = cacherBoite;
+
+    function sousTitre() {
+      const t = vid.currentTime, c = ST.find((x) => t >= x[0] && t < x[1]);
+      st.textContent = c ? c[2] : "";
+    }
+    function ouvrir() {
+      noter("aide-lieu-video");
+      if (!vid.getAttribute("src")) vid.src = VIDEO;
+      vid.muted = true; son.textContent = "Activer le son";
+      demo.hidden = false;
+      try { vid.currentTime = 0; } catch (e) {}
+      const p = vid.play(); if (p && p.catch) p.catch(() => {});
+      $i("gDemoFermer").focus();
+    }
+    function fermer() {
+      demo.hidden = true;
+      try { vid.pause(); } catch (e) {}
+      st.textContent = "";
+    }
+    vid.addEventListener("timeupdate", sousTitre);
+    son.onclick = () => {
+      vid.muted = !vid.muted;
+      son.textContent = vid.muted ? "Activer le son" : "Couper le son";
+      if (!vid.muted) { try { vid.currentTime = 0; } catch (e) {} const p = vid.play(); if (p && p.catch) p.catch(() => {}); }
+    };
+    $i("gDemoFermer").onclick = fermer;
+    demo.addEventListener("click", (e) => { if (e.target === demo) fermer(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !demo.hidden) fermer(); });
+    $i("gAideLieuVoir").onclick = () => { cacherBoite(); ouvrir(); };
+    lien.onclick = ouvrir;
+  } catch (e) {}
 })();
 </script>
 </body>
