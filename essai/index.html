@@ -319,12 +319,12 @@ body.mode-apercu .g-app #zoneCarte{min-height:100vh}
 <button type="submit">Chercher</button>
 <div id="sugg" role="listbox" aria-label="Lieux suggérés" hidden></div>
 </form>
-<p class="g-aide" id="gAide2"></p>
 <div class="g-aide-lieu" id="gAideLieu" hidden role="status">
 <p><strong>Besoin d’un coup de main ?</strong> <span id="gAideLieuTxt"></span></p>
 <div class="g-aide-lieu-btn"><button type="button" id="gAideLieuVoir">Voir comment (18 s)</button><button type="button" id="gAideLieuNon">Fermer</button></div>
 </div>
 <button type="button" class="g-lien-demo" id="gAideLieuLien"><span aria-hidden="true">▶</span> Comment trouver mon coin ? Voir la démo (18 s)</button>
+<p class="g-aide" id="gAide2"></p>
 <button type="button" id="monLacBtn" class="g-btn-lac" hidden>🎣 Choisir mon lac <span>— cliquez ensuite sur votre lac : le cadre s’ajuste</span></button>
 <div id="lacInfo" role="status"></div>
 <div id="lotInfo" role="status"></div>
@@ -9062,6 +9062,7 @@ window.addEventListener("message", function (e) {
 .g-app .g-aide-lieu button{font:inherit;font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:8px;border:1px solid #2b2b2b;background:#fff;color:#2b2b2b;cursor:pointer}
 .g-app .g-aide-lieu #gAideLieuVoir{background:#2b2b2b;color:#fff}
 .g-app .g-lien-demo{display:inline-flex;align-items:center;gap:6px;margin:2px 0 8px;padding:4px 0;border:0;background:none;font:inherit;font-size:13px;font-weight:600;color:#2f5d3a;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.g-app .g-lien-demo[hidden]{display:none}
 .g-app .g-lien-demo span{font-size:10px;text-decoration:none}
 .g-demo{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(13,17,16,.86)}
 .g-demo[hidden]{display:none}
@@ -9117,7 +9118,7 @@ window.addEventListener("message", function (e) {
       return t;
     }
 
-    function cacherBoite() { boite.hidden = true; }
+    function cacherBoite() { boite.hidden = true; lien.hidden = false; }
 
     // Vérifie chaque seconde : étape 2 ouverte, aucun cadre, personne n'écrit dans la recherche.
     setInterval(function () {
@@ -9131,7 +9132,12 @@ window.addEventListener("message", function (e) {
       if (++attente < DELAI) return;
       montre = true; memoriser();
       $i("gAideLieuTxt").textContent = texte();
-      boite.hidden = false;
+      boite.hidden = false; lien.hidden = true;
+      // sur cellulaire, le panneau défile : amener l'encadré dans la partie visible
+      try {
+        const sc = $i("gEtapes"), rb = boite.getBoundingClientRect(), rs = sc.getBoundingClientRect();
+        if (rb.bottom > rs.bottom || rb.top < rs.top) sc.scrollTop += rb.top - rs.top - 8;
+      } catch (e) {}
       noter("aide-lieu");
     }, 1000);
 
