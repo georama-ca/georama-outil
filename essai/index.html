@@ -9100,6 +9100,14 @@ window.addEventListener("message", function (e) {
       [12.4, 15.5, "Cliquez à l’endroit voulu : le cadre orange apparaît."],
       [15.5, 18.4, "Ce qui est dedans devient votre maquette."],
     ];
+    // sur écran tactile : mêmes moments, gestes du doigt
+    const ST_DOIGT = [
+      [0.3, 2.4, "Promenez-vous sur la carte."],
+      [2.4, 5.6, "Pincez avec deux doigts pour vous rapprocher."],
+      [6.3, 10.2, "Glissez un doigt pour vous déplacer, jusqu’à reconnaître votre coin."],
+      [12.4, 15.5, "Touchez l’endroit voulu : le cadre orange apparaît."],
+      [15.5, 18.4, "Ce qui est dedans devient votre maquette."],
+    ];
     const noter = (e) => { try { etape(e); } catch (x) {} };
     const tactile = () => (window.matchMedia && matchMedia("(pointer: coarse)").matches) || "ontouchstart" in window;
     const segment = () => { try { return profilActif; } catch (e) { return ""; } };
@@ -9144,7 +9152,7 @@ window.addEventListener("message", function (e) {
     $i("gAideLieuNon").onclick = cacherBoite;
 
     function sousTitre() {
-      const t = vid.currentTime, c = ST.find((x) => t >= x[0] && t < x[1]);
+      const t = vid.currentTime, c = (tactile() ? ST_DOIGT : ST).find((x) => t >= x[0] && t < x[1]);
       st.textContent = c ? c[2] : "";
     }
     function ouvrir() {
