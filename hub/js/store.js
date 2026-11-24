@@ -145,6 +145,29 @@ export class AdaptateurOneDrive {
       url: x['@microsoft.graph.downloadUrl'] || '', image: /\.(png|jpe?g|webp)$/i.test(x.name),
     }));
   }
+  // v1.16.0 : fichiers d'un dossier du même OneDrive, hors du dossier du hub (ex. 05_Finances_et_Comptabilite/05_Reçus_2026),
+  // avec les sous-dossiers jusqu'à « profondeur » niveaux.
+  async listerDrive(chemin, profondeur = 1) {
+    const sortie = [];
+    const parcourir = async (p, niv) => {
+      let url = '/drives/' + encodeURIComponent(this.lieu.driveId) + '/root:/' + cheminEncode(p) + ':/children?$top=200';
+      while (url) {
+        const r = await graph(url);
+        if (r.status === 404) { const e = new Error('Dossier introuvable : ' + p); e.code = 'introuvable'; throw e; }
+        if (r.status === 401 || r.status === 403) { const e = new Error('Ce compte n’a pas accès au dossier ' + p); e.code = 'acces'; throw e; }
+        if (!r.ok) throw new Error('Liste du dossier refusée (' + r.status + ').');
+        const j = await r.json();
+        for (const x of (j.value || [])) {
+          if (x.folder && niv > 0) await parcourir(p + '/' + x.name, niv - 1);
+          else if (x.file) sortie.push({ id: x.id, etag: x.eTag || x.cTag || '', nom: x.name, dossier: p, taille: x.size, maj: x.lastModifiedDateTime,
+            webUrl: x.webUrl, url: x['@microsoft.graph.downloadUrl'] || '', type: (x.file && x.file.mimeType) || '' });
+        }
+        url = j['@odata.nextLink'] || '';
+      }
+    };
+    await parcourir(chemin, profondeur);
+    return sortie;
+  }
   // Dépose un fichier (≤ 4 Mo) dans le dossier du hub, ex. factures/2026-11/….jpg
   async televerser(chemin, blob) {
     const r = await graph('/drives/' + encodeURIComponent(this.lieu.driveId) + '/items/' + encodeURIComponent(this.lieu.itemId) + ':/' + cheminEncode(chemin) + ':/content?@microsoft.graph.conflictBehavior=rename', {

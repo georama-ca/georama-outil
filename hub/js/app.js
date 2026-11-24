@@ -1,6 +1,7 @@
 // Hub Georama — démarrage, coquille (menu Cockpit), navigation et connexion.
 import { appliquerTaille } from './vues/parametres.js';
 import { confirmationsAuto } from './confirmation-auto.js';
+import { lireRecusAuto } from './recus-auto.js';
 import { cartesCadeauxAuto, envoyerCarteMaintenant } from './carte-cadeau-auto.js';
 import { CONFIG } from '../config.js';
 import * as auth from './auth.js';
@@ -536,7 +537,11 @@ async function demarrer() {
     setTimeout(() => cartesCadeauxAuto(ctx), 14000);
     setInterval(() => cartesCadeauxAuto(ctx), 3 * 60000);
     setInterval(() => { if (document.visibilityState === 'visible') synchroniserCourriels(ctx); }, 5 * 60000);
+    // v1.16.0 : reçus du dossier OneDrive ajoutés tout seuls aux dépenses (toutes les 10 minutes)
+    setTimeout(() => lireRecusAuto(ctx), 20000);
+    setInterval(() => lireRecusAuto(ctx), 10 * 60000);
   }
+  if (ctx.mode === 'demo') window.__hubDemo = ctx;   // pour les essais automatiques (démo seulement)
   window.addEventListener('beforeunload', ev => { if (ctx.m.enAttente() && ctx.mode !== 'demo') { ev.preventDefault(); ev.returnValue = ''; } });
   ctx.prenom = prenom(ctx.moi);
   rendre();

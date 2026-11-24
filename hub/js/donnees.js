@@ -367,13 +367,30 @@ export function depensesAuto(m, periode) {
   // Total par mois des campagnes de Georama (les annonces Marketplace personnelles « [Objet] Marketplace listing boosted » sont exclues).
   const parMois = {};
   ((meta && meta.mois) || []).filter(x => !estPerso(x.nom)).forEach(x => { parMois[x.mois] = (parMois[x.mois] || 0) + (x.depense || 0); });
+  // v1.16.0 : les reçus Meta (dossier des reçus ou dépense entrée à la main) font foi jusqu'à la fin de la période
+  // qu'ils couvrent ; seules les pubs dépensées après sont estimées ici (« pas encore facturées »).
+  const recusMeta = m.liste('depenses').filter(d => !d.auto && /\bmeta\b|facebook/.test(norm(d.fournisseur)));
+  const finMeta = recusMeta.reduce((f, d) => { const x = d.periodeFin || d.date || ''; return x > f ? x : f; }, '');
+  const jours = ((meta && meta.jours) || []).filter(j => !estPerso(j.nom));
+  const premierJour = jours.reduce((p, j) => (!p || j.date < p) ? j.date : p, '');
   Object.entries(parMois).forEach(([mois, depense]) => {
+    let montant = depense;
+    let note = 'Dépensé en pubs ce mois-là (lu dans Meta). Taxes estimées : à confirmer avec le reçu Meta.';
+    if (finMeta) {
+      const finMois = finMeta.slice(0, 7);
+      if (mois < finMois) return;
+      if (mois === finMois) {
+        if (premierJour && premierJour <= finMeta) montant = jours.filter(j => j.date.slice(0, 7) === mois && j.date > finMeta).reduce((t, j) => t + (j.depense || 0), 0);
+        else montant = depense - recusMeta.filter(d => (d.date || '').slice(0, 7) === mois).reduce((t, d) => t + (Number(d.montant) || 0), 0);
+      }
+      note = 'Pubs Meta après le dernier reçu (couvert jusqu’au ' + finMeta + ') : lu dans Meta, pas encore facturé. Taxes estimées.';
+    }
     const date = mois + '-01';
-    if (!depense || !dansPeriode(date, periode) || dejaEntree(m, 'Meta', mois)) return;
-    const ht = Math.round(depense * 100) / 100;
+    if (!(montant > 0.009) || !dansPeriode(date, periode)) return;
+    const ht = Math.round(montant * 100) / 100;
     // v1.14.4 : taxes des dépenses toujours estimées (elles sont payées, inscrite ou non).
     l.push(Object.assign({ ht }, taxesDe(ht, true), { d: { id: 'auto-meta-' + mois, date, fournisseur: 'Meta (pubs Facebook et Instagram)', categorie: 'Publicité', montant: ht,
-      note: 'Dépensé en pubs ce mois-là (lu dans Meta). Taxes estimées : à confirmer avec le reçu Meta.', auto: 'meta' } }));
+      note, auto: 'meta' } }));
   });
   abonnements(m).forEach(a => occurrences(a, aujourdhui()).forEach(date => {
     if (!dansPeriode(date, periode) || dejaEntree(m, a.fournisseur, date.slice(0, 7))) return;

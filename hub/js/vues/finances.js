@@ -3,6 +3,7 @@ import { esc, argent, pct, dateCourte, options, ouvrirFenetre, aujourdhui, uid, 
 import { ventesTaxables, reglages, resume, ventes, depenses, CATEGORIES_DEPENSE, nomSegment, taxesDe, moisCourant, TPS, TVQ, journaliser, abonnements } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
 import { ouvrirRapportComptable } from '../rapport-comptable.js';
+import { lireRecusAuto, etatRecus, dossierRecus, DOSSIER_RECUS } from '../recus-auto.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.fin) ctx.etat.fin = { periode: moisCourant() };
@@ -28,7 +29,8 @@ function ouvrirDepense(ctx, id, prerempli) {
   const m = ctx.m;
   const d = (id && m.get('depenses', id)) || Object.assign({ date: aujourdhui(), categorie: 'Filament', taxesAuto: true }, prerempli || {});
   const fact = d.facture;
-  const corps = `<div class="champ plein" style="margin-bottom:14px">
+  const bandeau = d.aVerifier ? `<p class="bandeau" style="display:block;margin:0 0 12px">${d.recu && d.source === 'recu' ? 'Dépense créée toute seule à partir du reçu <strong>' + esc(d.recu.nom) + '</strong>. Vérifie le fournisseur, la date, la catégorie et les montants, puis « Enregistrer ».' : ''}${d.dateRecu ? ' Le reçu ' + (d.recu ? '<strong>' + esc(d.recu.nom) + '</strong> ' : '') + 'porte la date du <strong>' + esc(dateCourte(d.dateRecu)) + '</strong> (ici : ' + esc(dateCourte(d.date)) + ').' : ''}</p>` : '';
+  const corps = bandeau + `<div class="champ plein" style="margin-bottom:14px">
       <label for="d-photo">Photo ou PDF de la facture</label>
       <div class="facture-boite">
         <div id="d-apercu" class="facture-apercu">${fact ? '<span class="petit doux">Chargement…</span>' : '<span class="petit doux">Aucune facture jointe</span>'}</div>
@@ -36,6 +38,7 @@ function ouvrirDepense(ctx, id, prerempli) {
           <label class="btn-2" for="d-photo" style="cursor:pointer;text-align:center">${fact ? 'Remplacer' : 'Prendre une photo ou choisir'}</label>
           <input id="d-photo" type="file" accept="image/*,application/pdf" class="sr">
           ${fact && fact.webUrl ? `<a class="btn-lien petit" href="${esc(fact.webUrl)}" target="_blank" rel="noopener">Ouvrir dans OneDrive</a>` : ''}
+          ${d.recu && d.recu.webUrl && (!fact || fact.webUrl !== d.recu.webUrl) ? `<a class="btn-lien petit" href="${esc(d.recu.webUrl)}" target="_blank" rel="noopener">Ouvrir le reçu</a>` : ''}
         </div>
       </div>
       <span class="aide">Sur le cellulaire, le bouton ouvre l’appareil photo. La facture est gardée dans OneDrive › Hub-Georama › factures.</span>
@@ -54,12 +57,19 @@ function ouvrirDepense(ctx, id, prerempli) {
   const { form } = ouvrirFenetre({
     titre: id ? 'Dépense · ' + d.fournisseur : 'Nouvelle dépense', corps,
     pied: id ? '<div class="actions"><button type="button" class="btn-2 btn-danger" data-modal-act="supprimer">Supprimer</button></div>' : '',
-    onAction(act) { if (act === 'supprimer' && confirm('Supprimer cette dépense ?')) { m.supprimer('depenses', id); return 'fermer'; } return null; },
+    onAction(act) {
+      if (act === 'supprimer' && confirm('Supprimer cette dépense ?' + (d.recu ? ' Le reçu restera dans son dossier et ne sera plus ajouté.' : ''))) {
+        // v1.16.0 : un reçu dont la dépense est supprimée n'est plus relu
+        if (d.recu && d.recu.cle) { const R = reglages(m); m.mettre('reglages', Object.assign({}, R, { id: 'general', recusIgnores: (R.recusIgnores || []).concat([d.recu.cle]).slice(-500) }), true); }
+        m.supprimer('depenses', id); return 'fermer';
+      }
+      return null;
+    },
     onSubmit(v) {
       const montant = Number(v.montant) || 0;
       const t = v.taxesAuto ? taxesDe(montant, true) : { tps: Number(v.tps) || 0, tvq: Number(v.tvq) || 0 };
       const idD = id || uid('d');
-      m.mettre('depenses', Object.assign({}, d, { id: idD, date: v.date, fournisseur: v.fournisseur, categorie: v.categorie, montant, tps: t.tps, tvq: t.tvq, taxesAuto: !!v.taxesAuto, note: v.note }), true);
+      m.mettre('depenses', Object.assign({}, d, { id: idD, date: v.date, fournisseur: v.fournisseur, categorie: v.categorie, montant, tps: t.tps, tvq: t.tvq, taxesAuto: !!v.taxesAuto, note: v.note, aVerifier: false, dateRecu: '' }), true);
       if (!id) journaliser(m, 'Dépense ajoutée : ' + v.fournisseur + ' (' + argent(montant, 2) + ')', '#/finances/depenses', 'depense');
       m.avertir('local');
       if (fichierChoisi) {
@@ -90,6 +100,7 @@ function ouvrirDepense(ctx, id, prerempli) {
     fichierChoisi = f;
     if (f.type === 'application/pdf') montrer('', true); else montrer(URL.createObjectURL(f));
   });
+  if (fact && !fact.chemin && fact.webUrl) apercu.innerHTML = `<a href="${esc(fact.webUrl)}" target="_blank" rel="noopener">Ouvrir le reçu${fact.nom ? ' « ' + esc(fact.nom) + ' »' : ''}</a>`;
   if (fact && fact.chemin && m.a.lienFichier) {
     m.a.lienFichier(fact.chemin).then(url => {
       if (!url) { apercu.innerHTML = '<span class="petit doux">Facture introuvable</span>'; return; }
@@ -208,6 +219,38 @@ function vueResume(ctx) {
     </section>`;
 }
 
+// v1.16.0 : reçus lus tout seuls dans le dossier des reçus du OneDrive
+function carteRecus(ctx) {
+  const m = ctx.m;
+  const R = reglages(m);
+  const aVerif = m.liste('depenses').filter(d => d.aVerifier).length;
+  const depuis = etatRecus.dernier ? ilYa(etatRecus.dernier) : '';
+  return `<h2 style="margin-top:18px">Reçus</h2>
+    <p class="petit" style="margin:0 0 6px">Dépose les reçus (PDF) dans <strong>OneDrive › ${esc(dossierRecus(m).replace(/\//g, ' › '))}</strong> : le hub les ajoute tout seuls aux dépenses${R.recusAuto === false ? ' <strong>(arrêté)</strong>' : ''}.</p>
+    ${aVerif ? `<p class="petit" style="margin:0 0 6px"><span class="etiquette orange">${aVerif} à vérifier</span> Ouvre chaque ligne, corrige au besoin, puis « Enregistrer ».</p>` : ''}
+    ${etatRecus.erreur ? `<p class="tres-petit" style="margin:0 0 6px;color:var(--danger,#b3261e)">${esc(etatRecus.erreur)}</p>` : depuis ? `<p class="tres-petit doux" style="margin:0 0 6px">Dernière lecture ${esc(depuis)} : ${etatRecus.fichiers} fichier${etatRecus.fichiers > 1 ? 's' : ''}${etatRecus.ajoutes ? ', ' + etatRecus.ajoutes + ' ajouté' + (etatRecus.ajoutes > 1 ? 's' : '') : ''}${etatRecus.doublons ? ', ' + etatRecus.doublons + ' copie' + (etatRecus.doublons > 1 ? 's' : '') + ' ignorée' + (etatRecus.doublons > 1 ? 's' : '') : ''}.</p>` : ''}
+    <div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn-2" data-act="lire-recus" style="min-height:32px;font-size:13px"${etatRecus.enCours ? ' disabled' : ''}>${etatRecus.enCours ? 'Lecture…' : 'Lire les reçus maintenant'}</button>
+    <button type="button" class="btn-lien petit" data-act="reglage-recus">Réglages</button></div>`;
+}
+function ouvrirReglageRecus(ctx) {
+  const m = ctx.m;
+  const R = reglages(m);
+  ouvrirFenetre({
+    titre: 'Reçus lus tout seuls',
+    corps: `<div class="champ plein"><label for="r-dossier">Dossier des reçus (dans le OneDrive Georama)</label>
+      <input id="r-dossier" name="dossier" type="text" value="${esc(dossierRecus(m))}" placeholder="${esc(DOSSIER_RECUS)}">
+      <span class="aide">Chemin à partir de « OneDrive - Georama ». Les sous-dossiers (ex. un par mois) sont lus aussi.</span></div>
+      <div class="champ plein"><label class="case"><input type="checkbox" name="auto"${R.recusAuto !== false ? ' checked' : ''}> Lire le dossier toutes les 10 minutes quand le hub est ouvert</label></div>
+      <p class="tres-petit doux" style="margin:8px 0 0">Chaque PDF devient une dépense « À vérifier » (fournisseur, date, avant taxes, TPS, TVQ, reçu joint). Deux copies du même reçu comptent une fois. Un reçu déjà entré à la main est relié à sa dépense. Une dépense supprimée n'est plus recréée. Les photos (JPG, PNG) sont ajoutées à 0 $ : montant à entrer.</p>`,
+    onSubmit(v) {
+      const dossier = String(v.dossier || '').trim().replace(/\\/g, '/').replace(/^.*OneDrive - Georama\//i, '').replace(/^\/+|\/+$/g, '');
+      m.mettre('reglages', Object.assign({}, R, { id: 'general', dossierRecus: dossier && dossier !== DOSSIER_RECUS ? dossier : '', recusAuto: !!v.auto }));
+      toast('Réglages des reçus enregistrés.');
+      setTimeout(() => lireRecusAuto(ctx, { manuel: true }).then(() => ctx.rendre()), 300);
+    },
+  });
+}
+
 // Dépenses automatiques : pubs Meta (lues chaque heure) et abonnements (Wix, Microsoft 365, Meshy…).
 const SUGGESTIONS = [
   { fournisseur: 'Wix (forfait Premium du site)', frequence: 'annuel', categorie: 'Logiciels et abonnements' },
@@ -275,7 +318,7 @@ function vueDepenses(ctx) {
         <div class="carte-tete"><h2>Dépenses · ${esc(nomPeriode(e.periode))}</h2><button type="button" class="btn-2" data-act="export-depenses">Exporter (CSV)</button></div>
         <table class="liste"><thead><tr><th>Date</th><th>Fournisseur</th><th>Catégorie</th><th class="droite">Avant taxes</th><th class="droite">TPS</th><th class="droite">TVQ</th></tr></thead>
         <tbody>${d.map(x => `<tr class="cliquable" data-act="${x.d.auto ? 'auto-d' : 'ouvrir-d'}" data-id="${esc(x.d.id)}" tabindex="0"${x.d.auto ? ' title="Dépense automatique : clique pour l’enregistrer avec la vraie facture"' : ''}>
-          <td class="petit num">${esc(dateCourte(x.d.date))}</td><td>${esc(x.d.fournisseur)}${x.d.auto ? ` <span class="etiquette bleu" title="${x.d.auto === 'meta' ? 'Lu dans Meta' : 'Abonnement'}">Auto</span>` : ''}${x.d.facture ? ' <span class="etiquette plein" title="Facture jointe">Facture</span>' : ''}${x.d.note ? `<br><span class="petit doux">${esc(x.d.note)}</span>` : ''}</td>
+          <td class="petit num">${esc(dateCourte(x.d.date))}</td><td>${esc(x.d.fournisseur)}${x.d.auto ? ` <span class="etiquette bleu" title="${x.d.auto === 'meta' ? 'Lu dans Meta' : 'Abonnement'}">Auto</span>` : ''}${x.d.facture || x.d.recu ? ` <span class="etiquette plein" title="${x.d.recu ? 'Reçu du dossier des reçus' : 'Facture jointe'}">${x.d.recu ? 'Reçu' : 'Facture'}</span>` : ''}${x.d.aVerifier ? ' <span class="etiquette orange" title="Lue toute seule : à vérifier">À vérifier</span>' : ''}${x.d.note ? `<br><span class="petit doux">${esc(x.d.note)}</span>` : ''}</td>
           <td class="petit">${esc(x.d.categorie)}</td><td class="droite num">${argent(x.ht, 2)}</td><td class="droite num">${argent(x.tps, 2)}</td><td class="droite num">${argent(x.tvq, 2)}</td></tr>`).join('') || '<tr><td colspan="6" class="vide">Aucune dépense pour cette période. <button type="button" class="btn-lien" data-act="nouvelle-d">Ajouter une dépense</button></td></tr>'}</tbody></table>
       </section>
       <aside class="carte lateral">
@@ -283,6 +326,7 @@ function vueDepenses(ctx) {
         ${Object.entries(parCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<div class="ligne"><span class="grow petit">${esc(c)}</span><span class="num petit">${argent(v, 2)}</span></div>
           <div class="barre" style="height:6px;margin:-4px 0 6px"><span style="width:${total ? v / total * 100 : 0}%"></span></div>`).join('') || '<p class="vide">—</p>'}
         <div class="ligne"><strong class="grow">Total</strong><strong class="num">${argent(total, 2)}</strong></div>
+        ${carteRecus(ctx)}
         ${carteAuto(ctx)}
       </aside>
     </div>`;
@@ -310,6 +354,8 @@ export default {
   },
   actions: {
     'nouvelle-d': ctx => ouvrirDepense(ctx, null),
+    'lire-recus': ctx => { lireRecusAuto(ctx, { manuel: true, force: true }).then(() => ctx.rendre()); setTimeout(() => ctx.rendre(), 50); },
+    'reglage-recus': ctx => ouvrirReglageRecus(ctx),
     'rapport-comptable': ctx => ouvrirRapportComptable(ctx),
     'ouvrir-d': (ctx, el) => ouvrirDepense(ctx, el.getAttribute('data-id')),
     'auto-d': (ctx, el) => {

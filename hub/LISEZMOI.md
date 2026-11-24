@@ -48,6 +48,13 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.16.0 (23 novembre 2026)
+- Reçus consignés tout seuls : le hub lit le dossier `05_Finances_et_Comptabilite/05_Reçus_2026` du OneDrive Georama (sous-dossiers compris) toutes les 10 minutes. Chaque PDF devient une dépense « À vérifier » : fournisseur (Wix, Meta, Microsoft 365, Bambu Lab, Anthropic, Meshy, Postes Canada…), date, catégorie, avant taxes, TPS, TVQ, reçu joint. Le texte du PDF est lu dans le navigateur avec pdf.js 6.2.108 (vendor/pdfjs-6.2.108, licence Apache 2.0).
+- Deux copies du même reçu (« … (1).pdf ») comptent une fois (clé fournisseur + numéro de facture). Un reçu déjà entré à la main (même fournisseur, même total à 1 $ près, moins de 4 mois d'écart) est relié à sa dépense au lieu d'en créer une deuxième. Une dépense supprimée n'est plus recréée (reglages.recusIgnores). Photos : ajoutées à 0 $, montant à entrer.
+- Pubs Meta : les reçus Meta font foi jusqu'à la fin de la période qu'ils couvrent ; l'estimation automatique ne compte plus que les pubs dépensées après (« pas encore facturées »).
+- Finances › Dépenses : étiquettes « Reçu » et « À vérifier », carte « Reçus » (bouton « Lire les reçus maintenant », réglages : dossier, lecture automatique). « Enregistrer » une dépense retire « À vérifier ».
+- Module pur `js/recus-lecture.js` (testé avec node sur 29 vrais reçus : montants exacts au cent), `js/recus-auto.js`, `listerDrive()` dans store.js.
+
 ### v1.15.0 (23 novembre 2026)
 - Finances : bouton « Rapport pour le comptable » (js/rapport-comptable.js). Choix de la période (depuis le début, année, mois en cours, ou du mois X au mois Y) ; ouvre une page à imprimer ou à enregistrer en PDF (format lettre) : sommaire (revenus, dépenses, bénéfice avant impôts, à encaisser), statut des taxes et seuil de 30 000 $, par mois, dépenses par catégorie, achats d'équipement, dépenses estimées ou sans facture, questions pour le comptable, détail des ventes et des dépenses (facture jointe, estimée ou à trouver).
 - Questions pour le comptable proposées (forme juridique, inscription aux taxes, amortissement de l'imprimante, subvention de la MRC, cartes-cadeaux, pièces justificatives, bureau à la maison), modifiables et gardées dans reglages.json (questionsComptable).
