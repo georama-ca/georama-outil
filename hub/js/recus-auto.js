@@ -10,7 +10,7 @@ export const DOSSIER_RECUS = '05_Finances_et_Comptabilite/05_Reçus_2026';
 const CLE_VUS = 'georama-hub-recus-vus';
 const EXT = /\.(pdf|jpe?g|png|webp|heic)$/i;
 let enCours = false;
-export const etatRecus = { dernier: '', erreur: '', ajoutes: 0, relies: 0, doublons: 0, fichiers: 0, enCours: false };
+export const etatRecus = { dernier: '', erreur: '', sansAcces: false, ajoutes: 0, relies: 0, doublons: 0, fichiers: 0, enCours: false };
 
 export function dossierRecus(m) { return String(reglages(m).dossierRecus || DOSSIER_RECUS).replace(/\\/g, '/').replace(/^\/+|\/+$/g, ''); }
 function lireVus() { try { return JSON.parse(localStorage.getItem(CLE_VUS) || '{}') || {}; } catch (e) { return {}; } }
@@ -95,7 +95,16 @@ export async function lireRecusAuto(ctx, { force = false, manuel = false } = {})
   if (!manuel && reglages(m).recusAuto === false) return null;
   enCours = true; etatRecus.enCours = true;
   try {
-    const fichiers = await m.a.listerDrive(dossierRecus(m), 2);
+    // v1.16.1 : d'abord par l'identifiant du dossier noté dans reglages (marche pour un compte à qui le dossier est partagé),
+    // sinon par son chemin dans le OneDrive (compte propriétaire : info@).
+    const R0 = reglages(m);
+    const refNotee = R0.recusRef && R0.recusRef.dossier === dossierRecus(m) ? R0.recusRef : null;
+    let fichiers;
+    try { fichiers = await m.a.listerDrive(dossierRecus(m), 2, refNotee); }
+    catch (e) { if (!refNotee) throw e; fichiers = await m.a.listerDrive(dossierRecus(m), 2, null); }
+    if (fichiers.ref && (!refNotee || refNotee.itemId !== fichiers.ref.itemId)) {
+      m.mettre('reglages', Object.assign({}, reglages(m), { id: 'general', recusRef: { dossier: dossierRecus(m), driveId: fichiers.ref.driveId, itemId: fichiers.ref.itemId } }), true);
+    }
     const vus = force ? {} : lireVus();
     const bilan = await traiterRecus(m, fichiers, async f => {
       if (!f.url || f.taille > 20 * 1048576) return '';
@@ -104,7 +113,12 @@ export async function lireRecusAuto(ctx, { force = false, manuel = false } = {})
       return textePdf(await rep.arrayBuffer());
     }, { force, vus });
     ecrireVus(vus);
-    Object.assign(etatRecus, { dernier: new Date().toISOString(), erreur: '', fichiers: fichiers.length, ajoutes: bilan.ajoutes, relies: bilan.relies, doublons: bilan.doublons });
+    Object.assign(etatRecus, { dernier: new Date().toISOString(), erreur: '', sansAcces: false, fichiers: fichiers.length, ajoutes: bilan.ajoutes, relies: bilan.relies, doublons: bilan.doublons });
+    // État partagé (vu par les autres comptes) : à chaque ajout, sinon au plus une fois l'heure
+    const E = reglages(m).recusEtat || {};
+    if (bilan.ajoutes || bilan.relies || !E.le || Date.now() - new Date(E.le) > 3600000) {
+      m.mettre('reglages', Object.assign({}, reglages(m), { id: 'general', recusEtat: { le: etatRecus.dernier, par: ctx.courriel || ctx.moi || '', fichiers: fichiers.length } }), true);
+    }
     if (bilan.ajoutes || bilan.relies) {
       m.avertir('local');
       journaliser(m, bilan.ajoutes + ' reçu' + (bilan.ajoutes > 1 ? 's' : '') + ' ajouté' + (bilan.ajoutes > 1 ? 's' : '') + ' aux dépenses' + (bilan.relies ? ', ' + bilan.relies + ' relié' + (bilan.relies > 1 ? 's' : '') + ' à une dépense déjà entrée' : '') + ' (dossier des reçus)', '#/finances/depenses', 'depense');
@@ -112,9 +126,11 @@ export async function lireRecusAuto(ctx, { force = false, manuel = false } = {})
     } else if (manuel) ctx.toast('Aucun nouveau reçu (' + fichiers.length + ' fichier' + (fichiers.length > 1 ? 's' : '') + ' dans le dossier).');
     return bilan;
   } catch (e) {
-    etatRecus.erreur = e.message || 'lecture impossible';
+    // Compte sans accès au dossier (ex. charles@ : seul Hub-Georama lui est partagé) : pas une erreur, c'est la session info@ qui lit.
+    etatRecus.sansAcces = e.code === 'acces' || e.code === 'introuvable';
+    etatRecus.erreur = etatRecus.sansAcces ? '' : (e.message || 'lecture impossible');
     etatRecus.dernier = new Date().toISOString();
-    if (manuel) ctx.toast('Reçus : ' + etatRecus.erreur, true);
+    if (manuel) ctx.toast(etatRecus.sansAcces ? 'Ce compte n’a pas accès au dossier des reçus : ils sont lus par le hub ouvert avec info@.' : 'Reçus : ' + etatRecus.erreur, true);
     return null;
-  } finally { enCours = false; etatRecus.enCours = false; }
+  } finally { enCours = false; etatRecus.enCours = false; if (manuel) ctx.rendre && ctx.rendre(); }
 }

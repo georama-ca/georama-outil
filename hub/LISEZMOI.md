@@ -48,6 +48,10 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.16.1 (23 novembre 2026)
+- Reçus : « Dossier introuvable » dans une session charles@ (seul Hub-Georama lui est partagé, pas le reste du OneDrive d'info@). Le hub n'affiche plus une erreur : « Ce compte n'a pas accès au dossier des reçus : ils sont lus par le hub ouvert avec info@ », avec la dernière lecture faite par info@ (reglages.recusEtat).
+- Le dossier est retrouvé par son identifiant (reglages.recusRef, noté par la session qui l'a trouvé) : si le dossier 05_Reçus_2026 est partagé avec un compte, ce compte peut aussi le lire. Recherche du chemin nom par nom sans tenir compte des accents en dernier recours.
+
 ### v1.16.0 (23 novembre 2026)
 - Reçus consignés tout seuls : le hub lit le dossier `05_Finances_et_Comptabilite/05_Reçus_2026` du OneDrive Georama (sous-dossiers compris) toutes les 10 minutes. Chaque PDF devient une dépense « À vérifier » : fournisseur (Wix, Meta, Microsoft 365, Bambu Lab, Anthropic, Meshy, Postes Canada…), date, catégorie, avant taxes, TPS, TVQ, reçu joint. Le texte du PDF est lu dans le navigateur avec pdf.js 6.2.108 (vendor/pdfjs-6.2.108, licence Apache 2.0).
 - Deux copies du même reçu (« … (1).pdf ») comptent une fois (clé fournisseur + numéro de facture). Un reçu déjà entré à la main (même fournisseur, même total à 1 $ près, moins de 4 mois d'écart) est relié à sa dépense au lieu d'en créer une deuxième. Une dépense supprimée n'est plus recréée (reglages.recusIgnores). Photos : ajoutées à 0 $, montant à entrer.
