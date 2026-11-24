@@ -191,6 +191,8 @@ export function lieuPropre(c) {
   let t = String((c && c.lieu) || '').replace(/https?:\/\/\S+/g, ' ');
   t = t.replace(/^\s*maquette\s+georama\s*[·:\-–]?\s*/i, '');
   t = t.split(/\s{2,}|\n|\s[·|]\s(?=(Boréal|Sapinière|Arctique|Terre|Monochrome|Sans cadre|Cadre|\d))/)[0] || '';
+  // v1.16.2 : aussi avec de simples espaces (« … et chalet Boréal (vert forêt, …) Sans cadre 10 × 12 po »)
+  t = t.split(/\s(?=[A-ZÀ-Ý][a-zà-ÿ]+\s\([^)]*,)|\s(?=Sans cadre\b|Cadre\s)/)[0] || t;
   t = t.replace(/^\s*maquette\s+georama\s*[·:\-–]?\s*/i, '');
   t = t.replace(/\(\s*\d+\s*[×x]\s*\d+\s*cm\s*\)/gi, '').replace(/\s+/g, ' ').trim();
   return t;

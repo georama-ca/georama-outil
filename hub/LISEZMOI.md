@@ -48,6 +48,10 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.16.2 (24 novembre 2026)
+- Production › Fiche de production : les cartes des commandes montrent le nom du client (une ligne, coupé avec « … » si trop long) et le lieu nettoyé (2 lignes au plus) au lieu de toute la description de l'article Wix. Cartes plus basses qu'avant.
+- lieuPropre() coupe aussi la gamme et le cadre séparés par de simples espaces (« … et chalet Boréal (vert forêt, …) Sans cadre … »). Touche aussi {lieu} dans les courriels.
+
 ### v1.16.1 (23 novembre 2026)
 - Reçus : « Dossier introuvable » dans une session charles@ (seul Hub-Georama lui est partagé, pas le reste du OneDrive d'info@). Le hub n'affiche plus une erreur : « Ce compte n'a pas accès au dossier des reçus : ils sont lus par le hub ouvert avec info@ », avec la dernière lecture faite par info@ (reglages.recusEtat).
 - Le dossier est retrouvé par son identifiant (reglages.recusRef, noté par la session qui l'a trouvé) : si le dossier 05_Reçus_2026 est partagé avec un compte, ce compte peut aussi le lire. Recherche du chemin nom par nom sans tenir compte des accents en dernier recours.

@@ -7,7 +7,7 @@ import {
   COULEURS_BASIC, amsDirect, controleAms,
 } from '../donnees.js';
 import { ouvrirCommande, badgeStatut, promiseTexte, celebrer } from './commandes.js';
-import { carteCourriels, ouvrirCourriel } from '../courriels.js';
+import { carteCourriels, ouvrirCourriel, lieuPropre } from '../courriels.js';
 
 const UNITES = { A: 'AMS 2 Pro · A', B: 'AMS 2 Pro · B', HT: 'AMS HT' };
 
@@ -254,7 +254,8 @@ function vueFiche(ctx) {
     const n = ETAPES.filter(s => (x.etapes || {})[s.id]).length;
     return `<a class="cmd-carte" href="#/production/fiche/${esc(x.id)}"${x.id === c.id ? ' aria-current="true"' : ''}>
       <span style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px"><strong style="white-space:nowrap">${esc(x.numero)}</strong>${badgeStatut(x.statut)}</span>
-      <span class="petit doux">${esc(x.lieu || x.client)}</span>
+      <span class="petit" style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(x.client || '')}">${esc(x.client || 'Client à préciser')}</span>
+      <span class="petit doux" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden" title="${esc(x.lieu || '')}">${esc(lieuPropre(x) || x.lieu || '')}</span>
       <span class="barre"><span style="width:${Math.round(n / ETAPES.length * 100)}%"></span></span>
       <span class="tres-petit doux">${n}/${ETAPES.length} étapes · promise ${esc(dateCourte(x.promise))}</span>
     </a>`;
