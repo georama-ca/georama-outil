@@ -2,6 +2,7 @@
 import { esc, argent, pct, dateCourte, options, ouvrirFenetre, aujourdhui, uid, toast, telecharger, csv, ilYa } from '../ui.js';
 import { ventesTaxables, reglages, resume, ventes, depenses, CATEGORIES_DEPENSE, nomSegment, taxesDe, moisCourant, TPS, TVQ, journaliser, abonnements } from '../donnees.js';
 import { ouvrirCommande } from './commandes.js';
+import { ouvrirRapportComptable } from '../rapport-comptable.js';
 
 function etatVue(ctx) {
   if (!ctx.etat.fin) ctx.etat.fin = { periode: moisCourant() };
@@ -297,6 +298,7 @@ export default {
         <div class="actions">
           <label class="sr" for="periode">Période</label>
           <select id="periode" data-chg="periode" style="width:auto">${options(periodes(), e.periode)}</select>
+          <button type="button" class="btn-2" data-act="rapport-comptable">Rapport pour le comptable</button>
           <button type="button" class="btn" data-act="nouvelle-d">+ Dépense</button>
         </div>
       </header>
@@ -308,6 +310,7 @@ export default {
   },
   actions: {
     'nouvelle-d': ctx => ouvrirDepense(ctx, null),
+    'rapport-comptable': ctx => ouvrirRapportComptable(ctx),
     'ouvrir-d': (ctx, el) => ouvrirDepense(ctx, el.getAttribute('data-id')),
     'auto-d': (ctx, el) => {
       const x = depenses(ctx.m, el.getAttribute('data-id').match(/(\d{4}-\d{2})/) ? el.getAttribute('data-id').match(/(\d{4}-\d{2})/)[1] : etatVue(ctx).periode).find(y => y.d.id === el.getAttribute('data-id'));

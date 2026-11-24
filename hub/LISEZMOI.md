@@ -48,6 +48,11 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.15.0 (23 novembre 2026)
+- Finances : bouton « Rapport pour le comptable » (js/rapport-comptable.js). Choix de la période (depuis le début, année, mois en cours, ou du mois X au mois Y) ; ouvre une page à imprimer ou à enregistrer en PDF (format lettre) : sommaire (revenus, dépenses, bénéfice avant impôts, à encaisser), statut des taxes et seuil de 30 000 $, par mois, dépenses par catégorie, achats d'équipement, dépenses estimées ou sans facture, questions pour le comptable, détail des ventes et des dépenses (facture jointe, estimée ou à trouver).
+- Questions pour le comptable proposées (forme juridique, inscription aux taxes, amortissement de l'imprimante, subvention de la MRC, cartes-cadeaux, pièces justificatives, bureau à la maison), modifiables et gardées dans reglages.json (questionsComptable).
+- « Exporter tout en CSV » : ventes et dépenses de la période dans un seul fichier.
+
 ### v1.14.10 (18 novembre 2026)
 - La confirmation des commandes régulières du site n'est plus envoyée toute seule : elle part après validation, avec le bouton « Confirmation (site) » de la fiche. La fiche affiche « Confirmation pas encore envoyée. Vérifie la maquette et le PDF client, puis envoie « Confirmation (site) » ci-dessous. »
 - Nouveau réglage envoiConfirmationAuto (faux par défaut), case « Envoyer la confirmation toute seule » dans Paramètres › Courriels aux clients. L'ancienne clé confirmationAuto n'est plus lue. Les cartes-cadeaux ne changent pas.
