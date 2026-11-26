@@ -60,7 +60,23 @@ const JAMAIS = [
   ['Baisser le plateau sous 75 °C ou le débit de 1re couche sous 1', 'essai du 25 nov. raté.'],
   ['Pousser la tour de purge contre le bord droit', 'hors de portée de la buse gauche, « Print plate » reste grisé.'],
   ['Passer en mode LAN pendant une impression', ''],
+  ['Imprimer une marche au dos pour les languettes du cadre', 'le pourtour serait suspendu au-dessus du plateau en 1re couche.'],
 ];
+// Encadrement (décisions du 15 nov., Production 4.44 ; offre de l'outil client 4.20)
+function encadrement(c, ok) {
+  const b = ok ? nb(c.cadre_bordure) : '5';
+  return [
+    ['Quand', 'Le lien de la commande a un cadre : cd = bois, blanc ou noir. « Sans cadre » : rien ne change, brim de 5 mm.'],
+    ['Bordure de cadre', 'Bande plate de ' + b + ' mm de large tout le tour, 5 mm de haut (la hauteur de la base), dans la pièce Socle. Grand format : sur les bords extérieurs seulement.'],
+    ['Brim', 'Aucun avec un cadre : la bordure tient au plateau à sa place.'],
+    ['Taille de la plaque', '264 × 314,8 mm en 10 × 12 (254 × 304,8 + 2 bordures), dans les 300 × 320 mm que les deux buses atteignent.'],
+    ['Montage (option A)', 'Feuillure de 5 mm de profond, lèvre de 3 à 5,5 mm posée sur la bordure, 4 languettes tournantes 9 × 25 mm vissées au dos du cadre. Dos de la maquette vers le mur, retirable par le client.'],
+    ['Dos', 'Aucune marche imprimée pour les languettes. Pas d’accroche en grand format (le cadre de bois s’accroche).'],
+    ['Offre', '10 × 12 « Sans cadre » par défaut (250 $) ; cadre de bois +30 $, bois pâle par défaut, blanc ou noir au choix. Grand format : cadre inclus.'],
+    ['Si les coins décollent', 'Remettre un brim de 2,5 mm : 319,8 mm sur 320 (CADRE_SANS_BRIM = False, BORDURE_MM = 2,5).'],
+  ];
+}
+
 const HISTORIQUE = [
   ['25 nov.', '4.70', 'Lettres du dos en pochoir', 'Îles du o et du D qui décollent (idée d’Anne-Marie)'],
   ['25 nov.', '4.69', 'Retour à 80/75 °C, débit 1, 30/60 mm/s', '1re couche décollée partout en 4.67'],
@@ -175,6 +191,12 @@ export function vueRegles() {
         <div style="max-width:400px">${plateau(ok ? c : null)}</div>
         <div>${BUSES.map(b => `<div class="ligne" style="align-items:flex-start"><strong class="petit" style="width:130px;flex:0 0 auto">${esc(b[0])}</strong><span class="grow petit doux">${esc(b[1])}</span></div>`).join('')}</div>
       </div>
+    </section>
+
+    <section class="carte" style="margin-bottom:16px">
+      <div class="carte-tete"><h2>Encadrement</h2><span class="tres-petit doux">Réglages de cadre définis le 15 nov. (Production 4.44)</span></div>
+      <div class="g2" style="gap:0 24px">${encadrement(c, ok).map((e, i) => `<div class="ligne" style="align-items:flex-start;${i < 2 ? 'border-top:0' : ''}"><strong class="petit" style="width:150px;flex:0 0 auto">${esc(e[0])}</strong><span class="grow petit doux">${esc(e[1])}</span></div>`).join('')}</div>
+      <p class="tres-petit doux" style="margin:10px 0 0">Dans Production : CADRE_BORDURE_MM, CADRE_BORDURE_HAUTEUR_MM, CADRE_SANS_BRIM, CADRES_AVEC_BORDURE. Planche des options de montage : <a href="https://claude.ai/artifact/VkJWmh8yJyKwaWkbi3dAUh" target="_blank" rel="noopener">ouvrir</a>.</p>
     </section>
 
     <div class="g2" style="align-items:start;margin-bottom:16px">

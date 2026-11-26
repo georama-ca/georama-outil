@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.17.2 (25 novembre 2026)
+- Production › Règles d'impression : nouvelle carte « Encadrement » (réglages de cadre du 15 nov., Production 4.44) : quand la bordure s'applique, bordure de 5 mm (largeur lue en direct), aucun brim, plaque de 264 × 314,8 mm, montage option A (feuillure de 5 mm, lèvre, 4 languettes tournantes), dos sans marche, offre (sans cadre par défaut, cadre de bois +30 $), solution si les coins décollent. « À ne jamais faire » : marche imprimée au dos.
+
 ### v1.17.1 (25 novembre 2026)
 - Production › Règles d'impression refait avec le style du hub (retour d'Anne-Marie : le cadre ne ressemblait pas aux autres écrans et donnait 2 barres de défilement). Plus de cadre : cartes, chiffres clés, tableaux et étiquettes du hub, une seule barre de défilement. Nouveau module js/regles-impression.js.
 - Valeurs lues en direct à http://127.0.0.1:8765/api/regles. Il faut Georama Production 4.72 (il permet maintenant cette lecture depuis outil.georama.ca). Sans Production ou avec une version plus ancienne : les règles s'affichent quand même, un bandeau le dit (Démarrer, Relire).
