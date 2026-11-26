@@ -48,6 +48,10 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.17.0 (25 novembre 2026)
+- Production : nouvel onglet « Règles d'impression » (après « Filament et AMS », ordinateur seulement). Il affiche la page http://127.0.0.1:8765/regles de Georama Production (4.71 et plus), qui lit ses valeurs en direct à GET /api/regles. Même zone, même calcul de taille et même message que l'onglet « Georama Production » quand Production n'est pas démarré (Démarrer, Afficher ici quand même, Ouvrir dans un onglet).
+- Cadre séparé de celui de Georama Production : passer d'un onglet à l'autre ne recharge pas l'interface de Production. Bouton de rechargement des règles.
+
 ### v1.16.2 (24 novembre 2026)
 - Production › Fiche de production : les cartes des commandes montrent le nom du client (une ligne, coupé avec « … » si trop long) et le lieu nettoyé (2 lignes au plus) au lieu de toute la description de l'article Wix. Cartes plus basses qu'avant.
 - lieuPropre() coupe aussi la gamme et le cadre séparés par de simples espaces (« … et chalet Boréal (vert forêt, …) Sans cadre … »). Touche aussi {lieu} dans les courriels.

@@ -655,6 +655,21 @@ function blocProduction(ctx, c, a, petiteIco) {
 // navigue dans le hub. Le programme démarre avec le bouton « Démarrer » (lien georama-production:).
 const PROD_URL = 'http://127.0.0.1:8765/';
 let cadre = null, cadreSrc = '';
+// v1.17.0 : 2e cadre pour l'onglet « Règles d'impression » (page /regles de Production 4.71+), séparé pour ne pas
+// recharger l'interface de Production (et perdre son travail en cours) quand on passe d'un onglet à l'autre.
+let cadreR = null, cadreRSrc = '';
+function cadreRegles() {
+  if (!cadreR) {
+    cadreR = document.createElement('iframe');
+    cadreR.id = 'cadre-regles';
+    cadreR.title = 'Règles d’impression (Georama Production)';
+    cadreR.setAttribute('allow', 'clipboard-read; clipboard-write; local-network-access; local-network; loopback-network');
+    cadreR.style.cssText = 'position:fixed;border:1px solid var(--bordure);z-index:15;display:none;background:#2A2F2B;border-radius:8px';
+    document.body.appendChild(cadreR);
+    cadreProduction();   // installe les écouteurs (redimensionnement, défilement, fenêtres) qui placent les cadres
+  }
+  return cadreR;
+}
 function cadreProduction() {
   if (!cadre) {
     cadre = document.createElement('iframe');
@@ -718,14 +733,16 @@ function basculerMax() {
   placerCadre();
 }
 export function placerCadre() {
-  if (!cadre) return;
+  if (!cadre && !cadreR) return;
   const z = document.getElementById('zone-production');
-  if (!z || !z.dataset.pret || document.getElementById('modal').open) { cadre.style.display = 'none'; return; }
+  const visible = z && z.dataset.pret && !document.getElementById('modal').open ? (z.dataset.cadre === 'regles' ? cadreR : cadre) : null;
+  [cadre, cadreR].forEach(f => { if (f && f !== visible) f.style.display = 'none'; });
+  if (!visible) return;
   const r = z.getBoundingClientRect();
   // v1.14.7 : avec la taille de l'interface (zoom de 70 à 110 %), getBoundingClientRect donne des pixels à l'écran
   // alors que le style du cadre est de nouveau multiplié par le zoom : on divise par le rapport écran / mise en page.
   const k = z.offsetWidth ? (r.width / z.offsetWidth) || 1 : 1;
-  Object.assign(cadre.style, { display: 'block', left: r.left / k + 'px', top: r.top / k + 'px', width: r.width / k + 'px', height: r.height / k + 'px' });
+  Object.assign(visible.style, { display: 'block', left: r.left / k + 'px', top: r.top / k + 'px', width: r.width / k + 'px', height: r.height / k + 'px' });
 }
 async function serveurPret() {
   try { await fetch(PROD_URL + 'api/infos', { mode: 'no-cors', cache: 'no-store' }); return true; } catch (e) { return false; }
@@ -746,16 +763,38 @@ function vueGeorama(ctx) {
     </div>
     <p class="tres-petit doux seulement-mobile" style="margin:0">Georama Production s’utilise sur un ordinateur. Sur le cellulaire : boutons « Aperçu rapide », « Produire le .3mf » et « PDF client » dans la fiche de la commande.</p>`;
 }
+// v1.17.0 : onglet « Règles d'impression » : la page /regles de Georama Production (4.71+), qui lit ses valeurs
+// en direct à GET /api/regles. Même zone, même calcul de taille et même message que l'onglet Georama Production.
+function vueRegles() {
+  return `<div class="barre-prod seulement-ordi">
+      <span class="petit doux grow">Les règles que Georama Production applique à chaque maquette, lues en direct sur cet ordi.</span>
+      <button type="button" class="btn-ico" data-act="gp-recharger" title="Recharger les règles" aria-label="Recharger les règles">${ico('recharger')}</button>
+    </div>
+    <div id="zone-production" class="zone-production" data-cadre="regles">
+      <div id="gp-etat" class="petit doux">Recherche de Georama Production sur cet ordi…</div>
+    </div>
+    <p class="tres-petit doux seulement-mobile" style="margin:0">Les règles d’impression s’affichent sur un ordinateur où Georama Production est ouvert.</p>`;
+}
 async function monterGeorama(ctx) {
   const z = document.getElementById('zone-production');
   if (!z) return;
+  const regles = z.dataset.cadre === 'regles';
+  const sousVue = ctx.route.sous;
   const etat = document.getElementById('gp-etat');
-  const c = ctx.route.id ? ctx.m.get('commandes', ctx.route.id) : null;
-  const src = PROD_URL + (c && c.lien ? '?lien=' + encodeURIComponent(c.lien) + '&numero=' + encodeURIComponent(c.numero || '') : '');
+  const c = !regles && ctx.route.id ? ctx.m.get('commandes', ctx.route.id) : null;
+  const src = regles ? PROD_URL + 'regles' : PROD_URL + (c && c.lien ? '?lien=' + encodeURIComponent(c.lien) + '&numero=' + encodeURIComponent(c.numero || '') : '');
   const e0 = etatVue(ctx);
   const ok = e0.forcerCadre || await serveurPret();
   if (!z.isConnected) return;
   if (ok) {
+    if (regles) {
+      const f = cadreRegles();
+      if (cadreRSrc !== src) { f.src = src; cadreRSrc = src; }
+      z.dataset.pret = '1';
+      if (etat) etat.textContent = '';
+      placerCadre();
+      return;
+    }
     const f = cadreProduction();
     if (cadreSrc !== src) { f.src = src; cadreSrc = src; }
     z.dataset.pret = '1';
@@ -775,7 +814,7 @@ async function monterGeorama(ctx) {
        </div>
        <p class="tres-petit doux" style="margin:12px 0 0">Si Chrome demande d’autoriser l’accès aux « applis et services de cet appareil » ou au « réseau local » : clique <strong>Autoriser</strong>.<br>
        La première fois sur un ordi : double-clique sur « Installer le bouton du hub.cmd »<br>dans OneDrive › 04_Operations… › 05_Georama-production › georama-production.</p>`;
-  if (attend) { clearTimeout(e.minuterieGp); e.minuterieGp = setTimeout(() => { if (ctx.route.sous === 'georama') monterGeorama(ctx); }, 3000); }
+  if (attend) { clearTimeout(e.minuterieGp); e.minuterieGp = setTimeout(() => { if (ctx.route.sous === sousVue) monterGeorama(ctx); }, 3000); }
 }
 
 export default {
@@ -783,13 +822,13 @@ export default {
   render(ctx) {
     const sous = ctx.route.sous;
     const ong = (id, nom) => `<a href="#/production${id ? '/' + id : ''}"${sous === id ? ' aria-current="page"' : ''}>${nom}</a>`;
-    const titres = { '': 'File d’impression', fiche: 'Fiche de production', planification: 'Planification', filament: 'Filament et AMS', georama: 'Georama Production' };
-    const corps = sous === 'fiche' ? vueFiche(ctx) : sous === 'planification' ? vuePlanif(ctx) : sous === 'filament' ? vueFilament(ctx) : sous === 'georama' ? vueGeorama(ctx) : vueFile(ctx);
+    const titres = { '': 'File d’impression', fiche: 'Fiche de production', planification: 'Planification', filament: 'Filament et AMS', regles: 'Règles d’impression', georama: 'Georama Production' };
+    const corps = sous === 'fiche' ? vueFiche(ctx) : sous === 'planification' ? vuePlanif(ctx) : sous === 'filament' ? vueFilament(ctx) : sous === 'regles' ? vueRegles(ctx) : sous === 'georama' ? vueGeorama(ctx) : vueFile(ctx);
     return `<header class="entete">
         <div><p class="surtitre">Production</p><h1 class="titre-1">${titres[sous] || titres['']}</h1></div>
         <div class="actions">${sous !== 'georama' ? '<a class="btn-2 seulement-ordi" href="#/production/georama">Georama Production</a>' : ''}</div>
       </header>
-      <nav class="onglets" aria-label="Sections de la production">${ong('', 'File d’impression')}${ong('fiche', 'Fiche de production')}${ong('planification', 'Planification')}${ong('filament', 'Filament et AMS')}<a class="seulement-ordi" href="#/production/georama"${sous === 'georama' ? ' aria-current="page"' : ''}>Georama Production</a></nav>
+      <nav class="onglets" aria-label="Sections de la production">${ong('', 'File d’impression')}${ong('fiche', 'Fiche de production')}${ong('planification', 'Planification')}${ong('filament', 'Filament et AMS')}<a class="seulement-ordi" href="#/production/regles"${sous === 'regles' ? ' aria-current="page"' : ''}>Règles d’impression</a><a class="seulement-ordi" href="#/production/georama"${sous === 'georama' ? ' aria-current="page"' : ''}>Georama Production</a></nav>
       ${corps}`;
   },
   actions: {
@@ -820,7 +859,9 @@ export default {
     'gp-agrandir': () => basculerMax(),
     'gp-choisir': ctx => choisirCommande(ctx),
     'gp-recharger': ctx => {
-      if (cadre && cadreSrc) { const src = cadreSrc; cadre.src = 'about:blank'; setTimeout(() => { cadre.src = src; }, 50); }
+      const r = ctx.route.sous === 'regles';
+      const f = r ? cadreR : cadre, src = r ? cadreRSrc : cadreSrc;
+      if (f && src) { f.src = 'about:blank'; setTimeout(() => { f.src = src; }, 50); }
       else monterGeorama(ctx);
     },
     'gp-forcer': ctx => { etatVue(ctx).forcerCadre = true; monterGeorama(ctx); },
@@ -893,7 +934,7 @@ export default {
   },
   apres(ctx) {
     if (ctx.route.sous === 'fiche') { const c = ficheCourante(ctx); if (c) chargerFichiers(ctx, c); }
-    if (ctx.route.sous === 'georama') monterGeorama(ctx);
+    if (ctx.route.sous === 'georama' || ctx.route.sous === 'regles') monterGeorama(ctx);
     clearInterval(ctx.etat.minuterieProd);
     if (ctx.route.vue === 'production' && (ctx.route.sous === '' || ctx.route.sous === 'fiche')) {
       ctx.etat.minuterieProd = setInterval(() => {
