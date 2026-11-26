@@ -48,6 +48,9 @@ Les identifiants ne sont pas des secrets. Aucun mot de passe ne passe par le hub
 
 ## Journal des versions
 
+### v1.17.3 (25 novembre 2026)
+- Règles d'impression › Encadrement : deux diagrammes du cadre. Vue de dessus de la plaque (264 × 314,8 mm, bordure de 5 mm lue en direct, maquette 254 × 304,8 mm) et coupe du montage agrandie avec 7 repères numérotés (cadre, lèvre, feuillure, bordure, base et relief, languette tournante, mur).
+
 ### v1.17.2 (25 novembre 2026)
 - Production › Règles d'impression : nouvelle carte « Encadrement » (réglages de cadre du 15 nov., Production 4.44) : quand la bordure s'applique, bordure de 5 mm (largeur lue en direct), aucun brim, plaque de 264 × 314,8 mm, montage option A (feuillure de 5 mm, lèvre, 4 languettes tournantes), dos sans marche, offre (sans cadre par défaut, cadre de bois +30 $), solution si les coins décollent. « À ne jamais faire » : marche imprimée au dos.
 

@@ -62,6 +62,51 @@ const JAMAIS = [
   ['Passer en mode LAN pendant une impression', ''],
   ['Imprimer une marche au dos pour les languettes du cadre', 'le pourtour serait suspendu au-dessus du plateau en 1re couche.'],
 ];
+// Diagrammes du cadre (v1.17.3) : vue de dessus de la plaque et coupe du montage, en mm
+const pastilleSvg = (x, y, n) => `<g><circle cx="${x}" cy="${y}" r="1.5" fill="var(--accent)"/><text x="${x}" y="${y + 0.55}" font-size="1.6" font-weight="700" fill="var(--sur-accent)" text-anchor="middle">${n}</text></g>`;
+function vueDessusCadre(b) {
+  const L = 254 + 2 * b, H = 304.8 + 2 * b, ox = 26, oy = 26;
+  return `<svg viewBox="0 0 ${L + 96} ${H + 46}" role="img" aria-label="Plaque avec bordure de cadre, vue de dessus" style="width:100%;height:auto;display:block;font-family:inherit">
+    <rect x="${ox}" y="${oy}" width="${L}" height="${H}" fill="var(--accent)" rx="1"/>
+    <rect x="${ox + b}" y="${oy + b}" width="254" height="304.8" fill="var(--surface-2)" stroke="var(--fond)" stroke-width="1"/>
+    <path d="M${ox + L - 1} ${oy + 70} L${ox + L + 14} ${oy + 70}" stroke="var(--accent-texte)" stroke-width="1.5"/>
+    <text x="${ox + L + 17}" y="${oy + 66}" font-size="12" font-weight="700" fill="var(--accent-texte)">bordure</text>
+    <text x="${ox + L + 17}" y="${oy + 81}" font-size="12" font-weight="700" fill="var(--accent-texte)">${nb(b)} mm</text>
+    <text x="${ox + L / 2}" y="${oy + H / 2 - 8}" font-size="15" font-weight="700" fill="var(--texte)" text-anchor="middle">Maquette 10 × 12 po</text>
+    <text x="${ox + L / 2}" y="${oy + H / 2 + 12}" font-size="12" fill="var(--texte-doux)" text-anchor="middle">254 × 304,8 mm</text>
+    <line x1="${ox}" y1="12" x2="${ox + L}" y2="12" stroke="var(--texte-doux)" stroke-width="1"/>
+    <line x1="${ox}" y1="7" x2="${ox}" y2="17" stroke="var(--texte-doux)"/><line x1="${ox + L}" y1="7" x2="${ox + L}" y2="17" stroke="var(--texte-doux)"/>
+    <text x="${ox + L / 2}" y="9" font-size="12" fill="var(--texte)" text-anchor="middle">${nb(L)} mm avec la bordure</text>
+    <line x1="12" y1="${oy}" x2="12" y2="${oy + H}" stroke="var(--texte-doux)" stroke-width="1"/>
+    <line x1="7" y1="${oy}" x2="17" y2="${oy}" stroke="var(--texte-doux)"/><line x1="7" y1="${oy + H}" x2="17" y2="${oy + H}" stroke="var(--texte-doux)"/>
+    <text x="9" y="${oy + H / 2}" font-size="12" fill="var(--texte)" text-anchor="middle" transform="rotate(-90 9 ${oy + H / 2})">${nb(H)} mm</text>
+    <text x="${ox + L / 2}" y="${oy + H + 15}" font-size="12" fill="var(--accent-texte)" font-weight="700" text-anchor="middle">Bordure de cadre : ${nb(b)} mm tout le tour, aucun brim</text>
+  </svg>`;
+}
+function coupeCadre() {
+  return `<svg viewBox="-2 -9 52 37" role="img" aria-label="Coupe du montage dans le cadre" style="width:100%;height:auto;display:block;font-family:inherit">
+    <text x="0" y="-5.5" font-size="1.8" fill="var(--texte-doux)">↑ devant (pièce)</text>
+    <path d="M0 0 H18.5 V15 H13.5 V20 H0 Z" fill="#8a6a45" stroke="#c9a77c" stroke-width="0.25"/>
+    <path d="M19 15 V12.5 L24 10 L30 4 L35 6.5 L41 -6 L48 -2 V15 Z" fill="rgba(147,170,95,.55)" stroke="var(--accent)" stroke-width="0.25"/>
+    <rect x="14" y="15" width="5" height="5" fill="var(--accent)" stroke="var(--fond)" stroke-width="0.2"/>
+    <rect x="19" y="15" width="29" height="5" fill="rgba(147,170,95,.35)" stroke="var(--accent)" stroke-width="0.2"/>
+    <rect x="8" y="20.1" width="16" height="1.2" rx="0.4" fill="var(--bordure-controle)" stroke="var(--texte-doux)" stroke-width="0.15"/>
+    <circle cx="10" cy="20.7" r="0.45" fill="var(--fond)"/>
+    <line x1="-2" y1="23.5" x2="50" y2="23.5" stroke="var(--texte-doux)" stroke-width="0.35" stroke-dasharray="1 0.7"/>
+    <text x="34" y="9.5" font-size="1.9" fill="var(--texte)" text-anchor="middle">relief</text>
+    ${pastilleSvg(7, 7, 1)}${pastilleSvg(16, 7, 2)}${pastilleSvg(11.4, 17.5, 3)}${pastilleSvg(16.5, 17.5, 4)}${pastilleSvg(30, 17.5, 5)}${pastilleSvg(27, 20.7, 6)}${pastilleSvg(44, 25.6, 7)}
+  </svg>`;
+}
+const LEGENDE_COUPE = [
+  'Cadre de bois',
+  'Lèvre du cadre : 3 à 5,5 mm posés sur la bordure',
+  'Feuillure de 5 mm de profond',
+  'Bordure de cadre imprimée, 5 × 5 mm',
+  'Base de 5 mm ; le relief monte au-dessus',
+  'Languette tournante 9 × 25 mm, vissée au dos du cadre',
+  'Mur : dos de la maquette vers le mur, retirable par le client',
+];
+
 // Encadrement (décisions du 15 nov., Production 4.44 ; offre de l'outil client 4.20)
 function encadrement(c, ok) {
   const b = ok ? nb(c.cadre_bordure) : '5';
@@ -195,6 +240,12 @@ export function vueRegles() {
 
     <section class="carte" style="margin-bottom:16px">
       <div class="carte-tete"><h2>Encadrement</h2><span class="tres-petit doux">Réglages de cadre définis le 15 nov. (Production 4.44)</span></div>
+      <div class="g2" style="align-items:start;margin-bottom:14px">
+        <figure style="margin:0"><figcaption class="tres-petit doux" style="margin-bottom:6px">Plaque vue de dessus</figcaption><div style="max-width:340px">${vueDessusCadre(ok && c.cadre_bordure ? Number(c.cadre_bordure) : 5)}</div></figure>
+        <figure style="margin:0"><figcaption class="tres-petit doux" style="margin-bottom:6px">Coupe du montage (bord gauche, agrandi)</figcaption><div style="max-width:460px">${coupeCadre()}</div>
+          <ol class="tres-petit doux" style="margin:8px 0 0;padding:0;list-style:none;display:grid;gap:4px">${LEGENDE_COUPE.map((t, i) => `<li style="display:flex;gap:8px;align-items:center"><span style="flex:0 0 auto;display:inline-flex;width:18px;height:18px;border-radius:50%;background:var(--accent);color:var(--sur-accent);font-weight:700;font-size:11px;align-items:center;justify-content:center">${i + 1}</span>${esc(t)}</li>`).join('')}</ol>
+        </figure>
+      </div>
       <div class="g2" style="gap:0 24px">${encadrement(c, ok).map((e, i) => `<div class="ligne" style="align-items:flex-start;${i < 2 ? 'border-top:0' : ''}"><strong class="petit" style="width:150px;flex:0 0 auto">${esc(e[0])}</strong><span class="grow petit doux">${esc(e[1])}</span></div>`).join('')}</div>
       <p class="tres-petit doux" style="margin:10px 0 0">Dans Production : CADRE_BORDURE_MM, CADRE_BORDURE_HAUTEUR_MM, CADRE_SANS_BRIM, CADRES_AVEC_BORDURE. Planche des options de montage : <a href="https://claude.ai/artifact/VkJWmh8yJyKwaWkbi3dAUh" target="_blank" rel="noopener">ouvrir</a>.</p>
     </section>
