@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Carte-cadeau Georama : offrez son territoire en relief</title>
 <meta name="robots" content="noindex">
-<!-- Page carte-cadeau v2.1 (2026-11-17). Affichée dans la page Wix « Carte-cadeau » (iframe). Maquette : https://claude.ai/artifact/SJ4s8bBdwEAuwbXGSjjT2w -->
+<!-- Page carte-cadeau v2.2 (2026-11-27) : clic « Offrir » noté dans le compteur Entonnoir (carte-offrir). v2.1 (2026-11-17). Affichée dans la page Wix « Carte-cadeau » (iframe). Maquette : https://claude.ai/artifact/SJ4s8bBdwEAuwbXGSjjT2w -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -236,6 +236,11 @@ body>div>section:last-of-type>div{width:100%;box-sizing:border-box}
   // Hauteur envoyée à la page Wix (si elle l'écoute)
   function dire() { try { parent.postMessage({ georamaHauteur: document.documentElement.scrollHeight }, '*'); } catch (e) {} }
   window.addEventListener('load', dire); window.addEventListener('resize', dire); setTimeout(dire, 1500);
+  // Compteur Entonnoir (27 nov.) : un clic sur « Offrir une carte-cadeau » est signalé à la page Wix, qui le note (étape carte-offrir).
+  var offrir = document.querySelectorAll('a[href*="/gift-card"]');
+  for (var j = 0; j < offrir.length; j++) offrir[j].addEventListener('click', function () {
+    try { parent.postMessage({ type: 'georama-etape', etape: 'carte-offrir', segment: 'carte-cadeau', premiere: true, zone: '' }, '*'); } catch (e) {}
+  });
 })();
 </script>
 </body>
