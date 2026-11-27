@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Georama — Votre maquette</title>
-<!-- v2.0 (27 nov. 2026) : la maquette de la personne reste visible au panier : carte du lieu avec le cadre, type, largeur,
+<!-- v2.1 (27 nov. 2026) : version cellulaire compacte (carte 84 px à gauche, deux boutons côte à côte). v2.0 : la maquette de la personne reste visible au panier : carte du lieu avec le cadre, type, largeur,
      gamme et cadre, bouton « Modifier ma maquette », rappel prix final / 3 semaines / satisfait ou remboursé.
      v1 (20 oct. 2026) : lien de visualisation 3D seulement. Protocole inchangé : la page panier envoie { type: "georama-liens", liens: [{ nom, lien }] }. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,10 +31,13 @@
   a.btn:hover { background: #AFBD70; }
   a.sec { background: transparent; color: #F2F1EA; border: 1.5px solid rgba(242, 241, 234, .45); font-weight: 600; }
   @media (max-width: 600px) {
-    .boite { padding: 14px; gap: 12px; }
-    .carte { width: 100%; height: 110px; }
-    h2 { font-size: 15px; }
-    .liens, a.btn { width: 100%; }
+    .boite { padding: 12px; gap: 10px 12px; }
+    .carte { width: 84px; height: 84px; }
+    .txt { flex: 1 1 180px; }
+    h2 { font-size: 14.5px; }
+    p { font-size: 12.5px; }
+    .liens { width: 100%; flex-wrap: nowrap; }
+    a.btn { flex: 1 1 0; min-height: 42px; padding: 0 8px; font-size: 13px; white-space: normal; text-align: center; line-height: 1.15; }
   }
 </style>
 </head>
